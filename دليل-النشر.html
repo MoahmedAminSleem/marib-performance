@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دليل نشر لوحة أداء مصنع مأرب — خطوة بخطوة</title>
+<style>
+  :root{
+    --bg:#0A101C; --card:#131E2E; --card2:#0F1826; --line:rgba(217,168,107,.22);
+    --gold:#D9A86B; --gold2:#E9C68A; --txt:#F2EBDD; --dim:#A9B7C7; --red:#F87C7C; --green:#4FD98D;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',Arial,sans-serif;line-height:1.9;
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 6px)}
+  .wrap{max-width:860px;margin:0 auto;padding:28px 18px 60px}
+  header.hero{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+    border-radius:16px;padding:26px 24px;margin-bottom:22px;box-shadow:0 18px 40px rgba(0,0,0,.4)}
+  .brand{color:var(--gold);font-weight:900;letter-spacing:.22em;font-size:11px}
+  h1{margin:8px 0 4px;font-size:26px}
+  .sub{color:var(--dim);font-size:14px;margin:0}
+  .badge{display:inline-block;border:1px dashed var(--gold);color:var(--gold2);border-radius:8px;
+    padding:2px 10px;font-size:12px;font-weight:700;margin-inline-start:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:18px}
+  .stat{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .stat b{display:block;font-size:20px;color:var(--gold2)}
+  .stat span{color:var(--dim);font-size:12px}
+  section.step{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px;margin:18px 0}
+  .step-head{display:flex;align-items:flex-start;gap:14px}
+  .num{flex:0 0 44px;height:44px;border-radius:50%;background:rgba(217,168,107,.12);
+    border:1.4px dashed var(--gold);color:var(--gold2);font-weight:900;font-size:20px;
+    display:flex;align-items:center;justify-content:center}
+  h2{margin:4px 0 2px;font-size:19px}
+  .time{color:var(--dim);font-size:12.5px}
+  ol{margin:14px 0 4px;padding-inline-start:22px}
+  li{margin:10px 0}
+  .en{direction:ltr;display:inline-block;background:#1A2432;border:1px solid var(--line);
+    color:var(--gold2);border-radius:6px;padding:1px 9px;font-size:13.5px;font-weight:700;
+    font-family:Consolas,'Segoe UI',monospace}
+  .path{direction:ltr;display:inline-block;background:#0E1520;border:1px solid var(--line);
+    border-radius:6px;padding:1px 8px;font-family:Consolas,monospace;font-size:13px;color:#9FD3E8}
+  .note{background:rgba(217,168,107,.08);border:1px dashed var(--gold);border-radius:10px;
+    padding:10px 14px;margin:12px 0;font-size:13.5px}
+  .warn{background:rgba(248,124,124,.08);border:1px dashed var(--red);border-radius:10px;
+    padding:10px 14px;margin:12px 0;font-size:13.5px}
+  .ok{background:rgba(79,217,141,.08);border:1px dashed var(--green);border-radius:10px;
+    padding:10px 14px;margin:12px 0;font-size:13.5px}
+  .url{direction:ltr;display:block;background:#0E1520;border:1px solid var(--line);border-radius:8px;
+    padding:8px 12px;font-family:Consolas,monospace;color:#9FD3E8;font-size:13px;margin:6px 0;word-break:break-all}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:right}
+  th{background:var(--card2);color:var(--gold2)}
+  footer{margin-top:26px;color:var(--dim);font-size:12px;text-align:center;border-top:1px solid var(--line);
+    padding-top:16px}
+  .faq details{background:var(--card2);border:1px solid var(--line);border-radius:10px;
+    padding:10px 14px;margin:8px 0}
+  .faq summary{cursor:pointer;font-weight:700;color:var(--gold2)}
+  .faq p{color:var(--dim);font-size:13.5px;margin:8px 0 2px}
+  @media print{body{background:#fff;color:#111}.wrap{max-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <span class="brand">MARIB GARMENTS — PERFORMANCE STUDIO</span>
+  <h1>دليل نشر اللوحة الأونلاين <span class="badge">مجاني ١٠٠٪</span></h1>
+  <p class="sub">٣ خطوات بس — من غير ما تكتب أي كود — وبعدها أي حد في الشركة يفتح الدومين ويسجل دخول عادي، والداتا كلها متخزنة على قاعدة PostgreSQL.</p>
+  <div class="grid">
+    <div class="stat"><b>~١٥ دقيقة</b><span>زمن التنفيذ كله</span></div>
+    <div class="stat"><b>٠ جنيه</b><span>GitHub + Vercel + Neon</span></div>
+    <div class="stat"><b>٣ حسابات</b><span>مجانية، من غير كارت</span></div>
+    <div class="stat"><b>٣ شهور</b><span>يوليو + أغسطس + سبتمبر جاهزين</span></div>
+  </div>
+</header>
+
+<section class="step">
+  <div class="step-head"><div class="num">١</div>
+    <div><h2>ارفع الكود على GitHub <span class="en">github.com</span></h2>
+    <span class="time">~٥ دقايق — أول مرة في حياتك تتعمل عادي</span></div></div>
+  <ol>
+    <li>افتح <span class="en">github.com</span> واعمل حساب (زرار <span class="en">Sign up</span> — زي أي إيميل جديد).</li>
+    <li>من فوق شمال اضغط <span class="en">+</span> ← <span class="en">New repository</span>.</li>
+    <li>في خانة <span class="en">Repository name</span> اكتب: <span class="path">marib-performance</span> — واختار <span class="en">Private</span> (مهم — الكود يفضل مخصوص عليك) — بعدين <span class="en">Create repository</span>.</li>
+    <li>هتلاقي صفحة فيها <span class="en">uploading an existing file</span> — اضغط عليها.</li>
+    <li>افتح ملف الـ ZIP اللي معاك (<span class="path">marib-performance-deploy.zip</span>) وفكّه على جهازك.</li>
+    <li>اسحب <b>كل محتويات المجلد اللي اتفك</b> (٤١ ملف/مجلد — مش المجلد نفسه) على صندوق السحب في GitHub. <b>استنى لحد ما أسماء الملفات تخلص رفع</b> (شريط بيجن فوق).</li>
+    <li>اكتب في خانة التعليق: <span class="path">first deploy</span> واضغط <span class="en">Commit changes</span>.</li>
+  </ol>
+  <div class="note"><b>ليه Private؟</b> عشان محدش غيرك يشوف كود الموقع. Vercel هيقرأه عادي برضه — ده مسموح.</div>
+</section>
+
+<section class="step">
+  <div class="step-head"><div class="num">٢</div>
+    <div><h2>اعمل قاعدة البيانات المجانية <span class="en">neon.tech</span></h2>
+    <span class="time">~٣ دقايق — هنسخ منها سطر واحد بس</span></div></div>
+  <ol>
+    <li>افتح <span class="en">neon.tech</span> واعمل حساب (تقدر تضغط <span class="en">Sign up with GitHub</span> بنفس حسابك).</li>
+    <li>اضغط <span class="en">Create project</span> (لو سألك عن اسم: <span class="path">marib</span> — والمنطقة: <span class="en">Frankfurt</span> أو أقرب واحدة).</li>
+    <li>بعد ما يخلص، هتظهرلك صفحة فيها <b>Connection String</b> — سطر طويل بيبدأ بـ <span class="path">postgresql://</span>. <b>اضغط زرار النسخ (Copy)</b> جنب السطر ده واحتفظ بيه في ملف نصي مؤقتًا.</li>
+  </ol>
+  <span class="url">postgresql://neondb:XXXXXXXX@ep-xxxx-xxxx.region.aws.neon.tech/neondb?sslmode=require</span>
+  <div class="warn"><b>السطر ده هو مفتاح الداتا كلها</b> — ميبعتش لأي حد ولا بيتكتب في أي شات. اللي هيحصله نسخة واحدة بس بنحطها في Vercel في الخطوة الجاية.</div>
+  <div class="note">لو ضاع منك السطر في أي وقت: ادخل على Neon ← مشروعك ← <span class="en">Dashboard</span> ← هتلاقيه هناك بنفس المكان. ولو حسيت يومًا إنه اتسرب: من <span class="en">Reset password</span> بتعمل مفتاح جديد في ثواني.</div>
+</section>
+
+<section class="step">
+  <div class="step-head"><div class="num">٣</div>
+    <div><h2>انشر الموقع <span class="en">vercel.com</span> — هنا بيجي الدومين</h2>
+    <span class="time">~٥ دقايق منها دقيقة واحدة بتعمل حاجة، والباقي السيرفر بيشتغل لوحده</span></div></div>
+  <ol>
+    <li>افتح <span class="en">vercel.com</span> واضغط <span class="en">Continue with GitHub</span> (بنفس حساب GitHub).</li>
+    <li>من صفحة <span class="en">Projects</span> اضغط <span class="en">Add New... ← Project</span>.</li>
+    <li>هتلاقي مستودع <span class="path">marib-performance</span> في القائمة — اضغط <span class="en">Import</span> جنبه.</li>
+    <li><b>قبل ما تدوس Deploy</b> — انزل لخانة <span class="en">Environment Variables</span>:
+      <table>
+        <tr><th>Key</th><th>Value</th></tr>
+        <tr><td><span class="en">DATABASE_URL</span></td><td>الصق هنا سطر <span class="path">postgresql://...</span> اللي نسخته من Neon</td></tr>
+      </table>
+      خلي <span class="en">Environments</span> التلاتة (Production / Preview / Development) متعلمة زي ما هي.
+    </li>
+    <li>اضغط <span class="en">Deploy</span> واستنى من دقيقة لـ ٣ دقايق — هتشوف شريط أخضر <span class="en">Congratulations!</span>.</li>
+    <li>اضغط <span class="en">Continue to Dashboard</span> — فوق هتلاقي رابط موقعك، شكله كده:</li>
+  </ol>
+  <span class="url">https://marib-performance-xxxx.vercel.app</span>
+  <div class="ok"><b>الدومين ده ببلاش وباسم موقعك</b> — ابعت لأي حد في الشركة يفتحه ويسجل دخول. يدخل مرة واحدة على جهازه ويفضل فاكره. (لو عايز تختبر: افتحه من موبايلك بـ 4G مش الواي فاي بتاع المكتب.)</div>
+  <div class="note"><b>أول مرة تفتح الموقع ممكن تأخذ ١٠-٢٠ ثانية</b> (السيرفر بيصحى وبيعمل الجداول + بيحط شهور يوليو/أغسطس/سبتمبر تلقائي). بعدها بيفتح بسرعة عادية.</div>
+</section>
+
+<section class="step">
+  <div class="step-head"><div class="num">٤</div>
+    <div><h2>أول دخول — وقفل الباب</h2><span class="time">~دقيقتين</span></div></div>
+  <ol>
+    <li>افتح الدومين — هتلاقي شاشة الدخول بتاعة الجينز (نفس اللي انت متعود عليها).</li>
+    <li>سجّل: <span class="path">Amin</span> / <span class="path">2872002</span> — وعلامة "تذكرني" لو جهازك الشخصي.</li>
+    <li><b>فورًا</b>: من القايمة الجانبية ← المستخدمين ← دور على حسابك ← زرار المفتاح ← باسورد جديد قوي (حروف + أرقام + رمز، مش أرقام موبايلك ولا اسم الشركة). من اللحظة دي انت اللي معاك مفتاح الشقة.</li>
+    <li>ضيف حسابات الزملاء: اسم + باسورد مؤقت لكل واحد — وعلّم جنب اسمه <b>مفتاح "مسموح له يرفع الشهور"</b> لو هو اللي هيرفع الإكسل — الباقي كله مشاهدة. (الباسورد المؤقت قوله يغيره من نفس المكان أو غيّره أنت له.)</li>
+    <li>الشهور الثلاثة (يوليو ٧٣,٦٨٩ / أغسطس ١٣٦,٤٧٢ / سبتمبر ٢٠,٦٠٢) موجودة من أول لحظة — بدّل بينهم من قايمة "الشهر" فوق.</li>
+  </ol>
+  <div class="note"><b>الشهر الجديد (أكتوبر)</b>: لما يجي — حد عنده صلاحية الرفع يضغط "البيانات" ← يختار ملف/مجلد الإكسل بتاع أكتوبر — بيترفع على السيرفر وكل الشركة تلاقيه على طول من قايمة الشهر.</div>
+</section>
+
+<section class="step faq">
+  <div class="step-head"><div class="num">؟</div>
+    <div><h2>أسئلة بتتحصل كتير</h2></div></div>
+  <details><summary>عايز أعدّل حاجة في الموقع — أعمل إيه؟</summary>
+    <p>قول للمساعد بتاعك ("عدّل كذا") — هيقولك: افتح الملف الفلاني في GitHub (زرار القلم ✏️ جنب اسم الملف)، عدّل السطر ده، اضغط Commit. Vercel ينشر التعديل لوحده خلال دقيقة من غير ما تلمس أي حاجة تانية. ده بالظبط معنى "تحت إيدك".</p></details>
+  <details><summary>الشركة عايزة دومين باسمها زي marib.com؟</summary>
+    <p>لما الإدارة توافق: اشترِ دومين من Namecheap أو GoDaddy (~١٠$ في السنة) واربطه من Vercel ← Project ← Settings ← Domains ← Add. الدليل بيساعدك لوحته لو احتجت. والنسخة المجانية بتستمر شغالة زي ما هي.</p></details>
+  <details><summary>النت قطع في المصنع؟</summary>
+    <p>من القايمة الجانبية زرار "أوفلاين" — بينزّل نفس الملف اللي بنشتغل بيه دلوقتي (شغال من غير نت بنفس الأرقام). النسختين ورا بعض زي ما اتفقنا.</p></details>
+  <details><summary>حد نسا باسورده؟</summary>
+    <p>انت (الأدمن) من المستخدمين ← زرار المفتاح جنبه ← باسورد جديد. لو انت نسيت باسورد <b>الأدمن نفسه</b>: قول للمساعد — فيه حل جاهز (أمر واحد بيرجّع باسورد مؤقت وانت تغيّره).</p></details>
+  <details><summary>الموقع بيفتح ببطء أول مرة في اليوم؟</summary>
+    <p>عادي — الخطة المجانية بتخلي السيرفر "ينام" لو محدش فتح الموقع ساعة-تلاتة، وأول زائر بيصحّيه (١٠ ثواني تقريبًا). طالما الشركة بتفتحه كل يوم، مش هتحس بيها أصلًا.</p></details>
+  <details><summary>داتاي فين بالظبط؟ وحد يقدر ياخدها؟</summary>
+    <p>على سيرفرات Neon (قاعدة PostgreSQL) — مرمّزة أثناء النقل (HTTPS) والباسوردات متخزنة متشفرة جوا السيرفر نفسه. مفتاح القاعدة موجود في مكان واحد بس (Vercel) ومش في الكود. أقوى نقطتين تبقى عندك: باسورد أدمن قوي + ماتشاركش الحساب بتاعك.</p></details>
+  <details><summary>ظهرلي خطأ في صفحة الـ Deploy؟</summary>
+    <p>٩٠٪ من الحالات: نسيت تحط <span class="en">DATABASE_URL</span> أو نسخته ناقص. روح Vercel ← Project ← Settings ← Environment Variables ← اتأكد إن السطر موجود وكامل ← بعدين Deployments ← آخر صف ← النقط التلاتة ← Redeploy. لو استمر: افتح الدومين على <span class="path">/api/health</span> وابعت اللي مكتوب للمساعد.</p></details>
+</section>
+
+<footer>
+  Marib Garments Co. — دليل النشر للنسخة الأونلاين · ملف الرفع: marib-performance-deploy.zip (٤١ ملف) · سبتمبر ٢٠٢٦
+</footer>
+</div>
+</body>
+</html>

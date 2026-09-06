@@ -1,0 +1,45 @@
+// Marib Performance Studio — PRODUCTION schema (PostgreSQL on Neon)
+// Deploy-time copy of schema.prisma (see scripts/postinstall.mjs: on
+// Vercel it swaps this in and runs prisma generate). Tables are then
+// created at RUNTIME by src/lib/bootstrap.ts (CREATE TABLE IF NOT
+// EXISTS, dialect-aware) — the owner never runs a migration command.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique
+  role        String    @default("user") // dev | admin | user
+  canUpload   Boolean   @default(false)
+  active      Boolean   @default(true)
+  pwHash      String
+  failedCount Int       @default(0)
+  lockedUntil DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Session {
+  id        String   @id // 48-byte hex session token
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model MonthData {
+  id           Int      @id @default(autoincrement())
+  monthKey     String   @unique // "2026-08"
+  label        String   @default("")
+  packJson     String // packed tables (App.packTables format)
+  fileNames    String   @default("[]") // JSON array of uploaded file names
+  uploadedById Int?
+  uploadedAt   DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
