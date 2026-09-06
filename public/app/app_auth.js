@@ -330,28 +330,37 @@ var MaribAuth = (function () {
   }
 
   function enterApp(fresh) {
-    hideLogin();
     refreshChrome();
     if (fresh && me) toast(T("us_hello") + me.u, "ok");
-    /* round 10: no bundled data — right after sign-in, ask for the folder.
-       round 14: if a previous session's tables are being restored from
-       IndexedDB, wait for that first — a new tab with saved data must
-       NOT be asked to upload again */
-    if (window.App && !App.hasData()) {
-      /* round 21: the DOMContentLoaded restore ran BEFORE the session
-         cookie existed — retry it now, then prompt only if still empty */
-      if (App.retryRestore) { try { App.retryRestore(); } catch (e) { } }
-      setTimeout(function () {
-        if (!window.App || App.hasData()) return;
-        if (App.isRestoring && App.isRestoring()) {
-          if (App.onRestored) App.onRestored(function () {
-            if (!App.hasData()) App.promptData();
-          });
-          return;
-        }
-        App.promptData();
-      }, 550);
+    /* round 23: NEVER reveal the shell while the data restore is still
+       in flight — that fraction of a second used to show the "upload
+       data" empty state before the server data landed. The login screen
+       (or the boot veil) stays up until the restore settles, then the
+       shell appears already loaded. 8s safety for a stuck network. */
+    var revealed = false;
+    function reveal() {
+      if (revealed) return;
+      revealed = true;
+      hideLogin();
+      dropBootVeil();
+      var sb = $("lgSubmit"); if (sb) sb.disabled = false;
+      /* genuinely no data for this account → ask for the folder */
+      if (window.App && !App.hasData()) {
+        setTimeout(function () {
+          if (!window.App || App.hasData()) return;
+          if (App.promptData) { try { App.promptData(); } catch (e) { } }
+        }, 300);
+      }
     }
+    if (window.App && !App.hasData() && App.retryRestore) {
+      try { App.retryRestore(); } catch (e) { }
+      if (App.isRestoring && App.isRestoring() && App.onRestored) {
+        App.onRestored(reveal);
+        setTimeout(reveal, 8000);
+        return;
+      }
+    }
+    reveal();
   }
 
   function refreshChrome() {
@@ -573,9 +582,9 @@ var MaribAuth = (function () {
       }).then(function (r) {
         return r.json().then(function (j) { return { ok: r.ok, body: j || {} }; });
       }).then(function (r) {
-        if (submitBtn) submitBtn.disabled = false;
         var j = r.body;
         if (!r.ok || !j.ok) {
+          if (submitBtn) submitBtn.disabled = false;
           var key = (j.error === "locked" || j.error === "rate") ? "lg_err_locked"
             : j.error === "inactive" ? "lg_err_inactive"
             : j.error === "server" ? "lg_err_server" : "lg_err";
@@ -689,7 +698,7 @@ var MaribAuth = (function () {
        drops at the earliest possible moment. */
     function settle(j) {
       if (j && j.ok && j.user) { me = j.user; enterApp(false); }
-      else showLogin();
+      else { showLogin(); dropBootVeil(); }
     }
     var pre = (window.__meCheck && window.__meCheck.then) ? window.__meCheck : null;
     if (pre) {
@@ -700,7 +709,9 @@ var MaribAuth = (function () {
         .then(function (j) { settle(j); })
         .catch(function () { settle(null); });
     }
-    dropBootVeil();
+    /* round 23: the veil now lifts inside showLogin()/enterApp() — only
+       after the session AND the data restore have settled, so neither
+       the dashboard-behind-login nor the empty-state ever flashes. */
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

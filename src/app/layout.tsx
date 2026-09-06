@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./marib-app.css";
 
 export const metadata: Metadata = {
-  title: "لوحة أداء مصنع مأرب — MARIB PERFORMANCE",
+  title: "marib international garment",
   description:
     "لوحة أداء مصنع مأرب — النسخة الأونلاين: قاعدة بيانات PostgreSQL مشتركة، تسجيل دخول آمن، وأرشيف شهري كامل.",
   robots: { index: false, follow: false },

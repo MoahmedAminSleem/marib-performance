@@ -53,8 +53,6 @@ var MaribStore = (function () {
     if (!/^\d{4}-\d{2}$/.test(key)) return;
     activeMonth = key;
     try { localStorage.setItem(LS_MONTH, key); } catch (e) { }
-    var sel = document.getElementById("fMonth");
-    if (sel) sel.value = key;
   }
 
   function monthKeyOf(pack) {
@@ -87,51 +85,23 @@ var MaribStore = (function () {
     return key;
   }
 
-  /* ---------- month picker (topbar) ---------- */
-  function renderMonths(months, activeKey) {
-    var sel = document.getElementById("fMonth");
-    if (!sel) return;
-    if (!months) return getMonths(true).then(function (ms) { renderMonths(ms, activeKey); });
-    var cur = activeKey || activeMonthKey() || (months[0] && months[0].key);
-    sel.innerHTML = "";
-    if (!months.length) {
-      var o = document.createElement("option");
-      o.value = ""; o.textContent = "—";
-      sel.appendChild(o);
-      return;
-    }
-    months.forEach(function (m) {
-      var o = document.createElement("option");
-      o.value = m.key;
-      o.textContent = m.label || m.key;
-      sel.appendChild(o);
-    });
-    sel.value = cur;
-  }
-
-  function bindMonthPicker() {
-    var sel = document.getElementById("fMonth");
-    if (!sel || sel._maribBound) return;
-    sel._maribBound = true;
-    sel.addEventListener("change", function () {
-      var key = sel.value;
-      if (!/^\d{4}-\d{2}$/.test(key)) return;
-      setActiveMonth(key);
-      jfetch("/api/months/" + key).then(function (r) {
-        if (!r.ok || !r.body.ok) return;
-        if (window.App && App.setTables && App.unpackTables) {
-          var t = null;
-          try { t = App.unpackTables(r.body.pack); } catch (e) { return; }
-          if (!t) return;
-          App.setTables(t, "restored");
-          /* stale date range from another month → reset the period */
-          var f = document.getElementById("fFrom"), to = document.getElementById("fTo");
-          if (f) f.value = "";
-          if (to) to.value = "";
-          try { App.applyQP("all"); } catch (e) { }
-        }
-      });
-    });
+  /* ---------- month switch (round 23: driven by the DATE range —
+     the file/month dropdown is gone; app_main asks for the month that
+     covers the picked dates and the range is PRESERVED, not reset) ---------- */
+  function switchMonth(key) {
+    if (!/^\d{4}-\d{2}$/.test(key)) return Promise.resolve(null);
+    setActiveMonth(key);
+    return jfetch("/api/months/" + key).then(function (r) {
+      if (!r.ok || !r.body.ok) return null;
+      if (window.App && App.setTables && App.unpackTables) {
+        var t = null;
+        try { t = App.unpackTables(r.body.pack); } catch (e) { return null; }
+        if (!t || (!t.dd.length && !t.lo.length)) return null;
+        App.setTables(t, "restored");
+        return { pack: r.body.pack, names: r.body.names || [], at: r.body.at, month: key, label: r.body.label };
+      }
+      return null;
+    }).catch(function () { return null; });
   }
 
   /* ---------- the record the app expects: {pack, names, at} ---------- */
@@ -142,10 +112,7 @@ var MaribStore = (function () {
       return jfetch("/api/months/" + key).then(function (r) {
         if (!r.ok || !r.body.ok) return null;
         activeMonth = key;
-        renderMonths(months, key);
-        var sel = document.getElementById("fMonth");
-        if (sel) sel.value = key;
-        return { pack: r.body.pack, names: r.body.names || [], at: r.body.at, month: key, label: r.body.label };
+        return { pack: r.body.pack, names: r.body.names || [], at: r.body.at, month: key, label: r.body.label, months: months };
       });
     }).catch(function () { return null; });
   }
@@ -212,8 +179,8 @@ var MaribStore = (function () {
   return {
     saveData: saveData, loadData: loadData, clearData: clearData,
     saveMonth: saveMonth, monthKeyOf: monthKeyOf,
+    getMonths: getMonths, switchMonth: switchMonth,
     setActiveMonth: setActiveMonth, activeMonthKey: activeMonthKey,
-    renderMonths: renderMonths, bindMonthPicker: bindMonthPicker,
     saveUI: saveUI, loadUI: loadUI, clearUI: clearUI,
     onDataMessage: onDataMessage
   };

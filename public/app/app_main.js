@@ -15,6 +15,7 @@ var App = (function () {
       C_GOOD = "#4FD98D", C_WARN = "#F0BE55", C_BAD = "#F87C7C", C_F = "#7E92A8";
   var LS_KEY = "marib_live_v2";
   var LS_TH = "marib_targets_v1";
+  var LS_ROLES = "marib_roles_v1";   /* round 23: server role overrides mirror */
 
   /* user-editable targets (round 7): load persisted values over the
      defaults at startup so every chart/gauge/status chip follows them */
@@ -31,7 +32,60 @@ var App = (function () {
   }
   loadTargets();
 
-  var state = { tables: null, model: null, k: null, page: "overview", busy: false, source: "embed", qp: "all", cmp: {} };
+  var state = { tables: null, model: null, k: null, page: "overview", busy: false, source: "embed", qp: "all", cmp: {},
+    tmode: "both", supView: "sup", months: [], roles: {}, dimSets: null,
+    scopeSrc: null, scopeMode: null, scopeOut: null };
+
+  /* ---------------- round 23: people classification (roles) ----------------
+     Each name in the supervisors/leaders/managers union lands in ONE of
+     the three sub-tabs. Explicit overrides come from the server (set by
+     the admin in Settings); anything unassigned follows its natural
+     dimension: DD/PM supervisor → مشرف قسم, else leader, else manager. */
+  function loadRoleOverrides() {
+    try {
+      var o = JSON.parse(localStorage.getItem(LS_ROLES));
+      return (o && typeof o === "object") ? o : {};
+    } catch (e) { return {}; }
+  }
+  state.roles = loadRoleOverrides();
+  function computeDimSets() {
+    var m = state.model, s = { sup: {}, leader: {}, manager: {} };
+    if (!m) return s;
+    (m.supervisors || []).forEach(function (x) { s.sup[x] = 1; });
+    (m.leaders || []).forEach(function (x) { s.leader[x] = 1; });
+    (m.managers || []).forEach(function (x) { s.manager[x] = 1; });
+    return s;
+  }
+  function effCat(name) {
+    if (state.roles[name]) return state.roles[name];
+    if (!state.dimSets) state.dimSets = computeDimSets();
+    var s = state.dimSets;
+    if (s.sup[name]) return "sup";
+    if (s.leader[name]) return "leader";
+    if (s.manager[name]) return "manager";
+    return "sup";
+  }
+  function allPeople() {
+    var m = state.model;
+    if (!m) return [];
+    var seen = {}, out = [];
+    (m.supervisors || []).concat(m.leaders || [], m.managers || []).forEach(function (n) {
+      if (n != null && !seen[n]) { seen[n] = 1; out.push(n); }
+    });
+    return out.sort();
+  }
+  function fetchRoles() {
+    fetch("/api/settings", { credentials: "same-origin" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (j && j.ok && j.roles && typeof j.roles === "object") {
+          state.roles = j.roles;
+          state.dimSets = null;
+          try { localStorage.setItem(LS_ROLES, JSON.stringify(j.roles)); } catch (e) { }
+          if (state.model) render();
+        }
+      }).catch(function () { });
+  }
 
   /* ---------------- i18n helpers ---------------- */
   var T = I18N.t, TP = I18N.ta, TV = I18N.tv, TS = I18N.ts, TB = I18N.tb;
@@ -172,6 +226,20 @@ var App = (function () {
      line/section/supervisor filters, and charts get a compare strip +
      ghost series + per-bar deltas.
      ============================================================ */
+  /* ---------------- round 23: time-mode scoped model ----------------
+     base/ot run the SAME compute() over a channel-scoped copy of the
+     model (see MaribCore.scopeModel); "both" passes the model through
+     untouched — byte-identical to previous rounds. */
+  function scopedModel() {
+    var m = state.model;
+    if (!m || state.tmode === "both" || !MaribCore.scopeModel) return m;
+    if (state.scopeSrc !== m || state.scopeMode !== state.tmode) {
+      state.scopeSrc = m; state.scopeMode = state.tmode;
+      state.scopeOut = MaribCore.scopeModel(m, state.tmode);
+    }
+    return state.scopeOut;
+  }
+
   var cmpCache = {};   /* mode -> {info, k} — rebuilt on every render */
 
   function pad2(n) { return (n < 10 ? "0" : "") + n; }
@@ -209,7 +277,7 @@ var App = (function () {
     var k2 = null;
     if (info) {
       try {
-        k2 = MaribCore.compute(state.model, { from: info.from, to: info.to, line: f.line, section: f.section, sup: f.sup }, { noPrev: true });
+        k2 = MaribCore.compute(scopedModel(), { from: info.from, to: info.to, line: f.line, section: f.section, sup: f.sup }, { noPrev: true });
       } catch (e) { k2 = null; }
       if (k2 && !k2.factoryTarget && !k2.ddRows && !k2.attRows) k2 = null;  /* window has no records */
     }
@@ -681,17 +749,55 @@ var App = (function () {
   /* ============================================================
      PAGE: SUPERVISORS
      ============================================================ */
+  /* ---- round 23: supervisors page has 3 sub-tabs (supervisors /
+     leaders / managers); each person appears in the ONE sub-tab chosen
+     by the admin (Settings → People Classification, server-stored) or
+     by their natural dimension. Leaders/managers aggregate from Daily
+     Data rows (their OT minutes come from the OT sheet rows, which
+     carry the same person columns). ---- */
+  function supViewList(k, view) {
+    var cat = view || state.supView || "sup";
+    if (cat === "leader") {
+      return (k.byLeader || []).filter(function (p) { return effCat(p.person) === "leader"; })
+        .map(function (p) { return { name: p.person, target: p.target, actual: p.actual, achv: p.achv, otPct: p.otPct, minProd: p.minProd }; });
+    }
+    if (cat === "manager") {
+      return (k.byManager || []).filter(function (p) { return effCat(p.person) === "manager"; })
+        .map(function (p) { return { name: p.person, target: p.target, actual: p.actual, achv: p.achv, otPct: p.otPct, minProd: p.minProd }; });
+    }
+    return (k.bySupervisor || []).filter(function (p) { return effCat(p.supervisor) === "sup"; })
+      .map(function (p) { return { name: p.supervisor, target: p.target, actual: p.actual, achv: p.achv, otPct: p.otPct, minProd: p.minProd }; });
+  }
+  function supNouns(view) {
+    var AR = { sup: "المشرفين", leader: "رؤساء الخطوط", manager: "مديري الصالة" };
+    var EN = { sup: "SUPERVISORS", leader: "LINE LEADERS", manager: "HALL MANAGERS" };
+    var TR = { sup: "Bölüm Şefleri", leader: "Hat Liderleri", manager: "Salon Müdürleri" };
+    var lang = I18N.is("ar") ? "ar" : (I18N.is("tr") ? "tr" : "en");
+    var title = lang === "ar" ? AR[view] : (lang === "tr" ? TR[view] : EN[view].charAt(0) + EN[view].slice(1).toLowerCase());
+    var sub = (lang === "en") ? AR[view] : EN[view];
+    return { title: title, sub: sub, person: T(view === "leader" ? "t_leader" : view === "manager" ? "t_manager" : "t_sup") };
+  }
+  function setCardHead(chartId, main, sub) {
+    var el = $(chartId); if (!el) return;
+    var card = el.closest ? el.closest(".card") : null; if (!card) return;
+    var h = card.querySelector("h4"), e = card.querySelector(".en");
+    if (h) h.textContent = main;
+    if (e) setSub(e, sub);
+  }
   function renderSups(k, m) {
-    var byS = k.bySupervisor || [];
+    var view = state.supView || "sup";
+    var byS = supViewList(k, view);
+    var drillable = view === "sup";
+    var N = supNouns(view);
     var wrap = $("svKpis"); wrap.innerHTML = "";
     var best = byS[0], worst = byS[byS.length - 1];
     var avgA = byS.length ? byS.reduce(function (s, x) { return s + (x.achv || 0); }, 0) / byS.length : null;
 
-    wrap.appendChild(kpiTile({ id: "sv1", title: TV("k_sv_count"), en: TS("k_sv_count"), badge: TB("k_sv_count"), fmt: fmtInt, unit: T("u_sup") }));
+    wrap.appendChild(kpiTile({ id: "sv1", title: N.title, en: N.sub, fmt: fmtInt, unit: T("u_sup") }));
     wrap.appendChild(kpiTile({
       id: "sv2", title: TV("k_sv_best"), en: TS("k_sv_best"), badge: TB("k_sv_best"),
       fmt: pctF(1),
-      sub: best ? "<b>" + esc(best.supervisor) + "</b>" : ""
+      sub: best ? "<b>" + esc(best.name) + "</b>" : ""
     }));
     wrap.appendChild(kpiTile({ id: "sv3", title: TV("k_sv_avg"), en: TS("k_sv_avg"), badge: TB("k_sv_avg"), fmt: pctF(1) }));
     wrap.appendChild(kpiTile({
@@ -704,10 +810,14 @@ var App = (function () {
     setKpi("sv3", avgA * 100, pctF(1));
     setKpi("sv4", k.minProduced, fmtInt);
 
+    var cmpList2 = function (k2) {
+      var v2 = view;
+      if (v2 === "leader") return (k2.byLeader || []).filter(function (p) { return effCat(p.person) === "leader"; }).map(function (p) { return [shortName(p.person), p.achv == null ? null : p.achv * 100]; });
+      if (v2 === "manager") return (k2.byManager || []).filter(function (p) { return effCat(p.person) === "manager"; }).map(function (p) { return [shortName(p.person), p.achv == null ? null : p.achv * 100]; });
+      return (k2.bySupervisor || []).filter(function (p) { return effCat(p.supervisor) === "sup"; }).map(function (p) { return [shortName(p.supervisor), p.achv == null ? null : p.achv * 100]; });
+    };
     var cmpSvTop = cmpCard("svTop", function (cmp, k2) {
-      var m2 = {};
-      (k2.bySupervisor || []).forEach(function (S) { m2[shortName(S.supervisor)] = S.achv == null ? null : S.achv * 100; });
-      cmp.cmpMap = m2;
+      cmp.cmpMap = {}; cmpList2(k2).forEach(function (pv) { cmp.cmpMap[pv[0]] = pv[1]; });
       cmp.cells = [{ name: TV("k_sv_avg"), cur: avgA == null ? null : avgA * 100, cmp: k2.factoryAchv == null ? null : k2.factoryAchv * 100, fmt: pctF(0), goodUp: true }];
       cmp.fmt = pctF(0);
     });
@@ -715,9 +825,9 @@ var App = (function () {
       items: byS.slice(0, 10).map(function (S) {
         var st = stOf(S.achv, TH.achievement);
         return {
-          label: shortName(S.supervisor), value: Math.round((S.achv || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_sup"), S.supervisor], [T("t_achv"), fmtPct(S.achv)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
-          drill: { type: "sup", value: S.supervisor }
+          label: shortName(S.name), value: Math.round((S.achv || 0) * 1000) / 10, color: stColor(st),
+          tip: [[N.person, S.name], [T("t_achv"), fmtPct(S.achv)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
+          drill: drillable ? { type: "sup", value: S.name } : null
         };
       }),
       fmt: pctF(0), valueName: T("vn_achv"),
@@ -727,18 +837,16 @@ var App = (function () {
 
     var bottom = byS.slice(-6).filter(function (S) { return S.achv != null; });
     var cmpSvB = cmpCard("svBottom", function (cmp, k2) {
-      var m2 = {};
-      (k2.bySupervisor || []).forEach(function (S) { m2[shortName(S.supervisor)] = S.achv == null ? null : S.achv * 100; });
-      cmp.cmpMap = m2;
+      cmp.cmpMap = {}; cmpList2(k2).forEach(function (pv) { cmp.cmpMap[pv[0]] = pv[1]; });
       cmp.cells = [{ name: TV("k_sv_avg"), cur: avgA == null ? null : avgA * 100, cmp: k2.factoryAchv == null ? null : k2.factoryAchv * 100, fmt: pctF(0), goodUp: true }];
       cmp.fmt = pctF(0);
     });
     C.hbar($("svBottom"), {
       items: bottom.map(function (S) {
         return {
-          label: shortName(S.supervisor), value: Math.round((S.achv || 0) * 1000) / 10, color: C_BAD,
-          tip: [[T("t_sup"), S.supervisor], [T("t_achv"), fmtPct(S.achv)], [T("t_target"), fmtInt(S.target)], [T("t_gap"), fmtInt(Math.max(0, S.target - S.actual))], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
-          drill: { type: "sup", value: S.supervisor }
+          label: shortName(S.name), value: Math.round((S.achv || 0) * 1000) / 10, color: C_BAD,
+          tip: [[N.person, S.name], [T("t_achv"), fmtPct(S.achv)], [T("t_target"), fmtInt(S.target)], [T("t_gap"), fmtInt(Math.max(0, S.target - S.actual))], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
+          drill: drillable ? { type: "sup", value: S.name } : null
         };
       }),
       fmt: pctF(0), valueName: T("vn_achv"), sort: "asc",
@@ -749,16 +857,21 @@ var App = (function () {
     var rows = byS.map(function (S, i) {
       var st = stOf(S.achv, TH.achievement);
       var otst = S.otPct == null ? null : stOf(S.otPct, TH.overtime, true);
-      return "<tr class='drill-row' data-dt='sup' data-dv='" + esc(S.supervisor) + "'><td><span class='rank num" + (i < 3 ? " top" : "") + "'>" + (i + 1) + "</span></td>" +
-        "<td class='t-name'><b>" + esc(S.supervisor) + "</b></td>" +
+      var pre = drillable ? "<tr class='drill-row' data-dt='sup' data-dv='" + esc(S.name) + "'>" : "<tr>";
+      return pre + "<td><span class='rank num" + (i < 3 ? " top" : "") + "'>" + (i + 1) + "</span></td>" +
+        "<td class='t-name'><b>" + esc(S.name) + "</b></td>" +
         "<td class='num'>" + fmtInt(S.target) + "</td>" +
         "<td class='num'>" + fmtInt(S.actual) + "</td>" +
         "<td class='num' style='color:" + stColor(st) + ";font-weight:800'>" + fmtPct(S.achv) + "</td>" +
         "<td class='num' style='color:" + (otst ? stColor(otst) : C_MUTED) + ";font-weight:800'>" + fmtPct(S.otPct, 2) + "</td>" +
         "<td>" + stChip(S.achv, TH.achievement) + "</td></tr>";
     }).join("");
-    $("svTable").innerHTML = "<thead><tr>" + T("th_sups").map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr></thead><tbody>" + rows + "</tbody>";
-    $("svTblChip").textContent = I18N.count(byS.length, "sup");
+    var ths = T("th_sups").slice();
+    ths[1] = N.person;
+    $("svTable").innerHTML = "<thead><tr>" + ths.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr></thead><tbody>" + rows + "</tbody>";
+    setCardHead("svTable", (I18N.is("tr") ? N.title + " Performans" : I18N.is("en") ? N.title + " Performance" : "أداء " + N.title),
+      (I18N.is("en") ? "أداء " + (view === "sup" ? "المشرفين" : view === "leader" ? "رؤساء الخطوط" : "مديري الصالة") : (view === "sup" ? "SUPERVISOR" : view === "leader" ? "LINE LEADERS" : "HALL MANAGERS") + " DETAILS"));
+    $("svTblChip").textContent = byS.length + " " + T("rl_cnt");
   }
 
   /* ============================================================
@@ -1728,6 +1841,76 @@ var App = (function () {
   /* ============================================================
      Filters / nav / render
      ============================================================ */
+  /* ---------------- round 23: month chip + auto month by date ----------------
+     The file/month dropdown is GONE: the active month follows the picked
+     date range (max-overlap month of [from,to]), the chip shows which
+     month is loaded, and the date inputs span the WHOLE archive. */
+  function lastDayOfKey(key) {
+    var y = +key.slice(0, 4), mth = +key.slice(5, 7);
+    return new Date(Date.UTC(y, mth, 0)).getUTCDate();
+  }
+  function updateMonthChip() {
+    var el = $("monthChip");
+    if (!el) return;
+    var key = (window.MaribStore && MaribStore.activeMonthKey) ? MaribStore.activeMonthKey() : null;
+    if (key && I18N.monthLabel) el.textContent = I18N.monthLabel(key);
+    el.style.display = key ? "" : "none";
+  }
+  function archiveBounds() {
+    var ms = state.months || [];
+    if (!ms.length) {
+      var m = state.model;
+      return { min: m && m.dateMin, max: m && m.dateMax };
+    }
+    var first = ms[ms.length - 1].key, last = ms[0].key;   /* desc order */
+    return { min: first + "-01", max: last + "-" + (lastDayOfKey(last) < 10 ? "0" + lastDayOfKey(last) : lastDayOfKey(last)) };
+  }
+  function pickMonthFor(from, to) {
+    /* candidates = the months of the range ENDPOINTS only (max overlap
+       between the two). A range whose endpoints live in no archived
+       month (or a mid-edit transitional span) never triggers a jump. */
+    var ms = state.months || [];
+    if (!ms.length || (!from && !to)) return null;
+    var keys = {};
+    ms.forEach(function (m) { keys[m.key] = m; });
+    var cands = [];
+    [from, to].forEach(function (d) {
+      if (!d) return;
+      var k = d.slice(0, 7);
+      if (keys[k] && cands.indexOf(k) < 0) cands.push(k);
+    });
+    if (!cands.length) return null;
+    var best = null, bestDays = -1;
+    cands.forEach(function (k) {
+      var e = k + "-" + (lastDayOfKey(k) < 10 ? "0" + lastDayOfKey(k) : lastDayOfKey(k));
+      var s = k + "-01";
+      var a = from > s ? from : s, b = to < e ? to : e;
+      var days = (a <= b) ? Math.round((Date.parse(b) - Date.parse(a)) / 86400000) + 1 : 0;
+      if (days > bestDays) { bestDays = days; best = k; }
+    });
+    return best;
+  }
+  function autoMonth() {
+    if (!window.MaribStore || !MaribStore.switchMonth || !(state.months || []).length) return false;
+    var fF = $("fFrom"), fT = $("fTo");
+    var a = fF.value, b = fT.value;
+    if (!a && !b) return false;
+    var from = a < b ? a : b, to = a < b ? b : a;
+    if (!from) { from = to; }
+    if (!to) { to = from; }
+    var key = pickMonthFor(from, to);
+    var active = MaribStore.activeMonthKey();
+    if (key && key !== active) {
+      MaribStore.switchMonth(key).then(function (rec) {
+        if (!rec) { toast(T("toast_no_month"), "err"); render(); return; }
+        updateMonthChip();
+      });
+      return true;
+    }
+    if (!key) toast(T("toast_no_month"), "err");
+    return false;
+  }
+
   function fillFilters(keep) {
     var m = state.model;
     var lSel = $("fLine"), sSel = $("fSup"), cSel = $("fSection");
@@ -1748,8 +1931,10 @@ var App = (function () {
     if (sv) sSel.value = sv;
 
     var fF = $("fFrom"), fT = $("fTo");
-    if (m.dateMin) { fF.min = m.dateMin; fT.min = m.dateMin; }
-    if (m.dateMax) { fF.max = m.dateMax; fT.max = m.dateMax; }
+    var gb = archiveBounds();
+    if (gb.min) { fF.min = gb.min; fT.min = gb.min; }
+    if (gb.max) { fF.max = gb.max; fT.max = gb.max; }
+    updateMonthChip();
   }
 
   /* quick-period chips write the range into the date inputs; the
@@ -1800,6 +1985,9 @@ var App = (function () {
     document.querySelectorAll(".qp-btn").forEach(function (b) {
       b.className = "qp-btn" + (b.getAttribute("data-qp") === qp ? " on" : "");
     });
+    /* round 23: "last month" may target ANOTHER archived month (e.g. in
+       October it points at September) — let the auto-switch load it */
+    if (qp === "last30") { if (!autoMonth()) render(); return; }
     render();
   }
 
@@ -1821,7 +2009,7 @@ var App = (function () {
     if (!state.model) return;
     cmpCache = {};   /* round 8: compare windows are re-resolved per render */
     var f = readFilters();
-    var k = MaribCore.compute(state.model, f);
+    var k = MaribCore.compute(scopedModel(), f);
     state.k = k;
     var days = (k.datesInRange || []).length;
     var fromTxt = f.from || state.model.dateMin, toTxt = f.to || state.model.dateMax;
@@ -1879,63 +2067,38 @@ var App = (function () {
   }
 
   /* ============================================================
-     CSV export
+     Data loading (folder / files / drop) — zero dialogs
+     round 23: files are grouped per MONTH (each monthly Excel packs
+     and upserts on its own) — re-uploading a file UPDATES that month
+     exactly: added rows are added, removed rows removed, changed
+     values changed (the server pack is REPLACED, not merged).
      ============================================================ */
-  function exportCSV() {
-    var k = state.k; if (!k) return;
-    var rows;
-    if (state.page === "overview") {
-      rows = [[T("csv_metric"), T("csv_value")],
-        [TV("k_ov_actual"), k.factoryActual], [T("t_target"), k.factoryTarget], [TV("k_ov_achv"), fmtPct(k.factoryAchv)],
-        [T("t_eff"), fmtPct(k.eff)], [TV("k_ov_ot"), fmtPct(k.otPct, 2)], [TV("k_ot_min"), k.otMinutes],
-        [TV("k_at_rate"), fmtPct(k.attendance)], [TV("k_at_abs"), k.absent], []];
-      rows.push([T("t_day"), T("t_actual"), T("t_target"), T("t_achv"), T("t_eff"), T("t_att")]);
-      (k.series || []).forEach(function (s) { rows.push([wd(s.date) + " " + s.label, s.loA, s.loT, fmtPct(s.achv), fmtPct(s.eff), fmtPct(s.attPct)]); });
-    } else if (state.page === "lines") {
-      rows = [T("th_lines")];
-      (k.byLine || []).forEach(function (L) { rows.push([L.line, L.target, L.actual, fmtPct(L.achv), fmtPct(L.otPct, 2), L.avgSAM == null ? "" : I18N.dec(L.avgSAM.toFixed(2)), L.maxAtt]); });
-    } else if (state.page === "sections") {
-      rows = [T("th_secs")];
-      (k.bySection || []).forEach(function (S) { rows.push([S.section, S.target, S.actual, fmtPct(S.achv), fmtPct(S.otPct, 2), S.maxAtt, S.otMin]); });
-    } else if (state.page === "sups") {
-      rows = [T("th_sups")];
-      (k.bySupervisor || []).forEach(function (S) { rows.push([S.supervisor, S.target, S.actual, fmtPct(S.achv), fmtPct(S.otPct, 2)]); });
-    } else if (state.page === "pm") {
-      rows = [[T("csv_metric"), T("csv_value")],
-        [T("t_recs"), (k.pmAgg || {}).rows], [T("t_target"), (k.pmAgg || {}).target], [T("t_actual"), (k.pmAgg || {}).actual],
-        [T("t_ot_min2"), (k.pmAgg || {}).otMin], [T("t_availmin"), (k.pmAgg || {}).cap],
-        [T("t_prodmin"), (k.pmAgg || {}).minProd], [T("t_eff"), fmtPct((k.pmAgg || {}).eff)], []];
-      rows.push([T("t_day"), T("t_target"), T("t_actual"), T("t_recs"), T("t_eff")]);
-      (k.pmDaily || []).forEach(function (s) { rows.push([wd(s.date) + " " + s.label, s.target, s.actual, s.rows, fmtPct(s.eff)]); });
-      rows.push([]);
-      rows.push([T("t_mach"), T("t_lines"), T("t_recs"), T("t_target"), T("t_actual"), T("t_real"), T("t_availmin"), T("t_prodmin"), T("t_eff")]);
-      (k.byPmMachine || []).forEach(function (M) { rows.push([M.machine, M.lines.join(I18N.listSep()), M.rows, M.target, M.actual, fmtPct(M.achv), M.cap, M.minProd, fmtPct(M.eff)]); });
-    } else if (state.page === "ot") {
-      rows = [[T("csv_metric"), T("csv_value")], [T("t_ot_min2"), k.otMinutes], [T("t_availmin"), k.totalMinAvail], [T("t_ot_pct"), fmtPct(k.otPct, 2)], []];
-      rows.push([T("t_day"), T("t_ot_pct"), T("t_ot_min"), T("t_availmin")]);
-      (k.series || []).forEach(function (s) { rows.push([wd(s.date) + " " + s.label, fmtPct(s.otPct, 2), s.otMin, s.totalMinAvail]); });
-    } else {
-      rows = [T("th_att")];
-      (k.series || []).forEach(function (s) { rows.push([wd(s.date) + " " + s.label, fmtPct(s.attPct), s.absent, s.ddAttW]); });
-      rows.push([]); rows.push([T("csv_weekday"), T("t_avgatt")]);
-      (k.byDow || []).forEach(function (d) { rows.push([I18N.dayFull(d.order), fmtPct(d.pct)]); });
+  /* ============================================================
+     round 23b: an upload boots its month — if the current date
+     range doesn't touch that month at all, snap the inputs to the
+     month's span (custom period). Uploading August while a
+     September-only range is active must never leave the dashboard
+     blank: every row of the fresh month would be filtered out.
+     An empty range ("الكل") already shows the whole month — kept.
+     ============================================================ */
+  function snapRangeToMonth(key) {
+    if (!/^\d{4}-\d{2}$/.test(String(key || ""))) return;
+    var fF = $("fFrom"), fT = $("fTo");
+    var a = fF.value, b = fT.value;
+    if (!a && !b) return;                    /* "all" covers the month */
+    var from, to;
+    if (a && b) { from = a < b ? a : b; to = a < b ? b : a; }
+    else { from = to = (a || b); }
+    var s = key + "-01";
+    var ld = lastDayOfKey(key);
+    var e = key + "-" + (ld < 10 ? "0" + ld : ld);
+    if (to < s || from > e) {                /* no intersection → snap */
+      fF.value = s; fT.value = e;
+      state.qp = "custom";
+      document.querySelectorAll(".qp-btn").forEach(function (btn) { btn.className = "qp-btn"; });
     }
-    var csv = "\uFEFF" + rows.map(function (r) {
-      return r.map(function (c) {
-        var s = String(c == null ? "" : c);
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-      }).join(",");
-    }).join("\n");
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    a.download = "marib-" + state.page + ".csv";
-    document.body.appendChild(a); a.click(); a.remove();
-    toast(I18N.toastCsv(a.download), "ok");
   }
 
-  /* ============================================================
-     Data loading (folder / files / drop) — zero dialogs
-     ============================================================ */
   function collectFiles(fileList) {
     var files = [];
     for (var i = 0; i < fileList.length; i++) {
@@ -1962,20 +2125,26 @@ var App = (function () {
     });
   }
 
+  function mergedTables(fileRecs) {
+    var acc = { dd: [], ot: [], pm: [], att: [], lo: [] };
+    fileRecs.forEach(function (pf) {
+      for (var key in acc) if (acc[key]) acc[key] = acc[key].concat(pf.tables[key] || []);
+    });
+    return acc;
+  }
+
   function parseFiles(files) {
     var btn = $("btnData");
     btn.classList.add("busy"); state.busy = true;
     var cfg = MaribCore.DEFAULT_CONFIG;
-    var acc = { dd: [], ot: [], pm: [], att: [], lo: [] };
     var report = { errors: [], warnings: [], sheetsMissing: [], rows: {} };
-    var names = [];
+    var parsed = [];   /* { name, tables } — one record per file */
     var done = 0;
     Array.prototype.forEach.call(files, function (f) {
       readFile(f).then(function (buf) {
         try {
           var t = MaribCore.parseWorkbook(new Uint8Array(buf), XLSX, cfg, report);
-          for (var key in acc) if (acc[key]) acc[key] = acc[key].concat(t[key] || []);
-          names.push(f.name);
+          parsed.push({ name: f.name, tables: t });
         } catch (e) { report.errors.push(f.name + ": " + e.message); }
         done++;
         if (done === files.length) finish();
@@ -1984,29 +2153,57 @@ var App = (function () {
     function finish() {
       btn.classList.remove("busy"); state.busy = false;
       if (report.errors.length) { toast(I18N.toastReadErr(report.errors.length), "err"); return; }
-      if (!acc.dd.length && !acc.lo.length) { toast(T("toast_nodata"), "err"); return; }
-      state.tables = acc;
+      /* group the parsed files by their month — a folder may carry
+         several months, and a single sheet carries one */
+      var groups = {};
+      parsed.forEach(function (pf) {
+        var key = null;
+        try { key = (window.MaribStore && MaribStore.monthKeyOf) ? MaribStore.monthKeyOf(packTables(pf.tables)) : null; } catch (e) { key = null; }
+        if (!key) key = "__na";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(pf);
+      });
+      var keys = Object.keys(groups).filter(function (k) { return k !== "__na"; })
+        .filter(function (k) { var t = mergedTables(groups[k]); return t.dd.length || t.lo.length; });
+      if (!keys.length) { toast(T("toast_nodata"), "err"); return; }
+      keys.sort();
+      var newest = keys[keys.length - 1];
+      /* round 23b: the active month follows the upload IMMEDIATELY (the
+         chip never shows a stale month while the POSTs are in flight),
+         and a date range that misses the uploaded month snaps to it */
+      if (window.MaribStore && MaribStore.setActiveMonth) MaribStore.setActiveMonth(newest);
+      snapRangeToMonth(newest);
+      /* boot the NEWEST uploaded month locally (same numbers the server
+         now holds for it) */
+      state.tables = mergedTables(groups[newest]);
       state.source = "folder";
-      /* round 14: keep the parsed tables in IndexedDB so opening the app
-         in ANOTHER tab (sidebar link → "open in new tab") restores the
-         dashboard without login + folder upload. Logout clears it. */
-      /* round 21 (online): parsing stays LOCAL (same MaribCore = same
-         numbers), then the packed month POSTs to the server so every
-         device in the company sees it — no more per-device uploads */
-      var pack = packTables(acc);
-      var mkey = (window.MaribStore && MaribStore.monthKeyOf) ? MaribStore.monthKeyOf(pack) : null;
-      state.tables = acc;
-      state.source = "folder";
-      boot("folder", names);
-      if (window.MaribStore && MaribStore.saveMonth) {
-        MaribStore.saveMonth(mkey, pack, names, function (err, label) {
-          if (err) { toast(T(err), "err"); return; }
-          if (mkey && MaribStore.setActiveMonth) MaribStore.setActiveMonth(mkey);
-          if (MaribStore.renderMonths) MaribStore.renderMonths();
-          toast(I18N.toastUploaded ? I18N.toastUploaded(label) : T("toast_uploaded"), "ok");
-        });
-      } else {
-        toast(I18N.toastParsed(names.length), "ok");
+      boot("folder", groups[newest].map(function (pf) { return pf.name; }));
+      /* upsert every month on the server — replacing the pack is exactly
+         the "update" semantics: deleted rows disappear, added appear */
+      keys.forEach(function (key) {
+        var pack = packTables(mergedTables(groups[key]));
+        var mnames = groups[key].map(function (pf) { return pf.name; });
+        if (window.MaribStore && MaribStore.saveMonth) {
+          MaribStore.saveMonth(key, pack, mnames, function (err, label) {
+            if (err) { toast(T(err), "err"); return; }
+            if (MaribStore.setActiveMonth) MaribStore.setActiveMonth(key);
+            if (keys.length === 1) toast(I18N.toastUploaded ? I18N.toastUploaded(label) : T("toast_uploaded"), "ok");
+          });
+        } else {
+          if (keys.length === 1) toast(I18N.toastParsed(1), "ok");
+        }
+      });
+      if (keys.length > 1) {
+        var labels = keys.map(function (k) { return I18N.monthLabel ? I18N.monthLabel(k) : k; });
+        toast(T("toast_months_saved") + labels.join(I18N.listSep ? I18N.listSep() : "، "), "ok");
+      }
+      /* refresh the archive list (new months may have appeared) */
+      if (window.MaribStore && MaribStore.getMonths) {
+        MaribStore.getMonths().then(function (ms) {
+          state.months = ms || [];
+          fillFilters(true);
+          updateMonthChip();
+        }).catch(function () { });
       }
     }
   }
@@ -2050,6 +2247,8 @@ var App = (function () {
     var cfg = MaribCore.DEFAULT_CONFIG;
     var model = MaribCore.buildModel(state.tables, cfg);
     state.model = model;
+    state.dimSets = null;                 /* round 23: recompute person sets */
+    state.scopeSrc = null; state.scopeOut = null;   /* scope cache follows the model */
     /* round 10: data arrived — clear the empty state + note */
     var nd = $("noData"); if (nd) nd.classList.remove("on");
     var dn = $("dpNote"); if (dn) dn.classList.remove("on");
@@ -2077,7 +2276,9 @@ var App = (function () {
       section: $("fSection").value || "",
       sup: $("fSup").value || "",
       cmp: state.cmp || {},
-      attView: attBtn ? (attBtn.getAttribute("data-attview") || "workers") : "workers"
+      attView: attBtn ? (attBtn.getAttribute("data-attview") || "workers") : "workers",
+      tmode: state.tmode || "both",
+      supView: state.supView || "sup"
     };
   }
   function saveUI() {
@@ -2103,6 +2304,15 @@ var App = (function () {
       b.className = "qp-btn" + (b.getAttribute("data-qp") === state.qp ? " on" : "");
     });
     if (o.cmp && typeof o.cmp === "object") state.cmp = o.cmp;
+    /* round 23: time-mode + supervisors sub-tab */
+    if (o.tmode === "base" || o.tmode === "ot") state.tmode = o.tmode; else state.tmode = "both";
+    document.querySelectorAll("#tm .tm-btn").forEach(function (b) {
+      b.className = "tm-btn" + (b.getAttribute("data-tm") === state.tmode ? " on" : "");
+    });
+    if (o.supView === "leader" || o.supView === "manager") state.supView = o.supView; else state.supView = "sup";
+    document.querySelectorAll("#supTabs .att-tab").forEach(function (b) {
+      b.className = "att-tab" + (b.getAttribute("data-supview") === state.supView ? " on" : "");
+    });
     if (o.attView) {
       var tb = document.querySelector('.att-tab[data-attview="' + o.attView + '"]');
       if (tb) tb.click();
@@ -2131,12 +2341,14 @@ var App = (function () {
       if (!t || (!t.dd.length && !t.lo.length)) { done(); return; }
       state.tables = t;
       state.source = "restored";
+      state.months = saved.months || state.months || [];
       boot("restored", saved.names || []);
       applySavedUI();
       /* round 21: notify AFTER boot — a waiter (MaribAuth enterApp)
          must see the final hasData() state, or it opens the upload
          prompt over data that already arrived */
       done();
+      fetchRoles();
       toast(T("toast_restored"), "ok");
     }).catch(function () {
       state.restoring = false;
@@ -2154,6 +2366,7 @@ var App = (function () {
     });
     I18N.onChange(function () {
       closeDrill();
+      updateMonthChip();
       if (!state.model) return;
       fillFilters(true);
       var t = TP("pg_" + state.page) || ["", ""];
@@ -2190,12 +2403,43 @@ var App = (function () {
       b.addEventListener("click", function () { applyQP(b.getAttribute("data-qp")); });
     });
 
-    /* custom range inputs (manual change = custom period) */
+    /* custom range inputs (manual change = custom period) — round 23:
+       a range in ANOTHER archived month auto-loads that month */
     ["fFrom", "fTo"].forEach(function (id) {
       $(id).addEventListener("change", function () {
         state.qp = "custom";
         document.querySelectorAll(".qp-btn").forEach(function (b) { b.className = "qp-btn"; });
+        if (!autoMonth()) render();
+      });
+    });
+
+    /* round 23: time-mode segmented control (base / ot / both) — a
+       GLOBAL filter visible on every page; "both" = exact previous
+       behavior */
+    document.querySelectorAll("#tm .tm-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var v = b.getAttribute("data-tm");
+        if (state.tmode === v) return;
+        state.tmode = v;
+        document.querySelectorAll("#tm .tm-btn").forEach(function (x) {
+          x.className = "tm-btn" + (x.getAttribute("data-tm") === v ? " on" : "");
+        });
         render();
+      });
+    });
+
+    /* round 23: supervisors page sub-tabs (supervisors / leaders /
+       managers) — same page, different person list */
+    document.querySelectorAll("#supTabs .att-tab").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var v = b.getAttribute("data-supview");
+        if (state.supView === v) return;
+        state.supView = v;
+        document.querySelectorAll("#supTabs .att-tab").forEach(function (x) {
+          x.className = "att-tab" + (x === b ? " on" : "");
+        });
+        if (state.model) render();
+        saveUI();
       });
     });
 
@@ -2221,11 +2465,11 @@ var App = (function () {
     $("drill").addEventListener("click", function (e) { if (e.target === this) closeDrill(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeDrill(); });
 
-    /* export */
-    $("btnCsv").addEventListener("click", exportCSV);
-
     /* data menu — opens as a CENTERED modal dialog (direction-safe, never
-       clipped by the sidebar scroll). Closes on backdrop click, ✕ or Esc */
+       clipped by the sidebar scroll). Closes on backdrop click, ✕ or Esc.
+       round 23: TWO actions — upload a months FOLDER (each month packed
+       and upserted on its own) or upload a single Excel SHEET (updates
+       that month exactly: added→added, removed→removed, changed→changed) */
     var pop = $("dataPop");
     function openPop() {
       var n = $("dpNote"); if (n) n.classList.toggle("on", !state.model);
@@ -2239,18 +2483,25 @@ var App = (function () {
     pop.addEventListener("click", function (e) { if (e.target === this) closePop(); });
     $("dpClose").addEventListener("click", closePop);
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePop(); });
-    $("actPick").addEventListener("click", function () {
+    $("actFolder").addEventListener("click", function () {
       closePop();
       $("dirPick").click();
     });
+    $("actFile").addEventListener("click", function () {
+      closePop();
+      $("filePick").click();
+    });
     $("dirPick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
-    if (window.MaribStore && MaribStore.bindMonthPicker) MaribStore.bindMonthPicker();
+    $("filePick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
 
     /* round 10: the big button on the empty state opens the same data modal */
     if ($("ndBtn")) $("ndBtn").addEventListener("click", openPop);
 
-    /* ---- targets settings modal (round 7) ---- */
-    var tg = $("tgPop");
+    /* ---- round 23: SETTINGS modal (sidebar button) — two tabs:
+       targets & thresholds (round 7 UI, moved here from the filter bar)
+       + people classification (which name shows under Supervisors /
+       Leaders / Managers; admin edits, server-stored, everyone sees) ---- */
+    var tg = $("setPop");
     var DEF_TH = MaribCore.DEFAULT_CONFIG.thresholds;
     var TG_FIELDS = [
       ["tgAchvGood", "achievement", "good"], ["tgAchvWarn", "achievement", "warn"],
@@ -2263,15 +2514,96 @@ var App = (function () {
         $(fd[0]).value = Math.round(TH[fd[1]][fd[2]] * 1000) / 10;
       });
     }
-    function openTg() { tgFill(); tg.classList.add("on"); }
-    function closeTg() { tg.classList.remove("on"); }
-    $("btnTargets").addEventListener("click", function (e) {
+    function isAdminUser() {
+      try {
+        var me = window.MaribAuth && MaribAuth.me ? MaribAuth.me() : null;
+        return !!me && (me.role === "dev" || me.role === "admin");
+      } catch (e) { return false; }
+    }
+    function selectSetTab(v) {
+      document.querySelectorAll("#setTabs .att-tab").forEach(function (x) {
+        x.className = "att-tab" + (x.getAttribute("data-setview") === v ? " on" : "");
+      });
+      $("setTargets").className = "set-view" + (v === "targets" ? " on" : "");
+      $("setRoles").className = "set-view" + (v === "roles" ? " on" : "");
+    }
+    function openSet(tab) {
+      tgFill();
+      buildRolesList();
+      var admin = isAdminUser();
+      var tabRoles = $("setTabRoles");
+      if (tabRoles) tabRoles.style.display = admin ? "" : "none";
+      selectSetTab(tab === "roles" && admin ? "roles" : "targets");
+      tg.classList.add("on");
+    }
+    function closeSet() { tg.classList.remove("on"); }
+    $("btnSettings").addEventListener("click", function (e) {
       e.stopPropagation();
-      if (tg.classList.contains("on")) { closeTg(); } else { openTg(); }
+      if (tg.classList.contains("on")) { closeSet(); } else { openSet(); }
     });
-    tg.addEventListener("click", function (e) { if (e.target === this) closeTg(); });
-    $("tgClose").addEventListener("click", closeTg);
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeTg(); });
+    tg.addEventListener("click", function (e) { if (e.target === this) closeSet(); });
+    $("setClose").addEventListener("click", closeSet);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSet(); });
+    document.querySelectorAll("#setTabs .att-tab").forEach(function (b) {
+      b.addEventListener("click", function () {
+        selectSetTab(b.getAttribute("data-setview"));
+      });
+    });
+    function buildRolesList() {
+      var list = $("rlList");
+      if (!list) return;
+      var people = allPeople();
+      var admin = isAdminUser();
+      if (!people.length) {
+        list.innerHTML = '<p class="rl-empty">' + esc(T("dp_empty")) + "</p>";
+      } else {
+        var html = "";
+        people.forEach(function (n) {
+          var cat = effCat(n);
+          html += '<div class="rl-row" data-name="' + esc(n) + '">' +
+            '<span class="rl-name">' + esc(n) + '</span>' +
+            '<div class="rl-seg">' +
+            ["sup", "leader", "manager"].map(function (c) {
+              return '<button type="button" class="rl-opt' + (cat === c ? " on" : "") + '" data-cat="' + c + '"' + (admin ? "" : " disabled") + ' data-i18n="sv_tab_' + c + '">' + esc(T("sv_tab_" + c)) + "</button>";
+            }).join("") +
+            "</div></div>";
+        });
+        list.innerHTML = html;
+      }
+      var note = $("rlAdminNote"); if (note) note.style.display = admin ? "none" : "";
+      var save = $("rlSave"); if (save) save.style.display = admin ? "" : "none";
+    }
+    $("rlList").addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest(".rl-opt") : null;
+      if (!b || b.disabled) return;
+      var row = b.closest(".rl-row");
+      if (!row) return;
+      row.querySelectorAll(".rl-opt").forEach(function (x) { x.classList.toggle("on", x === b); });
+    });
+    $("rlSave").addEventListener("click", function () {
+      var roles = {};
+      document.querySelectorAll("#rlList .rl-row").forEach(function (r) {
+        var b = r.querySelector(".rl-opt.on");
+        if (b) roles[r.getAttribute("data-name")] = b.getAttribute("data-cat");
+      });
+      fetch("/api/settings", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roles: roles })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.ok) {
+          state.roles = roles;
+          state.dimSets = null;
+          try { localStorage.setItem(LS_ROLES, JSON.stringify(roles)); } catch (err) { }
+          closeSet();
+          render();
+          toast(T("rl_saved"), "ok");
+        } else {
+          toast(T(j && (j.error === "forbidden" || j.error === "auth") ? "cloud_err_no_perm" : "rl_err"), "err");
+        }
+      }).catch(function () { toast(T("rl_err"), "err"); });
+    });
     $("tgSave").addEventListener("click", function () {
       var ok = true, o = {};
       TG_FIELDS.forEach(function (fd) {
@@ -2459,7 +2791,9 @@ var App = (function () {
           if (!t || (!t.dd.length && !t.lo.length)) return;
           state.tables = t;
           state.source = "restored";
+          state.months = saved.months || state.months || [];
           boot("restored", saved.names || []);
+          updateMonthChip();
           toast(T("toast_restored"), "ok");
         }).catch(function () { });
       });

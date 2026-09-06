@@ -10,7 +10,7 @@ window.MARIB_I18N_DICT = {
   mid_title:    { ar: "لوحة أداء المصنع", en: "Factory Performance", tr: "Fabrika Performansı" },
   mid_sub:      { ar: "MARIB PERFORMANCE", en: "MARIB PERFORMANCE", tr: "MARIB PERFORMANCE" },
   live:         { ar: "مباشر", en: "LIVE", tr: "CANLI" },
-  doc_title:    { ar: "لوحة أداء مصنع مأرب — MARIB PERFORMANCE", en: "Marib Garments — Performance", tr: "Marib Giyim — Performans Paneli" },
+  doc_title:    { ar: "marib international garment", en: "marib international garment", tr: "marib international garment" },
 
   /* ---------- navigation ---------- */
   nav_overview: { ar: "الرئيسية", en: "Overview", tr: "Genel Bakış" },
@@ -69,12 +69,57 @@ window.MARIB_I18N_DICT = {
   t_ratio:      { ar: "النسبة", en: "Ratio", tr: "Oran" },
   f_csv:        { ar: "تصدير CSV", en: "Export CSV", tr: "CSV Dışa Aktar" },
 
+  /* ---------- round 23: time-mode (base / ot / both) ---------- */
+  tm_base:      { ar: "أساسي", en: "Base", tr: "Normal" },
+  tm_ot:        { ar: "أوفر", en: "OT", tr: "FM" },
+  tm_both:      { ar: "الكل", en: "All", tr: "Tümü" },
+  tm_base_tt:   { ar: "الوقت الأساسي فقط — المسجل في Daily Data وماكينات الجيوب", en: "Regular time only — Daily Data + pocket machine records", tr: "Sadece normal süre — Daily Data + cep makinesi kayıtları" },
+  tm_ot_tt:     { ar: "الأوفر تايم فقط — شيتات OT وأوفر تايم الجيوب", en: "Overtime only — OT sheets + pocket OT", tr: "Sadece fazla mesai — OT çizelgeleri + cep FM" },
+  tm_both_tt:   { ar: "الوقت الأساسي والأوفر تايم معًا", en: "Regular time and overtime together", tr: "Normal süre ve fazla mesai birlikte" },
+
+  /* ---------- round 23: month chip (auto month by date) ---------- */
+  toast_no_month: { ar: "مفيش بيانات مسجلة للشهر ده", en: "No data recorded for that month", tr: "O ay için kayıtlı veri yok" },
+
+  /* ---------- round 23: supervisors sub-tabs ---------- */
+  sv_tab_sup:     { ar: "مشرفي الأقسام", en: "Supervisors", tr: "Bölüm Şefleri" },
+  sv_tab_leader:  { ar: "رؤساء الخطوط", en: "Leaders", tr: "Hat Liderleri" },
+  sv_tab_manager: { ar: "مديري الصالة", en: "Managers", tr: "Salon Müdürleri" },
+  t_sup:      { ar: "المشرف", en: "Supervisor", tr: "Vardiya Şefi" },
+  t_leader:   { ar: "رئيس الخط", en: "Leader", tr: "Hat Lideri" },
+  t_manager:  { ar: "مدير الصالة", en: "Manager", tr: "Salon Müdürü" },
+  sv_noun_sup:     { ar: "المشرفين", en: "Supervisors", tr: "Bölüm Şefleri" },
+  sv_noun_leader:  { ar: "رؤساء الخطوط", en: "Line Leaders", tr: "Hat Liderleri" },
+  sv_noun_manager: { ar: "مديري الصالة", en: "Hall Managers", tr: "Salon Müdürleri" },
+  sv_perf:    { ar: "أداء", en: "", tr: "" },
+  sv_top:     { ar: "الأعلى إنجازًا", en: "Top Performers", tr: "En Başarılılar" },
+  sv_bottom:  { ar: "يحتاجون متابعة", en: "Needs Attention", tr: "İzlenmesi Gerekenler" },
+  sv_details: { ar: "التفاصيل", en: "DETAILS", tr: "DETAYLAR" },
+
+  /* ---------- round 23: settings modal (sidebar) ---------- */
+  nav_settings:     { ar: "الإعدادات", en: "Settings", tr: "Ayarlar" },
+  nav_tt_settings:  { ar: "الإعدادات — الأهداف وتصنيف المشرفين", en: "Settings — targets & people classification", tr: "Ayarlar — hedefler ve personel sınıflandırması" },
+  set_title:   { ar: "الإعدادات", en: "Settings", tr: "Ayarlar" },
+  set_sub:    { ar: "SETTINGS", en: "الإعدادات", tr: "AYARLAR" },
+  set_tab_targets: { ar: "الأهداف والحدود", en: "Targets & Limits", tr: "Hedefler ve Sınırlar" },
+  set_tab_roles:   { ar: "تصنيف المشرفين", en: "People Classification", tr: "Personel Sınıflandırması" },
+  rl_hint:    { ar: "حدد كل اسم يظهر في أنهي تابة: مشرف قسم أو رئيس خط أو مدير صالة — الاختيار بيتحفظ على السيرفر وكل الشركة يشوفه", en: "Choose where each name appears: department supervisor, line leader or hall manager — saved on the server for everyone", tr: "Her ismin nerede görüneceğini seçin: bölüm şefi, hat lideri veya salon müdürü — sunucuya kaydedilir, herkes görür" },
+  rl_save:    { ar: "حفظ التصنيف", en: "Save Classification", tr: "Sınıflandırmayı Kaydet" },
+  rl_saved:   { ar: "تم حفظ التصنيف — التابات اتحدّثت", en: "Classification saved — tabs updated", tr: "Sınıflandırma kaydedildi — sekmeler güncellendi" },
+  rl_err:     { ar: "متعذر حفظ التصنيف — جرّب تاني", en: "Couldn't save — try again", tr: "Kaydedilemedi — tekrar deneyin" },
+  rl_admin:   { ar: "التعديل متاح للأدمن فقط — للعرض بس", en: "View only — editing is admin-only", tr: "Sadece görüntüleme — düzenleme yöneticiye özel" },
+  rl_cnt:     { ar: "شخص", en: "people", tr: "kişi" },
+
   /* ---------- data menu / dropzone ---------- */
   dp_title: { ar: "تحديث البيانات", en: "Update Data", tr: "Veri Güncelle" },
   dp_sub:   { ar: "مصدر البيانات", en: "DATA SOURCE", tr: "VERİ KAYNAĞI" },
   dp_close: { ar: "إغلاق", en: "Close", tr: "Kapat" },
   dp_pick:  { ar: "اختيار مجلد البيانات", en: "Choose Data Folder", tr: "Veri Klasörü Seç" },
   dp_pick_hint: { ar: "ارفع ملف/مجلد إكسل الشهر — بيتخزن أونلاين وكل الشركة تشوفه فورًا", en: "Upload this month's Excel — it is stored online and the whole company sees it instantly", tr: "Ayın Excel dosyasını yükleyin — çevrimiçi kaydedilir, tüm şirket anında görür" },
+  dp_folder:       { ar: "رفع مجلد الشهور", en: "Upload Months Folder", tr: "Aylar Klasörünü Yükle" },
+  dp_folder_hint:  { ar: "اختار مجلد فيه ملفات إكسل الشهور — كل شهر بيتخزن لوحده وبيحدّث نسخته القديمة", en: "Pick a folder with the monthly Excel files — each month is stored on its own and replaces its old copy", tr: "Aylık Excel dosyalarının olduğu klasörü seçin — her ay ayrı kaydedilir ve eski kopyasını günceller" },
+  dp_file:         { ar: "رفع شيت إكسل", en: "Upload Excel Sheet", tr: "Excel Sayfası Yükle" },
+  dp_file_hint:    { ar: "ارفع ملف الشهر — لو مرفوع قبل كده بيتحدّث: اللي ضفته يتضاف واللي حذفته يتشال واللي غيرته يتغير", en: "Upload the month's file — if it already exists it updates: added rows are added, removed rows removed, changed values changed", tr: "Ayın dosyasını yükleyin — mevcutsa günceller: eklenen eklenir, silinen silinir, değişen değişir" },
+  toast_months_saved: { ar: "اتخزن واتحدث أونلاين: ", en: "Stored & updated online: ", tr: "Çevrimiçi kaydedildi/güncellendi: " },
   dp_reset: { ar: "استعادة البيانات الأصلية", en: "Restore Original Data", tr: "Özgün Verilere Dön" },
   dp_reset_hint: { ar: "يرجّع بيانات أغسطس المدمجة ويمسح أي تحديث قمت به", en: "Brings back the built-in August data and clears any updates you made", tr: "Yerleşik Ağustos verilerini geri getirir ve yaptığın güncellemeleri temizler" },
 
@@ -485,6 +530,20 @@ var I18N = (function () {
   function dayShort(dw) { return DAYS_SHORT[cur][dw]; }
   function heatDays() { return HEAT_DAYS[cur]; }
 
+  /* ---------- round 23: month label (month chip) ---------- */
+  var MONTHS_BY_LANG = {
+    ar: ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],
+    en: ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    tr: ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
+  };
+  function monthLabel(key) {
+    /* "2026-09" → "سبتمبر 2026" / "September 2026" / "Eylül 2026" */
+    if (!/^\d{4}-\d{2}$/.test(String(key || ""))) return "";
+    var m = +key.slice(5, 7);
+    var names = MONTHS_BY_LANG[cur] || MONTHS_BY_LANG.ar;
+    return (names[m - 1] || key) + " " + key.slice(0, 4);
+  }
+
   /* ---------- count phrases (proper plurals; TR uses no plural after numerals) ---------- */
   var COUNTS = {
     line:  { ar: "خط", en: ["line", "lines"], tr: "hat" },
@@ -709,7 +768,7 @@ var I18N = (function () {
   return {
     t: t, ta: ta, tv: tv, ts: ts, tb: tb, is: is, dir: dir, listSep: listSep,
     fmtInt: fmtInt, fmtNum: fmtNum, fmtPct: fmtPct, pctV: pctV, pts: pts, kFmt: kFmt, dec: dec,
-    dayFull: dayFull, dayShort: dayShort, heatDays: heatDays,
+    dayFull: dayFull, dayShort: dayShort, heatDays: heatDays, monthLabel: monthLabel,
     count: count, lineN: lineN, sectionN: sectionN, sectionName: sectionName, machN: machN, dayTitle: dayTitle,
     drTitleSec: drTitleSec, drTitleLine: drTitleLine, drTitlePm: drTitlePm, drTitlePmLine: drTitlePmLine,
     subTargetPcs: subTargetPcs, subActualOf: subActualOf, subOtOf: subOtOf, subAbsentWorkers: subAbsentWorkers,

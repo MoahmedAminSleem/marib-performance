@@ -404,6 +404,63 @@ var MaribCore = (function () {
     return model;
   }
 
+  /* ---------------- round 23: time-mode scoping (base / ot / both) ----------------
+     Returns a model whose record streams carry ONLY the channels that
+     belong to the requested mode. compute() itself stays untouched, so
+     "both" is byte-identical to the previous rounds, while base/ot run
+     the exact same formulas over the scoped records.
+       base : Daily Data + Pocket Machine base columns + Line Output + Attendance
+       ot   : OT sheet (its line/section/supervisor production and targets ride
+              the dd + lo channels) + OT Pocket quantities (otProd/otMin)  */
+  function isOtOnlyPmRow(x) {
+    /* round-19 "OT Pocket" rows fold into pm with every quantity on the OT
+       columns only (target/actualProd/minAvail empty). August-format rows
+       carry OT on the SAME row (mixed) — those are split by column below. */
+    return !(x.minAvail > 0) && !(x.actualProd > 0) && !(x.target > 0) &&
+           ((x.otProd > 0) || (x.otMin > 0));
+  }
+  function copyRow(x) { var y = {}; for (var k in x) y[k] = x[k]; return y; }
+  function scopeModel(model, mode) {
+    if (!model || !mode || mode === "both") return model;
+    var dd = model.dd || [], ot = model.ot || [], pm = model.pm || [],
+        lo = model.lo || [], att = model.att || [];
+    if (mode === "base") {
+      ot = [];
+      pm = pm.map(function (x) {
+        if (isOtOnlyPmRow(x)) return null;          /* pure OT-pocket row — gone */
+        if (!(x.otProd > 0) && !(x.otMin > 0)) return x;   /* pure base row */
+        var y = copyRow(x); y.otProd = 0; y.otMin = 0;     /* mixed row (Aug) */
+        return y;
+      }).filter(Boolean);
+    } else if (mode === "ot") {
+      /* the OT sheet is a Daily-Data-shaped table: its production/target/
+         workers flow through the dd channel (minutes zeroed so they are
+         counted once, on the ot channel) and its per-line production maps
+         onto the lo channel so the Lines page shows OT output. */
+      dd = ot.map(function (x) {
+        var y = copyRow(x);
+        y.minAvail = 0; y.regWorkers = 0; y.actWorkers = 0; y.absent = null;
+        return y;
+      });
+      lo = ot.map(function (x) {
+        return { date: x.date, day: x.day, line: x.line, actual: x.actualProd, target: x.target };
+      }).filter(function (x) { return x.line != null; });
+      pm = pm.map(function (x) {
+        if (isOtOnlyPmRow(x)) return x;             /* OT-pocket row stays whole */
+        var y = copyRow(x);
+        y.target = 0; y.actualProd = 0; y.minAvail = 0; y.plannedMin = 0; y.minProd = 0;
+        return y;
+      });
+      /* attendance (discipline scores) is not OT/base split — kept as-is */
+    } else {
+      return model;
+    }
+    var out = {};
+    for (var kk in model) out[kk] = model[kk];
+    out.dd = dd; out.ot = ot; out.pm = pm; out.lo = lo; out.att = att;
+    return out;
+  }
+
   /* ---------------- filter + compute (mirrors DAX filter propagation) ---------------- */
   function dateOK(iso, f) {
     if (f.from && iso < f.from) return false;
@@ -585,6 +642,37 @@ var MaribCore = (function () {
       var sm = supMin[S] || { avail: 0, ot: 0 };
       return { supervisor: S, target: t, actual: a, achv: t ? a / t : null, pmPart: b.pmActual + b.otProd, minProd: b.minProd, rows: b.rows, otMin: sm.ot, otPct: sm.avail ? sm.ot / sm.avail : null };
     }).sort(function (a, b) { return b.achv - a.achv; });
+
+    /* ---- round 23: by leader / by manager (supervisors page sub-tabs).
+       Daily Data rows grouped by the person column — OT-sheet rows carry
+       the same columns, so OT minutes per person come from the ot stream. */
+    function aggByPerson(field) {
+      var by = {}, mins = {};
+      dd.forEach(function (x) {
+        var p = x[field];
+        if (p == null) return;
+        if (!by[p]) by[p] = { person: p, target: 0, actual: 0, attByDate: {}, minProd: 0, rows: 0 };
+        by[p].target += x.target || 0; by[p].actual += x.actualProd || 0;
+        by[p].minProd += x.minProd || 0; by[p].rows++;
+        if (x.attWorkers != null) by[p].attByDate[x.date] = (by[p].attByDate[x.date] || 0) + x.attWorkers;
+        if (!mins[p]) mins[p] = { avail: 0, ot: 0 };
+        mins[p].avail += x.minAvail || 0;
+      });
+      ot.forEach(function (x) {
+        var p = x[field];
+        if (p == null) return;
+        if (!mins[p]) mins[p] = { avail: 0, ot: 0 };
+        mins[p].avail += x.minAvail || 0; mins[p].ot += x.minAvail || 0;
+      });
+      return Object.keys(by).map(function (P) {
+        var b = by[P], mn = mins[P] || { avail: 0, ot: 0 };
+        var maxAtt = 0; Object.keys(b.attByDate).forEach(function (d) { if (b.attByDate[d] > maxAtt) maxAtt = b.attByDate[d]; });
+        return { person: P, target: b.target, actual: b.actual, achv: b.target ? b.actual / b.target : null,
+                 maxAtt: maxAtt, minProd: b.minProd, rows: b.rows, otMin: mn.ot, otPct: mn.avail ? mn.ot / mn.avail : null };
+      }).sort(function (a, b) { return b.achv - a.achv; });
+    }
+    k.byLeader = aggByPerson("leader");
+    k.byManager = aggByPerson("manager");
 
     /* ---- sections: daily trend per section (for sections page + drill) ---- */
     var secDaily = {};
@@ -768,6 +856,7 @@ var MaribCore = (function () {
     parseWorkbook: parseWorkbook,
     buildModel: buildModel,
     compute: compute,
+    scopeModel: scopeModel,
     utils: {
       nk: nk, parseNum: parseNum, parseDate: parseDate, isoAddDays: isoAddDays,
       isoDayOfWeek: isoDayOfWeek, weekStartISO: weekStartISO, isoShort: isoShort,
