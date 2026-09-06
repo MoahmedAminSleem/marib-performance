@@ -641,6 +641,23 @@ var MaribAuth = (function () {
     });
   }
 
+  /* ---------------- round 22: first-paint boot veil ----------------
+     The skeleton paints a full-screen denim veil (#bootVeil) so the
+     dashboard shell behind the login gate never flashes while the
+     session check is in flight. Whoever settles first (session hit,
+     login show, or the 9s safety below) lifts it. Idempotent and a
+     no-op when the veil is absent (older builds). */
+  var veilDropped = false;
+  function dropBootVeil() {
+    var v = document.getElementById("bootVeil");
+    if (!v || veilDropped) return;
+    veilDropped = true;
+    v.classList.add("bye");
+    setTimeout(function () {
+      try { v.remove(); } catch (e) { v.style.display = "none"; }
+    }, 520);
+  }
+
   /* ---------------- boot ---------------- */
   function boot() {
     loginEl = $("loginScreen");
@@ -660,14 +677,30 @@ var MaribAuth = (function () {
     bindLogin();
     bindUsers();
     bindParallax();
-    /* round 21: the server is the source of truth for the session */
-    fetch("/api/auth/me", { credentials: "same-origin" })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        if (j && j.ok && j.user) { me = j.user; enterApp(false); }
-        else showLogin();
-      })
-      .catch(function () { showLogin(); });
+    /* round 22: never let a stuck network check freeze the veil —
+       after 9s show the login screen no matter what */
+    setTimeout(function () {
+      if (!veilDropped) { showLogin(); dropBootVeil(); }
+    }, 9000);
+    /* round 21: the server is the source of truth for the session.
+       round 22: page.tsx pre-started this fetch BEFORE the heavy app
+       scripts began loading (window.__meCheck) — reuse that in-flight
+       promise instead of firing a second request, so the boot veil
+       drops at the earliest possible moment. */
+    function settle(j) {
+      if (j && j.ok && j.user) { me = j.user; enterApp(false); }
+      else showLogin();
+    }
+    var pre = (window.__meCheck && window.__meCheck.then) ? window.__meCheck : null;
+    if (pre) {
+      pre.then(function (j) { settle(j || null); }).catch(function () { settle(null); });
+    } else {
+      fetch("/api/auth/me", { credentials: "same-origin" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { settle(j); })
+        .catch(function () { settle(null); });
+    }
+    dropBootVeil();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

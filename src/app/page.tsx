@@ -28,6 +28,7 @@ const SCRIPTS = [
 declare global {
   interface Window {
     __maribBooted?: boolean
+    __meCheck?: Promise<{ ok: boolean; user?: unknown } | null>
   }
 }
 
@@ -35,6 +36,24 @@ export default function Home() {
   useEffect(() => {
     if (window.__maribBooted) return
     window.__maribBooted = true
+    /* round 22: pre-start the session check while the heavy app
+       scripts are still downloading — app_auth.js consumes this
+       in-flight promise (window.__meCheck) so the boot veil drops
+       at the earliest possible moment. */
+    try {
+      window.__meCheck = fetch("/api/auth/me", { credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null)
+    } catch (e) {
+      console.warn("[marib] me prefetch failed", e)
+    }
+    /* round 22: safety — if app_auth.js never arrives (network
+       hiccup), lift the boot veil after 12s so the login screen is
+       at least reachable (bye = invisible + click-through). */
+    setTimeout(() => {
+      const v = document.getElementById("bootVeil")
+      if (v && !v.classList.contains("bye")) v.classList.add("bye")
+    }, 12000)
     let i = 0
     const loadNext = () => {
       if (i >= SCRIPTS.length) return
