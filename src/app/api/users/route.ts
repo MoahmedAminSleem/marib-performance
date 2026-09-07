@@ -1,27 +1,37 @@
 /* /api/users — user management (admin/dev only)
-   GET list · POST create · PUT password/role · DELETE remove — every change audited
-   R25: refactored onto the shared http helpers + structured logging. */
+   GET list · POST create · PUT password/role/photo/title · DELETE remove
+   — every change audited.
+   R25: refactored onto the shared http helpers + structured logging.
+   R27: photo + title are ADMIN-set (for any user) from the users modal —
+   the R26 self-service photo branch is gone by request; regular users
+   can no longer patch anything here (403 as before). */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { hashPassword, isDev, isAdmin } from "@/lib/marib/session";
-import { fail, serverFail, readJson, logger, requireRole, requireUserBody, requireRoleBody, type SessionUser } from "@/lib/marib/http";
+import { fail, serverFail, readJson, logger, requireRoleBody, requireUserBody, type SessionUser } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const lg = logger("users");
 
-/* R26: max stored photo size (data-URL chars) — the client resizes to
-   240px JPEG (~tens of KB); the cap is a safety net, not the norm. */
+/* R26/R27: max stored photo size (data-URL chars) — the client resizes
+   to a 240px square JPEG with adaptive quality (~10-25KB); the cap is
+   a safety net, not the norm. */
 const PHOTO_MAX = 400_000;
+/* R27: job title limits — kept tight so chips/rows never break layout */
+const TITLE_MAX = 40;
 
 export async function GET(req: NextRequest) {
   try {
-    const g = await requireRole(req, "admin", "users", "GET");
+    /* R27 review#1: live role re-check (not just the signed cookie) —
+       the list now carries every user's photo+title, so a demoted
+       admin must lose READ access at once too */
+    const g = await requireRoleBody(req, "admin");
     if (g.res) return g.res;
     const rows = await q(
-      "SELECT id, username, role, photo, created_at, created_by FROM marib_user ORDER BY created_at ASC"
+      "SELECT id, username, role, photo, title, created_at, created_by FROM marib_user ORDER BY created_at ASC"
     );
     return NextResponse.json({ users: rows });
   } catch (e) {
@@ -60,42 +70,47 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    /* R26: the photo branch is self-service — EVERY signed-in user may
-       set/clear their OWN photo (no admin needed). Any other patch
-       (password / role) keeps the original admin/dev gate. */
+    /* R27: EVERY patch (photo / title / password / role) is admin or
+       dev — a regular user gets 403. The photo no longer needs the
+       self-service branch: admins set photos from the users modal. */
     const g = await requireUserBody(req);
     if (g.res) return g.res;
     const me = g.user!;
+    if (!isAdmin(me)) return fail("admin", 403);
 
     const body = await readJson(req);
     if (!body) return fail("body", 413);
     const id = String(body.id || "");
-
-    const selfPhoto =
-      body.photo !== undefined && body.password === undefined && body.role === undefined && id === me.uid;
-
-    if (!selfPhoto) {
-      if (!isAdmin(me)) return fail("admin", 403);
-    }
-
-    if (selfPhoto) {
-      const photo = body.photo;
-      if (typeof photo !== "string" || photo.length > PHOTO_MAX) return fail("invalid", 400);
-      if (photo.length > 0 && !/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(photo)) return fail("invalid", 400);
-      await q("UPDATE marib_user SET photo = $1 WHERE id = $2", [photo || null, me.uid]);
-      await audit(me.username, "edit", "users:" + me.username, me.username, { change: "photo", to: photo ? "set" : "cleared" });
-      lg.info("photo " + (photo ? "set" : "cleared"), { by: me.username });
-      return NextResponse.json({ ok: true });
-    }
 
     const rows = await q("SELECT id, username, role FROM marib_user WHERE id = $1", [id]);
     const rec = rows[0] as { id: string; username: string; role: string } | undefined;
     if (!rec) return fail("notfound", 404);
 
     /* only a dev may touch a dev account — blocks an admin from taking
-       over Amin's account via a password reset */
+       over Amin's account via a password reset (photo/title too: an
+       admin shouldn't restyle the developer's identity) */
     if (rec.role === "dev" && !isDev(me)) return fail("dev-fixed");
-    /* nobody resets their own password here from the admin panel either */
+
+    /* ---- R27: photo (admin sets ANY user's photo, incl. own) ---- */
+    if (body.photo !== undefined) {
+      const photo = body.photo;
+      if (typeof photo !== "string" || photo.length > PHOTO_MAX) return fail("invalid", 400);
+      if (photo.length > 0 && !/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(photo)) return fail("invalid", 400);
+      await q("UPDATE marib_user SET photo = $1 WHERE id = $2", [photo || null, id]);
+      await audit(me.username, "edit", "users:" + rec.username, rec.username, { change: "photo", to: photo ? "set" : "cleared" });
+      lg.info("photo " + (photo ? "set" : "cleared"), { by: me.username, user: rec.username });
+    }
+
+    /* ---- R27: title / لقب (admin sets, empty clears) — trim to the
+       same 40-unit cap the client enforces, reject nothing (friendly) ---- */
+    if (body.title !== undefined) {
+      const raw = String(body.title ?? "");
+      /* strip control chars + hard trim so chips never wrap weirdly */
+      const title = raw.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, TITLE_MAX);
+      await q("UPDATE marib_user SET title = $1 WHERE id = $2", [title || null, id]);
+      await audit(me.username, "edit", "users:" + rec.username, rec.username, { change: "title", to: title || "(cleared)" });
+      lg.info("title set", { by: me.username, user: rec.username, title: title || "(cleared)" });
+    }
 
     if (typeof body.password === "string" && body.password.length > 0) {
       if (body.password.length < 4) return fail("invalid", 400);

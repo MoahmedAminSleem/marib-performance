@@ -2419,20 +2419,76 @@ var App = (function () {
   }
 
   /* ============================================================
-     Settings panel (R23 #2 — targets / classification / audit / storage)
+     Settings panel (R27 — categorized boxes → views)
+     Level 1: role-filtered grid of category boxes. Level 2: one
+     section's settings + a back button. Inner IDs unchanged.
      ============================================================ */
+  var SET_VIEWS = {
+    targets: "set_targets",
+    groups: "set_groups",
+    audit: "set_audit",
+    storage: "set_storage"
+  };
+  var setCurView = null; /* last opened view — kept for future "reopen
+     where you left" behaviour (review#10: currently write-only) */
+
+  function setSettingsHead(view) {
+    var h = $("setTitle"), bk = $("setBack");
+    if (!h) return;
+    if (view) {
+      h.setAttribute("data-i18n", SET_VIEWS[view] || "set_title");
+      h.textContent = T(SET_VIEWS[view] || "set_title");
+      if (bk) bk.hidden = false;
+    } else {
+      h.setAttribute("data-i18n", "set_title");
+      h.textContent = T("set_title");
+      if (bk) bk.hidden = true;
+    }
+  }
+
+  function showSettingsView(view) {
+    if (!SET_VIEWS[view]) return;
+    setCurView = view;
+    setSettingsHead(view);
+    var home = $("setHome"), hint = document.querySelector(".set-home-hint");
+    if (home) home.hidden = true;
+    if (hint) hint.hidden = true;
+    Object.keys(SET_VIEWS).forEach(function (v) {
+      var el = $("setView-" + v);
+      if (el) el.hidden = v !== view;
+    });
+    /* entering a view loads its data (same calls the old accordion did) */
+    if (view === "audit" && MaribAuth.isDev && MaribAuth.isDev()) loadAudit();
+    if (view === "storage" && MaribAuth.isDev && MaribAuth.isDev()) loadStorage();
+  }
+
+  function goSettingsHome() {
+    setCurView = null;
+    setSettingsHead(null);
+    var home = $("setHome"), hint = document.querySelector(".set-home-hint");
+    if (home) home.hidden = false;
+    if (hint) hint.hidden = false;
+    Object.keys(SET_VIEWS).forEach(function (v) {
+      var el = $("setView-" + v);
+      if (el) el.hidden = true;
+    });
+  }
+
   function openSettings() {
     var admin = MaribAuth.isAdmin ? MaribAuth.isAdmin() : false;
     var dev = MaribAuth.isDev ? MaribAuth.isDev() : false;
-    var sp = $("secProfile"); if (sp) sp.style.display = "";
-    var st = $("secTargets"); if (st) st.style.display = admin ? "" : "none";
-    var sg = $("secGroups"); if (sg) sg.style.display = "";
-    var sa = $("secAudit"); if (sa) sa.style.display = dev ? "" : "none";
-    var ss = $("secStorage"); if (ss) ss.style.display = dev ? "" : "none";
+    /* role-filter the category boxes (R27):
+       targets = admin+ · groups = everyone · audit/storage = dev only */
+    var bx = document.querySelectorAll("#setHome .set-box");
+    bx.forEach(function (b) {
+      var v = b.getAttribute("data-view");
+      var show = v === "targets" ? admin : (v === "groups" ? true : dev);
+      b.style.display = show ? "" : "none";
+    });
     var cs = $("clsSave"); if (cs) cs.disabled = !admin;
+    goSettingsHome();
     tgFill();
     buildClsList();
-    if (dev) { loadAudit(); loadStorage(); }
     $("setPop").classList.add("on");
   }
 
@@ -2455,8 +2511,8 @@ var App = (function () {
   }
 
   /* window.MaribMe — MaribAuth calls this on login / logout / boot so
-     the badge, the topbar mini chip and the settings preview stay in
-     sync with the signed-in user (photo included). */
+     the badge, the topbar mini chip and the R27 job-title texts stay
+     in sync with the signed-in user (photo + title included). */
   window.MaribMe = {
     set: function (u) {
       var b = $("meBadge");
@@ -2466,71 +2522,15 @@ var App = (function () {
       setAvPhoto($("meAv"), $("meAvImg"), $("meAvTxt"), u.photo, u.username);
       var nm = $("meName");
       if (nm) nm.textContent = u.username || "";
+      var tt = $("meTitle");
+      if (tt) {
+        var t = (u.title || "").trim();
+        tt.textContent = t;
+        tt.hidden = !t;
+      }
       setAvPhoto($("ucAv"), null, null, u.photo, u.username);
-      setAvPhoto($("pfAv"), $("pfAvImg"), $("pfAvTxt"), u.photo, u.username);
     }
   };
-
-  /* client-side resize: any image → max 240×240 JPEG (flattened on
-     white) — a few tens of KB, travels as a data URL, stored in the
-     user row on the server. */
-  function resizePhoto(file, cb) {
-    var img = new Image();
-    var url = URL.createObjectURL(file);
-    img.onload = function () {
-      try {
-        var MAX = 240;
-        var iw = img.width || MAX, ih = img.height || MAX;
-        var s = Math.min(1, MAX / Math.max(iw, ih));
-        var w = Math.max(1, Math.round(iw * s)), h = Math.max(1, Math.round(ih * s));
-        var cv = document.createElement("canvas");
-        cv.width = w; cv.height = h;
-        var cx = cv.getContext("2d");
-        cx.fillStyle = "#FFFFFF";
-        cx.fillRect(0, 0, w, h);
-        cx.drawImage(img, 0, 0, w, h);
-        cb(cv.toDataURL("image/jpeg", 0.85));
-      } catch (e) { cb(null); }
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = function () { URL.revokeObjectURL(url); cb(null); };
-    img.src = url;
-  }
-
-  function bindProfilePanel() {
-    var pick = $("pfPick");
-    if (!pick) return;
-    $("pfPickBtn").addEventListener("click", function () { pick.click(); });
-    pick.addEventListener("change", function (e) {
-      var f = e.target.files && e.target.files[0];
-      e.target.value = "";
-      if (!f) return;
-      if (!/^image\//.test(f.type)) { toast(T("pf_bad"), "err"); return; }
-      var me = window.MaribAuth ? MaribAuth.me() : null;
-      if (!me || !me.uid) { toast(T("toast_sync_err"), "err"); return; }
-      resizePhoto(f, function (dataUrl) {
-        if (!dataUrl || dataUrl.length > 300000) { toast(T("pf_bad"), "err"); return; }
-        MaribCloud.mePhoto(dataUrl, me.uid).then(function () {
-          me.photo = dataUrl;
-          window.MaribMe.set(me);
-          toast(T("pf_saved"), "ok");
-        }).catch(function (err) {
-          toast(err && err.status === 403 ? T("toast_need_admin") : T("toast_sync_err"), "err");
-        });
-      });
-    });
-    $("pfDelBtn").addEventListener("click", function () {
-      var me = window.MaribAuth ? MaribAuth.me() : null;
-      if (!me || !me.uid) return;
-      MaribCloud.mePhoto("", me.uid).then(function () {
-        me.photo = "";
-        window.MaribMe.set(me);
-        toast(T("pf_none"), "ok");
-      }).catch(function (err) {
-        toast(err && err.status === 403 ? T("toast_need_admin") : T("toast_sync_err"), "err");
-      });
-    });
-  }
 
   /* ---------- targets section (R24 #10: admin-only + apply mode) ---------- */
   var DEF_TH = MaribCore.DEFAULT_CONFIG.thresholds;
@@ -3010,7 +3010,7 @@ var App = (function () {
     $("xlsxPick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
     if ($("ndBtn")) $("ndBtn").addEventListener("click", function () { $("dirPick").click(); });
 
-    /* settings panel (R23 #2 — the gear) */
+    /* settings panel (R27 — boxes → views) */
     var sp = $("setPop");
     $("btnSettings").addEventListener("click", function (e) {
       e.stopPropagation();
@@ -3020,16 +3020,15 @@ var App = (function () {
     $("setClose").addEventListener("click", function () { sp.classList.remove("on"); });
     sp.addEventListener("click", function (e) { if (e.target === sp) sp.classList.remove("on"); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") sp.classList.remove("on"); });
-    document.querySelectorAll(".set-sec-head").forEach(function (h) {
-      h.addEventListener("click", function () {
-        h.closest(".set-sec").classList.toggle("closed");
-      });
+    document.querySelectorAll("#setHome .set-box").forEach(function (b) {
+      b.addEventListener("click", function () { showSettingsView(b.getAttribute("data-view")); });
     });
+    var sbk = $("setBack");
+    if (sbk) sbk.addEventListener("click", goSettingsHome);
     bindTargetsPanel();
     bindGroupsPanel();
     bindAuditPanel();
     bindStoragePanel();
-    bindProfilePanel();
 
     /* attendance sub-tabs: workers / supervisors (R25: one shared
        setAttView() path — also used by the URL restore; R26: anchors) */

@@ -44,13 +44,17 @@ export async function GET(req: NextRequest) {
     /* the login screen expects the exact { user: null } body on
        no-session (401 status, null user — original shape kept) */
     if (g.res) return NextResponse.json({ user: null }, { status: 401 });
-    /* R26: the session user carries the profile photo too (photo circle) */
+    /* R26: the session user carries the profile photo too (photo circle);
+       R27: and the job title (لقب) — both read live from the DB so they
+       update without re-issuing the signed cookie. */
     let photo: string | null = null;
+    let title: string | null = null;
     try {
-      const rows = await q("SELECT photo FROM marib_user WHERE id = $1 LIMIT 1", [g.user!.uid]);
+      const rows = await q("SELECT photo, title FROM marib_user WHERE id = $1 LIMIT 1", [g.user!.uid]);
       photo = (rows[0]?.photo as string) || null;
+      title = (rows[0]?.title as string) || null;
     } catch { /* DB hiccup — the session without the photo is still valid */ }
-    return NextResponse.json({ user: { ...g.user!, photo } });
+    return NextResponse.json({ user: { ...g.user!, photo, title } });
   } catch (e) {
     return serverFail("auth", "GET", e);
   }
@@ -72,10 +76,10 @@ export async function POST(req: NextRequest) {
     }
 
     const rows = await q(
-      "SELECT id, username, pass_hash, role, photo FROM marib_user WHERE LOWER(username) = LOWER($1) LIMIT 1",
+      "SELECT id, username, pass_hash, role, photo, title FROM marib_user WHERE LOWER(username) = LOWER($1) LIMIT 1",
       [username]
     );
-    const rec = rows[0] as { id: string; username: string; pass_hash: string; role: SessionUser["role"]; photo?: string | null } | undefined;
+    const rec = rows[0] as { id: string; username: string; pass_hash: string; role: SessionUser["role"]; photo?: string | null; title?: string | null } | undefined;
     /* dummy verify on unknown user keeps the timing flat (no enumeration) */
     const stored = rec ? rec.pass_hash : "scrypt$00$00000000000000000000000000000000";
     const okPass = verifyPassword(password, stored) && !!rec;
@@ -90,7 +94,7 @@ export async function POST(req: NextRequest) {
     await audit(u.username, "login", "site", null, null);
     lg.info("login ok", { user: u.username, role: u.role, remember });
 
-    const res = NextResponse.json({ user: { ...u, photo: (rec as { photo?: string | null }).photo || null } });
+    const res = NextResponse.json({ user: { ...u, photo: (rec as { photo?: string | null }).photo || null, title: (rec as { title?: string | null }).title || null } });
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: "lax",

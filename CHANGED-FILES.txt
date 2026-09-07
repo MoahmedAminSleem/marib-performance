@@ -1,0 +1,14 @@
+الجولة 27 — الملفات المتغيرة فقط (ارفعها فوق القديمة على GitHub)
+============================================================
+
+public/app/app.css  ·  532,734 bytes
+public/app/app_auth.js  ·  39,553 bytes
+public/app/app_main.js  ·  153,526 bytes
+public/app/i18n_dict.js  ·  65,904 bytes
+public/app/marib_cloud.js  ·  3,485 bytes
+src/app/api/auth/route.ts  ·  5,018 bytes
+src/app/api/users/route.ts  ·  7,087 bytes
+src/app/skeleton.ts  ·  55,530 bytes
+src/lib/marib/db.ts  ·  6,800 bytes
+
+TOTAL: 869,637 bytes across 9 files

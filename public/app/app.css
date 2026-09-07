@@ -1882,3 +1882,100 @@ a.su-tab:focus-visible,a.att-tab:focus-visible,a.nav-btn:focus-visible{
 .pf-btn:active{transform:scale(.96)}
 .pf-btn.del{background:transparent;color:#E9C68A;border:1px dashed rgba(217,168,107,.45);box-shadow:none}
 .pf-btn.del:hover{background:rgba(217,168,107,.1)}
+
+/* ---------- R27-1: settings home — categorized boxes ----------
+   Level 1 is a 2-column grid of category cards; clicking one opens
+   its view (level 2) with the back button in the panel header. */
+.set-back{flex:0 0 auto}
+.set-home{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.set-box{
+  display:flex;align-items:center;gap:12px;text-align:start;
+  padding:14px 12px;border-radius:13px;
+  background:linear-gradient(180deg,rgba(34,52,75,.55),rgba(16,26,41,.85));
+  border:1px solid rgba(169,183,199,.22);
+  cursor:var(--cur-thread);font-family:inherit;min-width:0;
+  transition:border-color .18s, transform .18s, box-shadow .18s;
+}
+.set-box:hover{border-color:rgba(217,168,107,.55);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.set-box:active{transform:scale(.985)}
+.set-box:focus-visible{outline:2px solid rgba(217,168,107,.6);outline-offset:2px}
+.sb-ic{
+  flex:0 0 auto;width:40px;height:40px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;color:#E9C68A;
+  background:rgba(217,168,107,.12);border:1px solid rgba(217,168,107,.35);
+}
+.sb-ic svg{width:21px;height:21px}
+.sb-tx{min-width:0;flex:1 1 auto;display:flex;flex-direction:column;gap:3px}
+.sb-tx b{color:#E9C68A;font-size:13px;font-weight:800}
+.sb-tx small{color:#A9B7C7;font-size:10.5px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sb-go{flex:0 0 auto;color:#A9B7C7;font-size:16px;font-weight:800;margin-inline-start:2px}
+[dir="ltr"] .sb-go{transform:scaleX(-1)}
+.set-home-hint{color:#7E92A8;font-size:11px;margin:10px 2px 0}
+.set-view{margin-top:6px}
+@media (max-width:640px){ .set-home{grid-template-columns:1fr} }
+
+/* ---------- R27-2: users modal — job title + photo editors ---------- */
+.us-meta{display:flex;align-items:center;gap:7px;margin-top:3px;flex-wrap:wrap;min-width:0}
+.us-title{
+  color:#E9C68A;font-size:11px;font-weight:800;
+  max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+/* the avatar became a button (opens the photo editor) */
+.us-row > .us-av{cursor:var(--cur-thread);position:relative;overflow:visible}
+.us-row > .us-av:focus-visible{outline:2px solid rgba(217,168,107,.6);outline-offset:2px}
+.us-av-txt{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.us-av-cam{
+  position:absolute;inset-inline-end:-3px;bottom:-3px;width:17px;height:17px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(175deg,#D8AC72,#A87F4E);color:#1F1508;
+  border:1.5px solid #13202f;opacity:0;transition:opacity .18s;pointer-events:none;
+}
+.us-row:hover .us-av-cam,.us-av:focus-visible .us-av-cam{opacity:1}
+@media (hover:none){ .us-av-cam{opacity:1} }
+@media (max-width:560px){ .us-av-cam{opacity:1} }
+.us-av-cam svg{width:10px;height:10px}
+/* expandable sub-rows: title editor / photo editor / password (shared) */
+.us-sub{
+  display:none;align-items:center;gap:9px;margin:8px 0 2px;padding:10px 12px;
+  border-radius:11px;background:rgba(13,23,38,.55);
+  border:1px dashed rgba(169,183,199,.24);
+}
+.us-sub.on{display:flex}
+.us-sub input[type="text"]{
+  flex:1 1 auto;min-width:0;padding:8px 12px;border-radius:8px;
+  border:1px solid var(--brd-soft);background:rgba(9,16,26,.7);
+  color:var(--txt);font-size:12.5px;font-weight:600;font-family:inherit;
+}
+.us-sub input[type="text"]:focus{border-color:rgba(217,168,107,.6);outline:none}
+.us-sub button{
+  flex:0 0 auto;border:none;border-radius:8px;padding:8px 14px;
+  font-size:11.5px;font-weight:800;font-family:inherit;cursor:var(--cur-thread);
+  transition:filter .15s;
+}
+.us-sub .us-save{background:linear-gradient(135deg,var(--accent),#B3121B);color:#fff}
+.us-sub .us-save:hover{filter:brightness(1.12)}
+.us-sub .us-cancel{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--brd-soft)}
+.us-sub .us-cancel:hover{color:var(--txt)}
+/* photo editor row: preview circle + hint + pick/remove */
+.us-img-row .us-av.prev{width:56px;height:56px;font-size:20px;flex:0 0 auto}
+.us-img-mid{min-width:0;flex:1 1 auto}
+.us-img-row .set-hint{margin:0 0 8px}
+@media (max-width:560px){
+  .us-acts{flex-wrap:wrap;justify-content:flex-end}
+  .us-img-row{flex-wrap:wrap}
+}
+
+/* ---------- R27-3: job title in the topbar chip + the me-badge ---------- */
+.uc-title{
+  font-style:normal;font-size:10.5px;font-weight:800;color:#E6C690;
+  max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.me-tt{
+  font-size:10.5px;font-weight:800;color:#E9C68A;letter-spacing:.2px;
+  max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;
+}
+@media (max-width:1250px){ .uc-title{display:none} }
+
+/* R27 safety: guarantee the [hidden] attribute always wins over any
+   display rule (settings home grid vs views) in every browser */
+[hidden]{display:none !important}

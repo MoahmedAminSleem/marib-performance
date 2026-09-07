@@ -17,6 +17,9 @@ var MaribAuth = (function () {
 
   var KEY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4"/><path d="M11 12 20 3M16.5 6.5l3.5 3.5M13.5 9.5l2.5 2.5"/></svg>';
   var TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5q0-1 1-1h3q1 0 1 1v2M6.5 7l1 13q0 .5.5.5h8q.5 0 .5-.5l1-13"/><path d="M10 11v6M14 11v6"/></svg>';
+  /* R27: tag = job title editor · camera = photo picker */
+  var TAG_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.6 12V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.6 7.6a2 2 0 0 1 0 2.2z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/></svg>';
+  var CAM_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2l1.7-2.4h7.2L17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg>';
 
   /* ---------------- local toast (reuses the app node) ---------------- */
   function toast(msg, cls) {
@@ -374,23 +377,39 @@ var MaribAuth = (function () {
           ucAv.style.backgroundImage = "";
           ucAv.classList.remove("photo");
         }
-        $("ucName").textContent = me.username;
+        /* review#8: guard every chrome node the same way */
+        var ucName = $("ucName"); if (ucName) ucName.textContent = me.username;
+        var t = $("ucTitle");
+        if (t) {
+          var tt = String(me.title || "").trim();
+          t.textContent = tt;
+          t.hidden = !tt;
+        }
         var r = $("ucRole");
-        r.textContent = T(roleKey(me.role));
-        r.className = "uc-role " + me.role;
-        chip.style.display = "";
+        if (r) {
+          r.textContent = T(roleKey(me.role));
+          r.className = "uc-role " + me.role;
+        }
+        /* R27 fix: the stylesheet base is .user-chip{display:none} — an
+           empty inline style falls back to it, so the chip NEVER showed
+           (a pre-existing bug since R23: "flex" is required to reveal) */
+        chip.style.display = "flex";
       } else chip.style.display = "none";
     }
     var b = $("btnUsers"), o = $("btnLogout"), g = $("btnSettings");
     if (b) b.style.display = isAdmin(me) ? "" : "none";
     if (o) o.style.display = me ? "" : "none";
     if (g) g.style.display = me ? "" : "none";
-    /* R26: photo circle + name (page title row, topbar chip, settings) */
+    /* R26/R27: photo circle + name + job title (title row, topbar chip) */
     if (window.MaribMe) { try { window.MaribMe.set(me); } catch (e) { } }
   }
 
   /* ============================================================
      users & roles modal — server-backed (/api/users)
+     R27: every row carries photo + title controls (admin-only modal,
+     so only admins ever reach them — the server re-checks anyway):
+       · clicking the avatar (camera badge) → photo editor row
+       · the tag icon → title editor row (مدير الإنتاج …)
      ============================================================ */
   var users = [];
   function loadUsers() {
@@ -400,6 +419,69 @@ var MaribAuth = (function () {
     }).catch(function (e) {
       toast(e && e.status === 403 ? T("us_no_admin") : T("toast_sync_err"), "err");
     });
+  }
+
+  /* R27 client-side photo pipeline — small on the server, crisp on
+     screen:
+       1. center-crop to a SQUARE (faces fill the circle, no distortion)
+       2. scale to 240×240 (largest display is 64px → 240px stays sharp
+          even on 2× retina; never upscales a small source)
+       3. adaptive JPEG quality: 0.85 → 0.72 → 0.6, stop as soon as the
+          data URL ≤ ~32K chars (~24KB) — typically 8-20KB per photo,
+          hundreds of photos still fit the Neon plan */
+  function resizePhotoSquare(file, cb) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    var done = false;
+    /* review#3: a decode that never fires must not hang the UI silently */
+    var timer = setTimeout(function () { finish(null); }, 15000);
+    function finish(out) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+      cb(out);
+    }
+    img.onload = function () {
+      try {
+        var MAX = 240;
+        var iw = img.width || MAX, ih = img.height || MAX;
+        var side = Math.min(iw, ih);
+        var s = Math.min(1, MAX / side);
+        var w = Math.max(1, Math.round(side * s));
+        var sx = (iw - side) / 2, sy = (ih - side) / 2;
+        var cv = document.createElement("canvas");
+        cv.width = w; cv.height = w;
+        var cx = cv.getContext("2d");
+        cx.fillStyle = "#FFFFFF";
+        cx.fillRect(0, 0, w, w);
+        cx.imageSmoothingEnabled = true;
+        if (cx.imageSmoothingQuality) cx.imageSmoothingQuality = "high";
+        cx.drawImage(img, sx, sy, side, side, 0, 0, w, w);
+        var QS = [0.85, 0.72, 0.6];
+        var out = null;
+        for (var i = 0; i < QS.length; i++) {
+          out = cv.toDataURL("image/jpeg", QS[i]);
+          if (out && out.length <= 32000) break;
+        }
+        /* review#6: the callback runs OUTSIDE the try so a throwing
+           caller can't trigger the catch's second cb(null) */
+        var res = out;
+        setTimeout(function () { finish(res); }, 0);
+      } catch (e) { finish(null); }
+    };
+    img.onerror = function () { finish(null); };
+    img.src = url;
+  }
+
+  /* keep the signed-in `me` object + chrome in sync when an admin
+     (typically editing their own row) changes photo/title */
+  function syncMeAfterEdit(username, patch) {
+    if (me && me.username === username) {
+      if (patch.photo !== undefined) me.photo = patch.photo;
+      if (patch.title !== undefined) me.title = patch.title;
+      refreshChrome();
+    }
   }
 
   function buildUsList() {
@@ -414,27 +496,73 @@ var MaribAuth = (function () {
       var isDev = u.role === "dev";
       var isMe = me && u.username === me.username;
       var uid = u.id;
+      var titleTxt = String(u.title || "").trim();
+      /* review#4: escape the role for class attrs (defense in depth) */
+      var roleCls = esc(u.role);
+      /* review#2: a NON-dev admin can never patch the dev account —
+         the server rejects it (dev-fixed), so don't even offer it.
+         NOTE: the local `isDev` boolean shadows the outer isDev()
+         helper here, so the signed-in role is checked inline. */
+      var devLocked = isDev && !(me && me.role === "dev");
+      var lockAttrs = devLocked ? " disabled" : "";
+      var lockStyle = devLocked ? " style=\"opacity:.38\"" : "";
       var block = document.createElement("div");
+      block.className = "us-item";
       block.innerHTML =
         '<div class="us-row">' +
-          '<span class="us-av ' + u.role + '">' + esc((u.username.charAt(0) || "?").toUpperCase()) + '</span>' +
+          '<span class="us-av ' + roleCls + '" role="button" tabindex="' + (devLocked ? "-1" : "0") + '" title="' + esc(T("us_cam")) + '"><i class="us-av-cam">' + CAM_SVG + '</i><span class="us-av-txt"></span></span>' +
           '<div class="us-mid">' +
             '<div class="us-nm"><b>' + esc(u.username) + '</b>' + (isMe ? '<span class="us-you">' + esc(T("us_you")) + '</span>' : "") + '</div>' +
-            '<span class="us-role ' + u.role + '">' + esc(T(roleKey(u.role))) + '</span>' +
+            '<div class="us-meta"><span class="us-role ' + roleCls + '">' + esc(T(roleKey(u.role))) + '</span>' +
+            (titleTxt ? '<span class="us-title">' + esc(titleTxt) + '</span>' : "") + '</div>' +
           '</div>' +
           '<div class="us-acts">' +
             '<label class="us-sw" title="' + esc(T("us_admin_lbl")) + '">' +
               '<input type="checkbox"' + (isAdmin({ role: u.role }) ? " checked" : "") + (isDev ? " disabled" : "") + '><i></i>' +
             '</label>' +
-            '<button class="us-ic chg" type="button" title="' + esc(T("us_chg")) + '">' + KEY_SVG + '</button>' +
+            '<button class="us-ic ttl" type="button" title="' + esc(T("us_ttl")) + '"' + lockAttrs + lockStyle + '>' + TAG_SVG + '</button>' +
+            '<button class="us-ic chg" type="button" title="' + esc(T("us_chg")) + '"' + lockAttrs + lockStyle + '>' + KEY_SVG + '</button>' +
             '<button class="us-ic del" type="button" title="' + esc(T("us_del")) + '"' + ((isDev || isMe) ? " disabled" : "") + '>' + TRASH_SVG + '</button>' +
           '</div>' +
         '</div>' +
-        '<div class="us-chg"><input type="text" placeholder="' + esc(T("us_chg_ph")) + '"><button class="us-save" type="button">' + esc(T("us_save")) + '</button><button class="us-cancel" type="button">' + esc(T("us_cancel")) + '</button></div>';
+        /* R27: title editor row */
+        '<div class="us-sub us-ttl-row">' +
+          '<input type="text" maxlength="40" placeholder="' + esc(T("us_ttl_ph")) + '">' +
+          '<button class="us-save" type="button">' + esc(T("us_save")) + '</button>' +
+          '<button class="us-cancel" type="button">' + esc(T("us_cancel")) + '</button>' +
+        '</div>' +
+        /* R27: photo editor row */
+        '<div class="us-sub us-img-row">' +
+          '<span class="us-av prev ' + roleCls + '"><span class="us-av-txt"></span></span>' +
+          '<div class="us-img-mid">' +
+            '<p class="set-hint">' + esc(T("ph_hint_u")) + '</p>' +
+            '<div class="pf-btns">' +
+              '<button class="pf-btn" type="button">' + esc(T("pf_pick")) + '</button>' +
+              '<button class="pf-btn del" type="button">' + esc(T("pf_del")) + '</button>' +
+            '</div>' +
+          '</div>' +
+          '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>' +
+        '</div>' +
+        /* password row (unchanged) */
+        '<div class="us-sub us-chg"><input type="text" placeholder="' + esc(T("us_chg_ph")) + '"><button class="us-save" type="button">' + esc(T("us_save")) + '</button><button class="us-cancel" type="button">' + esc(T("us_cancel")) + '</button></div>';
 
       var sw = block.querySelector(".us-sw input");
-      var avEl = block.querySelector(".us-av");
-      if (avEl && u.photo) { avEl.classList.add("photo"); avEl.style.backgroundImage = 'url("' + u.photo + '")'; }
+      var avEl = block.querySelector(".us-row > .us-av");
+      var prevEl = block.querySelector(".us-img-row .prev");
+      var avTxt = block.querySelector(".us-row .us-av-txt");
+      var prevTxt = block.querySelector(".us-img-row .us-av-txt");
+      [avTxt, prevTxt].forEach(function (tx) { if (tx) tx.textContent = (u.username.charAt(0) || "?").toUpperCase(); });
+      if (u.photo) {
+        [avEl, prevEl].forEach(function (el) {
+          if (el) { el.classList.add("photo"); el.style.backgroundImage = 'url("' + u.photo + '")'; }
+        });
+      }
+
+      /* only ONE expandable row at a time (same behaviour as chg) */
+      function closeSubs() {
+        block.querySelectorAll(".us-sub.on").forEach(function (x) { x.classList.remove("on"); });
+      }
+
       sw.addEventListener("change", function () {
         MaribCloud.userUpdate(uid, { role: sw.checked ? "admin" : "user" }).then(function () {
           loadUsers();
@@ -442,12 +570,86 @@ var MaribAuth = (function () {
         }).catch(function (e) { toast(e && e.status === 403 ? T("us_no_admin") : T("us_toast_bad"), "err"); });
       });
 
+      /* ---- title editor ---- */
+      var ttlBtn = block.querySelector(".us-ic.ttl");
+      var ttlRow = block.querySelector(".us-ttl-row");
+      var ttlInput = ttlRow.querySelector("input");
+      ttlBtn.addEventListener("click", function () {
+        var open = ttlRow.classList.contains("on");
+        closeSubs();
+        ttlRow.classList.toggle("on", !open);
+        if (!open) { ttlInput.value = titleTxt; try { ttlInput.focus(); } catch (e) { } }
+      });
+      ttlRow.querySelector(".us-save").addEventListener("click", function () {
+        var v = ttlInput.value.replace(/[\u0000-\u001F\u007F]/g, "").trim();
+        if (v.length > 40) { toast(T("us_ttl_bad"), "err"); return; }
+        MaribCloud.userTitle(uid, v).then(function () {
+          ttlRow.classList.remove("on");
+          syncMeAfterEdit(u.username, { title: v });
+          loadUsers();
+          toast(T("us_ttl_saved"), "ok");
+        }).catch(function (e) { toast(e && e.status === 403 ? T("us_no_admin") : T("us_toast_bad"), "err"); });
+      });
+      ttlRow.querySelector(".us-cancel").addEventListener("click", function () { ttlRow.classList.remove("on"); });
+
+      /* ---- photo editor (avatar click + camera badge) ---- */
+      var imgRow = block.querySelector(".us-img-row");
+      var fileInp = imgRow.querySelector('input[type="file"]');
+      var pickBtn = imgRow.querySelector(".pf-btn:not(.del)");
+      var delBtn = imgRow.querySelector(".pf-btn.del");
+      function openImgRow() {
+        var open = imgRow.classList.contains("on");
+        closeSubs();
+        imgRow.classList.toggle("on", !open);
+      }
+      /* review#9: both click paths open the same row — one handler */
+      avEl.addEventListener("click", function () {
+        if (devLocked) { toast(T("us_toast_nodel"), "err"); return; }
+        openImgRow();
+      });
+      avEl.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImgRow(); }
+      });
+      pickBtn.addEventListener("click", function () { fileInp.click(); });
+      fileInp.addEventListener("change", function (e) {
+        var f = e.target.files && e.target.files[0];
+        e.target.value = "";
+        if (!f) return;
+        /* review#7: raster formats only — SVG has no intrinsic size and
+           can turn the square crop into a blank white upload */
+        if (!/^image\/(png|jpe?g|webp|gif)$/i.test(f.type)) { toast(T("pf_bad"), "err"); return; }
+        resizePhotoSquare(f, function (dataUrl) {
+          if (!dataUrl || dataUrl.length < 200) { toast(T("pf_bad"), "err"); return; }
+          MaribCloud.userPhoto(uid, dataUrl).then(function () {
+            [avEl, prevEl].forEach(function (el) {
+              if (el) { el.classList.add("photo"); el.style.backgroundImage = 'url("' + dataUrl + '")'; }
+            });
+            syncMeAfterEdit(u.username, { photo: dataUrl });
+            toast(T("ph_saved_u") + " · " + Math.round(dataUrl.length * 3 / 4 / 1024) + " KB", "ok");
+          }).catch(function (err) {
+            toast(err && err.status === 403 ? T("us_no_admin") : T("toast_sync_err"), "err");
+          });
+        });
+      });
+      delBtn.addEventListener("click", function () {
+        MaribCloud.userPhoto(uid, "").then(function () {
+          [avEl, prevEl].forEach(function (el) {
+            if (el) { el.classList.remove("photo"); el.style.backgroundImage = ""; }
+          });
+          syncMeAfterEdit(u.username, { photo: "" });
+          toast(T("ph_none_u"), "ok");
+        }).catch(function (err) {
+          toast(err && err.status === 403 ? T("us_no_admin") : T("toast_sync_err"), "err");
+        });
+      });
+
+      /* ---- password row (unchanged) ---- */
       var chgBtn = block.querySelector(".us-ic.chg");
       var chgBox = block.querySelector(".us-chg");
       var chgInput = chgBox.querySelector("input");
       chgBtn.addEventListener("click", function () {
         var open = chgBox.classList.contains("on");
-        document.querySelectorAll(".us-chg.on").forEach(function (x) { x.classList.remove("on"); });
+        closeSubs();
         chgBox.classList.toggle("on", !open);
         if (!open) { chgInput.value = ""; try { chgInput.focus(); } catch (e) { } }
       });
@@ -461,16 +663,16 @@ var MaribAuth = (function () {
       });
       chgBox.querySelector(".us-cancel").addEventListener("click", function () { chgBox.classList.remove("on"); });
 
-      var delBtn = block.querySelector(".us-ic.del");
-      delBtn.addEventListener("click", function () {
+      var delBtn2 = block.querySelector(".us-ic.del");
+      delBtn2.addEventListener("click", function () {
         if (isDev || isMe) { toast(T("us_toast_nodel"), "err"); return; }
-        if (!delBtn.classList.contains("confirm")) {
-          delBtn.classList.add("confirm");
-          delBtn.textContent = T("us_del_cf");
+        if (!delBtn2.classList.contains("confirm")) {
+          delBtn2.classList.add("confirm");
+          delBtn2.textContent = T("us_del_cf");
           setTimeout(function () {
-            if (delBtn.isConnected) {
-              delBtn.classList.remove("confirm");
-              delBtn.innerHTML = TRASH_SVG;
+            if (delBtn2.isConnected) {
+              delBtn2.classList.remove("confirm");
+              delBtn2.innerHTML = TRASH_SVG;
             }
           }, 2600);
           return;

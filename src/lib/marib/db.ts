@@ -99,6 +99,10 @@ const BOOT_SQL: string[] = [
      to 240px). IF NOT EXISTS keeps both PGlite and Neon migrations
      idempotent — the column appears on the first boot after deploy. */
   `ALTER TABLE marib_user ADD COLUMN IF NOT EXISTS photo TEXT`,
+  /* R27: job title / nickname (مدير الإنتاج…) — set by an admin from
+     the users modal. Additive migration only: existing rows keep
+     everything, the new column just reads as NULL until filled. */
+  `ALTER TABLE marib_user ADD COLUMN IF NOT EXISTS title TEXT`,
   `CREATE TABLE IF NOT EXISTS marib_data (
     id     TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
     month  TEXT NOT NULL,

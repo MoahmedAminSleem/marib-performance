@@ -439,7 +439,9 @@ set_audit:  { ar: "سجل العمليات", en: "Activity Log", tr: "İşlem G�
 set_storage:{ ar: "مساحة قاعدة البيانات", en: "Database Storage", tr: "Veritabanı Depolama" },
 set_users:  { ar: "المستخدمين والصلاحيات", en: "Users & Roles", tr: "Kullanıcılar" },
 
-/* ---------- profile photo (R26) ---------- */
+/* ---------- profile photo (R26 — picker buttons reused by the users
+   modal in R27; set_profile/pf_hint/pf_saved/pf_none are kept for old
+   references even though the settings section itself moved) ---------- */
 set_profile:{ ar: "صورتك الشخصية", en: "Your Photo", tr: "Profil Fotoğrafın" },
 pf_hint:    { ar: "دي الصورة اللي بتظهر في الدايرة جنب اسمك فوق في اللوحة — اختار صورة واضحة وهي صغيرة ومربعة.", en: "This is the photo shown in the circle next to your name at the top of the dashboard — pick a clear, small, square image.", tr: "Panelin üstünde adınızın yanındaki dairede görünen fotoğraf — net, küçük ve kare bir görsel seçin." },
 pf_pick:    { ar: "اختر صورة", en: "Choose photo", tr: "Fotoğraf seç" },
@@ -447,6 +449,24 @@ pf_del:     { ar: "احذف الصورة", en: "Remove photo", tr: "Fotoğrafı 
 pf_saved:   { ar: "صورتك اتحدثت ✓", en: "Your photo was updated ✓", tr: "Fotoğrafın güncellendi ✓" },
 pf_bad:     { ar: "الصورة دي مش مناسبة — جرّب صورة أصغر أو أوضح", en: "That image didn't work — try a smaller or clearer one", tr: "Bu görsel olmadı — daha küçük ve net bir görsel deneyin" },
 pf_none:    { ar: "اتشالت الصورة", en: "Photo removed", tr: "Fotoğraf kaldırıldı" },
+
+/* ---------- R27: users-modal photo + title (admin-set) ---------- */
+ph_hint_u:   { ar: "الصورة بتظهر في الدايرة جنب اسم المستخدم فوق في اللوحة — بتتصغّر وتتضغط تلقائيًا عشان متاخدش مساحة على السيرفر.", en: "Shows in the circle next to the user's name at the top — auto-cropped, resized and compressed so it barely uses server space.", tr: "Fotoğraf panelin üstündeki dairede görünür — küçültülür ve sıkıştırılır, sunucuda yer kaplamaz." },
+ph_saved_u:  { ar: "صورة المستخدم اتحدثت ✓", en: "User photo updated ✓", tr: "Kullanıcı fotoğrafı güncellendi ✓" },
+ph_none_u:   { ar: "اتشالت صورة المستخدم", en: "User photo removed", tr: "Kullanıcı fotoğrafı kaldırıldı" },
+us_ttl:      { ar: "اللقب / المسمى الوظيفي", en: "Title / job name", tr: "Unvan / görev adı" },
+us_ttl_ph:   { ar: "مثال: مدير الإنتاج", en: "e.g. Production Manager", tr: "örn. Üretim Müdürü" },
+us_ttl_saved:{ ar: "تم حفظ اللقب — بظهر جنب اسم المستخدم", en: "Title saved — it shows next to the user's name", tr: "Unvan kaydedildi — kullanıcı adının yanında görünür" },
+us_ttl_bad:  { ar: "اللقب طويل أو غير صالح (40 حرف كحد أقصى)", en: "Title too long or invalid (max 40 characters)", tr: "Unvan çok uzun veya geçersiz (en fazla 40 karakter)" },
+us_cam:      { ar: "تغيير صورة المستخدم", en: "Change user photo", tr: "Kullanıcı fotoğrafını değiştir" },
+
+/* ---------- R27: settings home (categorized boxes) ---------- */
+sb_hint:     { ar: "اضغط على القسم اللي عايز تعدّله", en: "Tap the section you want to edit", tr: "Düzenlemek istediğin bölüme dokun" },
+sb_d_targets:{ ar: "خطوط الهدف وألوان الحالة على كل الرسومات والجداول", en: "Goal lines and status colors across all charts and tables", tr: "Tüm grafik ve tablolardaki hedef çizgileri ve durum renkleri" },
+sb_d_groups: { ar: "توزيع المشرفين ورؤساء الخطوط ومديري الصالة على مجموعاتهم", en: "Assign supervisors, line leaders and hall managers to their groups", tr: "Şefleri, hat başlarını ve salon yöneticilerini sınıflarına dağıtın" },
+sb_d_audit:  { ar: "كل عملية ورفع وتعديل حصل على الموقع ومَن عمله", en: "Every upload and edit made on the site, and who did it", tr: "Sitede yapılan her yükleme ve düzenleme, ve kim yaptı" },
+sb_d_storage:{ ar: "المساحة المستخدمة من قاعدة البيانات وحجم خطتك", en: "Database space used and your plan size", tr: "Kullanılan veritabanı alanı ve plan sınırı" },
+st_back:     { ar: "رجوع للإعدادات", en: "Back to settings", tr: "Ayarlara dön" },
 
 /* targets retro (R24 #10) */
 tg_apply_t:   { ar: "دلوقتي الهدف الجديد ده بيشتغل من امتى؟", en: "When should the new targets apply from?", tr: "Yeni hedefler ne zaman geçerli olsun?" },
