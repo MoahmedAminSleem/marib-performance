@@ -4,20 +4,24 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
-import { hashPassword, isDev } from "@/lib/marib/session";
-import { fail, serverFail, readJson, logger, requireRole, requireRoleBody, type SessionUser } from "@/lib/marib/http";
+import { hashPassword, isDev, isAdmin } from "@/lib/marib/session";
+import { fail, serverFail, readJson, logger, requireRole, requireUserBody, requireRoleBody, type SessionUser } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const lg = logger("users");
 
+/* R26: max stored photo size (data-URL chars) — the client resizes to
+   240px JPEG (~tens of KB); the cap is a safety net, not the norm. */
+const PHOTO_MAX = 400_000;
+
 export async function GET(req: NextRequest) {
   try {
     const g = await requireRole(req, "admin", "users", "GET");
     if (g.res) return g.res;
     const rows = await q(
-      "SELECT id, username, role, created_at, created_by FROM marib_user ORDER BY created_at ASC"
+      "SELECT id, username, role, photo, created_at, created_by FROM marib_user ORDER BY created_at ASC"
     );
     return NextResponse.json({ users: rows });
   } catch (e) {
@@ -56,13 +60,34 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const g = await requireRoleBody(req, "admin");
+    /* R26: the photo branch is self-service — EVERY signed-in user may
+       set/clear their OWN photo (no admin needed). Any other patch
+       (password / role) keeps the original admin/dev gate. */
+    const g = await requireUserBody(req);
     if (g.res) return g.res;
     const me = g.user!;
 
     const body = await readJson(req);
     if (!body) return fail("body", 413);
     const id = String(body.id || "");
+
+    const selfPhoto =
+      body.photo !== undefined && body.password === undefined && body.role === undefined && id === me.uid;
+
+    if (!selfPhoto) {
+      if (!isAdmin(me)) return fail("admin", 403);
+    }
+
+    if (selfPhoto) {
+      const photo = body.photo;
+      if (typeof photo !== "string" || photo.length > PHOTO_MAX) return fail("invalid", 400);
+      if (photo.length > 0 && !/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(photo)) return fail("invalid", 400);
+      await q("UPDATE marib_user SET photo = $1 WHERE id = $2", [photo || null, me.uid]);
+      await audit(me.username, "edit", "users:" + me.username, me.username, { change: "photo", to: photo ? "set" : "cleared" });
+      lg.info("photo " + (photo ? "set" : "cleared"), { by: me.username });
+      return NextResponse.json({ ok: true });
+    }
+
     const rows = await q("SELECT id, username, role FROM marib_user WHERE id = $1", [id]);
     const rec = rows[0] as { id: string; username: string; role: string } | undefined;
     if (!rec) return fail("notfound", 404);

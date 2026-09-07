@@ -29,8 +29,34 @@ var MaribAuth = (function () {
   }
 
   /* ---------------- state ---------------- */
-  var me = null; /* {uid, username, role} — from the signed session cookie */
+  var me = null; /* {uid, username, role, photo} — from the signed session cookie */
   var loginEl = null, cardEl = null;
+  /* R26 "تذكرني" rule — WITHOUT the checkbox the login must be asked
+     again on every fresh open of the site; WITH it the session lasts
+     30 days. The cookie alone can't express that (browsers keep session
+     cookies while the process lives / restore them on startup), so the
+     client keeps two flags:
+       localStorage  "marib_stay" — set ONLY when تذكرني was checked
+       sessionStorage "marib_stay" — set on every login; copied to tabs
+                                     opened FROM a link (open-in-new-tab
+                                     keeps the same view) and wiped the
+                                     moment the browser session ends. */
+  var STAY_KEY = "marib_stay";
+  function stayAllowed() {
+    try {
+      return localStorage.getItem(STAY_KEY) === "1" || sessionStorage.getItem(STAY_KEY) === "1";
+    } catch (e) { return true; /* storage blocked — keep the old behaviour */ }
+  }
+  function setStay(remember) {
+    try {
+      if (remember) localStorage.setItem(STAY_KEY, "1");
+      else localStorage.removeItem(STAY_KEY);
+      sessionStorage.setItem(STAY_KEY, "1");
+    } catch (e) { }
+  }
+  function clearStay() {
+    try { localStorage.removeItem(STAY_KEY); sessionStorage.removeItem(STAY_KEY); } catch (e) { }
+  }
   function isAdmin(u) { return !!u && (u.role === "dev" || u.role === "admin"); }
   function isDev(u) { return !!u && u.role === "dev"; }
   function roleKey(r) { return r === "dev" ? "us_role_dev" : r === "admin" ? "us_role_admin" : "us_role_user"; }
@@ -287,6 +313,25 @@ var MaribAuth = (function () {
       shell.setAttribute("aria-hidden", "true");
     }
     document.title = T("brand_name");
+    /* R26: the login screen starts truly EMPTY — no remembered username,
+       no password, no ticked تذكرني, no sewn-stitch leftovers. One quick
+       delayed pass (300ms) defeats the browser's load-time autofill, but
+       it stays AWAY from a field the user is already typing in. */
+    function blankLogin(force) {
+      var u = $("lgUser"), p = $("lgPass"), rm = $("lgRemember");
+      var typing = (document.activeElement === u) || (document.activeElement === p);
+      if (typing && !force) return;
+      if (u) u.value = "";
+      if (p) p.value = "";
+      if (rm) rm.checked = false;
+      pwVisible = false;
+      var fld = $("lgPwField");
+      if (fld) fld.classList.add("sewn");
+      var st = $("pwStitchSvg"); if (st) st.style.display = "none";
+      syncToggle();
+    }
+    blankLogin(true);
+    setTimeout(function () { blankLogin(false); }, 300);
     /* R25: React's hydration can restore the SSR <title> a moment AFTER
        the vanilla script already set it (a dev-mode race). Re-assert the
        login title once more — by then hydration has settled for good. */
@@ -323,7 +368,12 @@ var MaribAuth = (function () {
     var chip = $("userChip");
     if (chip) {
       if (me) {
-        $("ucAv").textContent = (me.username.charAt(0) || "?").toUpperCase();
+        var ucAv = $("ucAv");
+        if (ucAv) {
+          ucAv.textContent = (me.username.charAt(0) || "?").toUpperCase();
+          ucAv.style.backgroundImage = "";
+          ucAv.classList.remove("photo");
+        }
         $("ucName").textContent = me.username;
         var r = $("ucRole");
         r.textContent = T(roleKey(me.role));
@@ -335,6 +385,8 @@ var MaribAuth = (function () {
     if (b) b.style.display = isAdmin(me) ? "" : "none";
     if (o) o.style.display = me ? "" : "none";
     if (g) g.style.display = me ? "" : "none";
+    /* R26: photo circle + name (page title row, topbar chip, settings) */
+    if (window.MaribMe) { try { window.MaribMe.set(me); } catch (e) { } }
   }
 
   /* ============================================================
@@ -381,6 +433,8 @@ var MaribAuth = (function () {
         '<div class="us-chg"><input type="text" placeholder="' + esc(T("us_chg_ph")) + '"><button class="us-save" type="button">' + esc(T("us_save")) + '</button><button class="us-cancel" type="button">' + esc(T("us_cancel")) + '</button></div>';
 
       var sw = block.querySelector(".us-sw input");
+      var avEl = block.querySelector(".us-av");
+      if (avEl && u.photo) { avEl.classList.add("photo"); avEl.style.backgroundImage = 'url("' + u.photo + '")'; }
       sw.addEventListener("change", function () {
         MaribCloud.userUpdate(uid, { role: sw.checked ? "admin" : "user" }).then(function () {
           loadUsers();
@@ -464,11 +518,13 @@ var MaribAuth = (function () {
 
     /* logout — server-side cookie clear + back to the login screen.
        No location.reload(): a brand-new tab therefore loads ONCE and
-       settles instantly (R24 #12). */
+       settles instantly (R24 #12). R26: the stay flags go too — the
+       next open asks for the login again. */
     var lo = $("btnLogout");
     if (lo) lo.addEventListener("click", function () {
       var done = function () {
         me = null;
+        clearStay();
         toast(T("toast_logout"), "ok");
         showLogin();
       };
@@ -508,6 +564,7 @@ var MaribAuth = (function () {
       MaribCloud.login(name, pw, $("lgRemember").checked).then(function (r) {
         btn.disabled = false;
         me = r.user;
+        setStay($("lgRemember").checked);   /* R26 — the تذكرني rule */
         err.classList.remove("on");
         enterApp(true);
       }).catch(function (e2) {
@@ -586,11 +643,36 @@ var MaribAuth = (function () {
     bindLogin();
     bindUsers();
     bindParallax();
+    /* R26: link-opened tabs (right-click / Ctrl / middle-click on the nav
+       links) arrive with ?_st=<token>. Chromium does NOT copy this tab's
+       sessionStorage to them (only window.open / target=_blank get a
+       copy), so the token is the bridge: match it against the shared
+       localStorage copy → adopt the session, then strip _st from the
+       visible URL. A typed/bookmarked URL has no _st → login gate. */
+    try {
+      var qs = new URLSearchParams(location.search);
+      var stTok = qs.get("_st");
+      if (stTok) {
+        if (stTok === (localStorage.getItem("marib_link") || "")) {
+          sessionStorage.setItem(STAY_KEY, "1");
+        }
+        qs.delete("_st");
+        var clean = qs.toString();
+        history.replaceState(null, "", clean ? "?" + clean : location.pathname);
+      }
+    } catch (e) { }
     /* session check against the server — the login screen is never
-       shown before this resolves (no flash, R23 #5) */
+       shown before this resolves (no flash, R23 #5). R26: a session
+       cookie WITHOUT تذكرني only lives inside the current browser
+       session (sessionStorage flag); a fresh open of the site drops
+       it and asks for the login again. */
     MaribCloud.session().then(function (r) {
       me = r && r.user;
-      if (me) enterApp(false);
+      if (me && !stayAllowed()) {
+        me = null;
+        MaribCloud.logout().catch(function () { });
+        showLogin();
+      } else if (me) enterApp(false);
       else showLogin();
       veilOff();
     }).catch(function () {
@@ -605,6 +687,7 @@ var MaribAuth = (function () {
     login: showLogin,
     logout: function () {
       var done = function () { showLogin(); };
+      clearStay();
       MaribCloud.logout().then(done).catch(done);
     },
     togglePw: togglePw,

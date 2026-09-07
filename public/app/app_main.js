@@ -28,6 +28,23 @@ var App = (function () {
   var bootQuery = "";
   try { bootQuery = location.search || ""; } catch (e) { }
 
+  /* R26: link token — tabs opened FROM a link (right-click → open in
+     new tab / Ctrl / middle click) can't inherit this tab's sessionStorage
+     (Chromium only copies it for target=_blank / window.open). So every
+     tab-link href carries _st=<token>; the newly opened tab sees it,
+     matches it against the shared localStorage copy and adopts the
+     session. A URL typed fresh / bookmarked never has _st → login gate. */
+  var LINK_TOK = "";
+  try {
+    LINK_TOK = localStorage.getItem("marib_link") || "";
+    if (!LINK_TOK) {
+      LINK_TOK = (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID().replace(/-/g, "").slice(0, 16)
+        : String(Math.random()).slice(2, 10) + Date.now().toString(36);
+      localStorage.setItem("marib_link", LINK_TOK);
+    }
+  } catch (e) { /* storage blocked — links simply lose the bridge */ }
+
   /* ---------------- i18n helpers ---------------- */
   var T = I18N.t, TP = I18N.ta, TV = I18N.tv, TS = I18N.ts, TB = I18N.tb;
   function fmtInt(v) { return I18N.fmtInt(v); }
@@ -1928,25 +1945,69 @@ var App = (function () {
      the URL = restoring the whole view. No history entries are
      created — replaceState only, the back button stays clean.
      ============================================================ */
+  /* R26: the current view as a URLSearchParams — shared by syncUrl()
+     (writes the address bar) and syncLinkHrefs() (keeps the tab links
+     pointing at this exact view so right-click → new tab reopens it). */
+  function currentQuery() {
+    var p = new URLSearchParams();
+    if (state.page && state.page !== "overview") p.set("page", state.page);
+    if (state.qp && state.qp !== "custom" && state.qp !== "all") p.set("qp", state.qp);
+    var fF = $("fFrom"), fT = $("fTo"), mSel = $("fMonth");
+    if (fF && fF.value) p.set("from", fF.value);
+    if (fT && fT.value) p.set("to", fT.value);
+    if (mSel && mSel.value) p.set("month", mSel.value);
+    if ($("fLine") && $("fLine").value) p.set("line", $("fLine").value);
+    if ($("fSection") && $("fSection").value) p.set("section", $("fSection").value);
+    if ($("fSup") && $("fSup").value) p.set("sup", $("fSup").value);
+    if (state.scope && state.scope !== "both") p.set("scope", state.scope);
+    if (state.suView) p.set("su", state.suView);
+    if (state.attView && state.attView !== "workers") p.set("att", state.attView);
+    return p;
+  }
+
+  /* R26: the nav tabs + sub-tabs are real links now — after every render
+     their hrefs are refreshed to carry the CURRENT filters + the link
+     token, so "open in new tab" (right-click / Ctrl-click / middle-click)
+     lands on the same page with the same data AND the same session. */
+  function syncLinkHrefs() {
+    document.querySelectorAll("a.nav-btn").forEach(function (a) {
+      var p = currentQuery();
+      var pg = a.getAttribute("data-page") || "overview";
+      if (pg !== "overview") p.set("page", pg); else p.delete("page");
+      /* sub-view params only make sense on their own pages */
+      if (pg !== "sups") p.delete("su");
+      if (pg !== "att") p.delete("att");
+      if (LINK_TOK) p.set("_st", LINK_TOK);
+      a.setAttribute("href", p.toString() ? "?" + p.toString() : location.pathname);
+    });
+    document.querySelectorAll("a.su-tab").forEach(function (a) {
+      var p = currentQuery();
+      p.set("page", "sups");
+      p.set("su", a.getAttribute("data-suview") || "sup");
+      p.delete("att");
+      if (LINK_TOK) p.set("_st", LINK_TOK);
+      a.setAttribute("href", "?" + p.toString());
+    });
+    document.querySelectorAll("a.att-tab").forEach(function (a) {
+      var p = currentQuery();
+      p.set("page", "att");
+      p.set("att", a.getAttribute("data-attview") || "workers");
+      p.delete("su");
+      if (LINK_TOK) p.set("_st", LINK_TOK);
+      a.setAttribute("href", "?" + p.toString());
+    });
+  }
+
   function syncUrl() {
     try {
-      if (!state.model || !history || !history.replaceState) return;
-      var p = new URLSearchParams();
-      if (state.page && state.page !== "overview") p.set("page", state.page);
-      if (state.qp && state.qp !== "custom" && state.qp !== "all") p.set("qp", state.qp);
-      var fF = $("fFrom"), fT = $("fTo"), mSel = $("fMonth");
-      if (fF && fF.value) p.set("from", fF.value);
-      if (fT && fT.value) p.set("to", fT.value);
-      if (mSel && mSel.value) p.set("month", mSel.value);
-      if ($("fLine") && $("fLine").value) p.set("line", $("fLine").value);
-      if ($("fSection") && $("fSection").value) p.set("section", $("fSection").value);
-      if ($("fSup") && $("fSup").value) p.set("sup", $("fSup").value);
-      if (state.scope && state.scope !== "both") p.set("scope", state.scope);
-      if (state.suView) p.set("su", state.suView);
-      if (state.attView && state.attView !== "workers") p.set("att", state.attView);
-      var q = p.toString();
+      if (!state.model || !history || !history.replaceState) {
+        try { syncLinkHrefs(); } catch (e2) { }
+        return;
+      }
+      var q = currentQuery().toString();
       history.replaceState(null, "", q ? "?" + q : location.pathname);
     } catch (e) { /* URL writing must never break the app */ }
+    try { syncLinkHrefs(); } catch (e) { }
   }
 
   /* boot-time restore: reads the query string back into the DOM
@@ -2363,6 +2424,7 @@ var App = (function () {
   function openSettings() {
     var admin = MaribAuth.isAdmin ? MaribAuth.isAdmin() : false;
     var dev = MaribAuth.isDev ? MaribAuth.isDev() : false;
+    var sp = $("secProfile"); if (sp) sp.style.display = "";
     var st = $("secTargets"); if (st) st.style.display = admin ? "" : "none";
     var sg = $("secGroups"); if (sg) sg.style.display = "";
     var sa = $("secAudit"); if (sa) sa.style.display = dev ? "" : "none";
@@ -2372,6 +2434,102 @@ var App = (function () {
     buildClsList();
     if (dev) { loadAudit(); loadStorage(); }
     $("setPop").classList.add("on");
+  }
+
+  /* ============================================================
+     R26 — me-badge (user photo circle + name) & profile photo upload
+     ============================================================ */
+  function setAvPhoto(avEl, imgEl, txtEl, photo, username) {
+    if (!avEl) return;
+    if (photo) {
+      if (imgEl) { imgEl.src = photo; imgEl.hidden = false; }
+      else avEl.style.backgroundImage = 'url("' + photo + '")';
+      avEl.classList.add("photo");
+      if (txtEl) txtEl.textContent = "";
+    } else {
+      if (imgEl) { imgEl.hidden = true; imgEl.removeAttribute("src"); }
+      else avEl.style.backgroundImage = "";
+      avEl.classList.remove("photo");
+      if (txtEl) txtEl.textContent = (username || "?").charAt(0).toUpperCase();
+    }
+  }
+
+  /* window.MaribMe — MaribAuth calls this on login / logout / boot so
+     the badge, the topbar mini chip and the settings preview stay in
+     sync with the signed-in user (photo included). */
+  window.MaribMe = {
+    set: function (u) {
+      var b = $("meBadge");
+      if (!b) return;
+      if (!u) { b.style.display = "none"; return; }
+      b.style.display = "";
+      setAvPhoto($("meAv"), $("meAvImg"), $("meAvTxt"), u.photo, u.username);
+      var nm = $("meName");
+      if (nm) nm.textContent = u.username || "";
+      setAvPhoto($("ucAv"), null, null, u.photo, u.username);
+      setAvPhoto($("pfAv"), $("pfAvImg"), $("pfAvTxt"), u.photo, u.username);
+    }
+  };
+
+  /* client-side resize: any image → max 240×240 JPEG (flattened on
+     white) — a few tens of KB, travels as a data URL, stored in the
+     user row on the server. */
+  function resizePhoto(file, cb) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      try {
+        var MAX = 240;
+        var iw = img.width || MAX, ih = img.height || MAX;
+        var s = Math.min(1, MAX / Math.max(iw, ih));
+        var w = Math.max(1, Math.round(iw * s)), h = Math.max(1, Math.round(ih * s));
+        var cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        var cx = cv.getContext("2d");
+        cx.fillStyle = "#FFFFFF";
+        cx.fillRect(0, 0, w, h);
+        cx.drawImage(img, 0, 0, w, h);
+        cb(cv.toDataURL("image/jpeg", 0.85));
+      } catch (e) { cb(null); }
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); cb(null); };
+    img.src = url;
+  }
+
+  function bindProfilePanel() {
+    var pick = $("pfPick");
+    if (!pick) return;
+    $("pfPickBtn").addEventListener("click", function () { pick.click(); });
+    pick.addEventListener("change", function (e) {
+      var f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!f) return;
+      if (!/^image\//.test(f.type)) { toast(T("pf_bad"), "err"); return; }
+      var me = window.MaribAuth ? MaribAuth.me() : null;
+      if (!me || !me.uid) { toast(T("toast_sync_err"), "err"); return; }
+      resizePhoto(f, function (dataUrl) {
+        if (!dataUrl || dataUrl.length > 300000) { toast(T("pf_bad"), "err"); return; }
+        MaribCloud.mePhoto(dataUrl, me.uid).then(function () {
+          me.photo = dataUrl;
+          window.MaribMe.set(me);
+          toast(T("pf_saved"), "ok");
+        }).catch(function (err) {
+          toast(err && err.status === 403 ? T("toast_need_admin") : T("toast_sync_err"), "err");
+        });
+      });
+    });
+    $("pfDelBtn").addEventListener("click", function () {
+      var me = window.MaribAuth ? MaribAuth.me() : null;
+      if (!me || !me.uid) return;
+      MaribCloud.mePhoto("", me.uid).then(function () {
+        me.photo = "";
+        window.MaribMe.set(me);
+        toast(T("pf_none"), "ok");
+      }).catch(function (err) {
+        toast(err && err.status === 403 ? T("toast_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
   }
 
   /* ---------- targets section (R24 #10: admin-only + apply mode) ---------- */
@@ -2769,9 +2927,15 @@ var App = (function () {
       render();
     });
 
-    /* nav */
+    /* nav — R26: anchors; plain left click = SPA switch, modified
+       clicks (Ctrl / Cmd / Shift / middle) fall through to the browser
+       so "open in new tab" works natively with the live href. */
     document.querySelectorAll(".nav-btn").forEach(function (b) {
-      b.addEventListener("click", function () { goToPage(b.getAttribute("data-page")); });
+      b.addEventListener("click", function (e) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        goToPage(b.getAttribute("data-page"));
+      });
     });
 
     /* quick period chips */
@@ -2812,9 +2976,12 @@ var App = (function () {
       $(id).addEventListener("change", render);
     });
 
-    /* supervisors sub-tabs (R23 #6 / R24 #7 — nothing shows until chosen) */
+    /* supervisors sub-tabs (R23 #6 / R24 #7 — nothing shows until chosen;
+       R26: anchors with live hrefs — modified clicks open in a new tab) */
     document.querySelectorAll(".su-tab").forEach(function (b) {
-      b.addEventListener("click", function () {
+      b.addEventListener("click", function (e) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
         state.suView = b.getAttribute("data-suview");
         render();
       });
@@ -2862,11 +3029,14 @@ var App = (function () {
     bindGroupsPanel();
     bindAuditPanel();
     bindStoragePanel();
+    bindProfilePanel();
 
     /* attendance sub-tabs: workers / supervisors (R25: one shared
-       setAttView() path — also used by the URL restore) */
+       setAttView() path — also used by the URL restore; R26: anchors) */
     document.querySelectorAll(".att-tab").forEach(function (b) {
-      b.addEventListener("click", function () {
+      b.addEventListener("click", function (e) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
         setAttView(b.getAttribute("data-attview"));
         syncUrl();
       });

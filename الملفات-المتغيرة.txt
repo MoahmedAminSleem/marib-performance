@@ -1,24 +1,12 @@
-ملفات الجولة 25 المتغيرة فقط — ارفعها فوق القديمة في GitHub
-=======================================================
+الملفات المتغيرة فقط — جولة 26 (ارفعها فوق الملفات القديمة في GitHub)
+R26: تابات روابط + تذكرني + كيرسر الإبرة + اللوجو يمين + دايرة صورة اليوزر
 
-عدّلت (13):
-  public/app/app.css
-  public/app/app_auth.js
-  public/app/app_main.js
-  public/app/i18n_dict.js
-  src/app/api/audit/route.ts
-  src/app/api/auth/route.ts
-  src/app/api/data/route.ts
-  src/app/api/settings/route.ts
-  src/app/api/storage/route.ts
-  src/app/api/users/route.ts
-  src/app/layout.tsx
-  src/app/page.tsx
-  src/app/skeleton.ts
-
-جديدة (3):
-  .gitignore
-  src/lib/marib/http.ts
-  src/lib/marib/logger.ts
-
-(لا يوجد أي ملف Excel — البيانات محفوظة على سيرفر Neon)
+src/app/skeleton.ts  ·  54,119 bytes  ·  md5:5df9011f5a
+src/app/api/auth/route.ts  ·  4,699 bytes  ·  md5:f018a15f47
+src/app/api/users/route.ts  ·  5,946 bytes  ·  md5:9cb2da3357
+src/lib/marib/db.ts  ·  6,517 bytes  ·  md5:e8c0f9fa6f
+public/app/app.css  ·  527,827 bytes  ·  md5:579f566268
+public/app/i18n_dict.js  ·  62,790 bytes  ·  md5:4561f65270
+public/app/marib_cloud.js  ·  3,335 bytes  ·  md5:66fdd20bfa
+public/app/app_main.js  ·  153,993 bytes  ·  md5:e6e978443e
+public/app/app_auth.js  ·  29,165 bytes  ·  md5:f1a2caf8df

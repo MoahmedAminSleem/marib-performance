@@ -439,6 +439,15 @@ set_audit:  { ar: "سجل العمليات", en: "Activity Log", tr: "İşlem G�
 set_storage:{ ar: "مساحة قاعدة البيانات", en: "Database Storage", tr: "Veritabanı Depolama" },
 set_users:  { ar: "المستخدمين والصلاحيات", en: "Users & Roles", tr: "Kullanıcılar" },
 
+/* ---------- profile photo (R26) ---------- */
+set_profile:{ ar: "صورتك الشخصية", en: "Your Photo", tr: "Profil Fotoğrafın" },
+pf_hint:    { ar: "دي الصورة اللي بتظهر في الدايرة جنب اسمك فوق في اللوحة — اختار صورة واضحة وهي صغيرة ومربعة.", en: "This is the photo shown in the circle next to your name at the top of the dashboard — pick a clear, small, square image.", tr: "Panelin üstünde adınızın yanındaki dairede görünen fotoğraf — net, küçük ve kare bir görsel seçin." },
+pf_pick:    { ar: "اختر صورة", en: "Choose photo", tr: "Fotoğraf seç" },
+pf_del:     { ar: "احذف الصورة", en: "Remove photo", tr: "Fotoğrafı kaldır" },
+pf_saved:   { ar: "صورتك اتحدثت ✓", en: "Your photo was updated ✓", tr: "Fotoğrafın güncellendi ✓" },
+pf_bad:     { ar: "الصورة دي مش مناسبة — جرّب صورة أصغر أو أوضح", en: "That image didn't work — try a smaller or clearer one", tr: "Bu görsel olmadı — daha küçük ve net bir görsel deneyin" },
+pf_none:    { ar: "اتشالت الصورة", en: "Photo removed", tr: "Fotoğraf kaldırıldı" },
+
 /* targets retro (R24 #10) */
 tg_apply_t:   { ar: "دلوقتي الهدف الجديد ده بيشتغل من امتى؟", en: "When should the new targets apply from?", tr: "Yeni hedefler ne zaman geçerli olsun?" },
 tg_from_now:  { ar: "من الآن فما بعد", en: "From now on", tr: "Şu andan itibaren" },

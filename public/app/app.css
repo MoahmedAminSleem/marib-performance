@@ -79,7 +79,7 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 ::selection{background:rgba(239,31,37,.4)}
-button{font-family:inherit;cursor:pointer}
+button{font-family:inherit;cursor:var(--cur-thread)}
 input,select{font-family:inherit}
 .num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:embed;font-family:var(--ff-num)}
 
@@ -258,12 +258,12 @@ input,select{font-family:inherit}
 .tg-btns{display:flex;gap:9px}
 .tg-save{
   flex:1;background:var(--accent);color:#fff;border:none;border-radius:10px;
-  font-size:13px;font-weight:800;padding:11px;cursor:pointer;transition:.15s;font-family:var(--ff-body);
+  font-size:13px;font-weight:800;padding:11px;cursor:var(--cur-thread);transition:.15s;font-family:var(--ff-body);
 }
 .tg-save:hover{background:#D51A20}
 .tg-reset{
   background:none;border:1px solid var(--brd-soft);color:var(--muted);border-radius:10px;
-  font-size:12px;font-weight:700;padding:11px 14px;cursor:pointer;transition:.15s;font-family:var(--ff-body);
+  font-size:12px;font-weight:700;padding:11px 14px;cursor:var(--cur-thread);transition:.15s;font-family:var(--ff-body);
 }
 .tg-reset:hover{color:var(--txt);border-color:var(--brd)}
 .tg-note{font-size:10.5px;color:var(--faint);line-height:1.6;margin-top:12px;font-weight:600}
@@ -271,7 +271,7 @@ input,select{font-family:inherit}
 .att-tabs{display:flex;gap:8px;margin-bottom:14px}
 .att-tab{
   background:var(--card);border:1px solid var(--brd-soft);color:var(--muted);
-  border-radius:999px;padding:8px 18px;font-size:12.5px;font-weight:800;cursor:pointer;
+  border-radius:999px;padding:8px 18px;font-size:12.5px;font-weight:800;cursor:var(--cur-thread);
   transition:.18s;font-family:var(--ff-body);
 }
 .att-tab:hover{color:var(--txt);border-color:var(--brd)}
@@ -302,7 +302,7 @@ input,select{font-family:inherit}
 .page-ctrls .sub{font-size:10px;color:var(--faint);letter-spacing:2.6px;margin-top:1px}
 .filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .filters select{
-  appearance:none;-webkit-appearance:none;cursor:pointer;
+  appearance:none;-webkit-appearance:none;cursor:var(--cur-thread);
   background:var(--card-solid);color:var(--muted);
   border:1px solid var(--brd-soft);border-radius:var(--r-sm);
   padding:8px 30px 8px 12px;font-size:12.5px;font-weight:600;
@@ -511,10 +511,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 @keyframes dropPulse{0%,100%{border-color:rgba(239,31,37,.55)}50%{border-color:rgba(239,31,37,.95)}}
 
 /* ============ drill-through (Power BI style) ============ */
-.chart svg .drillable{cursor:pointer;transition:filter .16s,opacity .16s}
+.chart svg .drillable{cursor:var(--cur-thread);transition:filter .16s,opacity .16s}
 .chart svg rect.drillable:hover{filter:brightness(1.5)}
 .chart svg path.drillable:hover{filter:brightness(1.22)}
-.tbl tbody tr.drill-row{cursor:pointer}
+.tbl tbody tr.drill-row{cursor:var(--cur-thread)}
 .tbl tbody tr.drill-row:hover{background:rgba(239,31,37,.12)}
 .drill{
   position:fixed;inset:0;z-index:900;display:none;align-items:center;justify-content:center;
@@ -614,7 +614,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .cmp-pop.on{display:flex}
 .cmp-pop .cp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
 .cmp-pop .cp-head b{font-size:12.5px;font-weight:800;color:var(--txt)}
-.cmp-pop .cp-x{background:none;border:0;color:var(--muted);font-size:13px;padding:2px 6px;border-radius:6px;cursor:pointer}
+.cmp-pop .cp-x{background:none;border:0;color:var(--muted);font-size:13px;padding:2px 6px;border-radius:6px;cursor:var(--cur-thread)}
 .cmp-pop .cp-x:hover{color:var(--txt);background:rgba(255,255,255,.06)}
 .cmp-pop .cp-cur{font-size:11px;color:var(--muted);font-weight:700}
 .cmp-pop .cp-cur .num{color:var(--txt);font-weight:800}
@@ -622,7 +622,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .cmp-pop .cp-opt,.cmp-pop .cp-off{
   display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
   border:1px solid var(--brd-soft);background:rgba(255,255,255,.02);border-radius:9px;
-  padding:8px 10px;cursor:pointer;transition:.14s;text-align:start;
+  padding:8px 10px;cursor:var(--cur-thread);transition:.14s;text-align:start;
 }
 .cmp-pop .cp-opt span{font-size:12px;font-weight:700;color:var(--txt)}
 .cmp-pop .cp-opt small{font-size:10px;color:var(--faint);font-weight:700}
@@ -651,12 +651,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .cmp-strip b.flat{background:rgba(198,169,174,.14);color:var(--muted)}
 
 .chart svg .goal-hit{cursor:help}
-.kpi.kpi-drill{cursor:pointer;transition:border-color .15s,transform .15s}
+.kpi.kpi-drill{cursor:var(--cur-thread);transition:border-color .15s,transform .15s}
 .kpi.kpi-drill:hover{border-color:var(--accent);transform:translateY(-1px)}
 .kpi.kpi-drill::after{
   content:"↗";position:absolute;inset-inline-end:10px;bottom:8px;font-size:13px;color:var(--faint);
 }
-.chart.drillable{cursor:pointer}
+.chart.drillable{cursor:var(--cur-thread)}
 /* ============================================================
    Marib Performance — Login (round 10 · Denim Edition)
    Full-screen gate: dark denim weave, leather patch, gold
@@ -789,7 +789,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .lg-lang button{
   border:none;background:transparent;color:var(--lg-dim);
   font-size:12px;font-weight:800;min-width:34px;padding:4px 10px;border-radius:999px;
-  cursor:pointer;transition:.18s;font-family:var(--ff-num);
+  cursor:var(--cur-thread);transition:.18s;font-family:var(--ff-num);
 }
 .lg-lang button:hover{color:var(--lg-txt);background:rgba(255,255,255,.07)}
 .lg-lang button.on{background:linear-gradient(175deg,#D8AC72,#C49A6C 55%,#A87F4E);color:#2A1C0E;
@@ -932,7 +932,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 /* ---------- options row ---------- */
 .lg-opts{display:flex;align-items:center;justify-content:space-between;margin:1px 0 15px}
 .lg-remember{display:flex;align-items:center;gap:8px;color:#B9C6D6;font-size:12.5px;
-  font-weight:600;cursor:pointer;user-select:none;position:relative}
+  font-weight:600;cursor:var(--cur-thread);user-select:none;position:relative}
 .lg-remember input{position:absolute;opacity:0;width:0;height:0}
 .lg-remember i{
   width:17px;height:17px;border-radius:5px;flex:0 0 auto;position:relative;
@@ -1030,7 +1030,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .user-chip{
   display:none;align-items:center;gap:8px;padding:4px 12px 4px 6px;border-radius:999px;
   background:rgba(217,168,107,.08);border:1px solid rgba(217,168,107,.30);
-  cursor:pointer;transition:border-color .2s, background .2s;white-space:nowrap;
+  cursor:var(--cur-thread);transition:border-color .2s, background .2s;white-space:nowrap;
 }
 [dir="ltr"] .user-chip{padding:4px 6px 4px 12px}
 .user-chip:hover{border-color:rgba(217,168,107,.6);background:rgba(217,168,107,.14)}
@@ -1130,7 +1130,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .us-role.admin{background:var(--accent-soft);color:var(--accent-2);border:1px solid rgba(239,31,37,.34)}
 .us-role.user{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--brd-soft)}
 .us-acts{display:flex;align-items:center;gap:7px;flex:0 0 auto}
-.us-sw{position:relative;display:flex;align-items:center;cursor:pointer}
+.us-sw{position:relative;display:flex;align-items:center;cursor:var(--cur-thread)}
 .us-sw input{position:absolute;opacity:0;width:0;height:0}
 .us-sw i{
   width:40px;height:21px;border-radius:999px;position:relative;transition:.2s;
@@ -1170,7 +1170,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .us-chg input:focus{border-color:var(--brd-hov)}
 .us-chg button{
   padding:9px 15px;border-radius:9px;font-size:12px;font-weight:800;border:none;
-  cursor:pointer;transition:.18s;flex:0 0 auto;
+  cursor:var(--cur-thread);transition:.18s;flex:0 0 auto;
 }
 .us-chg .us-save{background:linear-gradient(135deg,var(--accent),#B3121B);color:#fff}
 .us-chg .us-save:hover{filter:brightness(1.12)}
@@ -1189,7 +1189,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 }
 .us-add-row input:focus{border-color:rgba(217,168,107,.6)}
 .us-add-row input::placeholder{color:var(--faint);font-weight:500}
-.us-chk{display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:12px;position:relative}
+.us-chk{display:flex;align-items:center;gap:9px;cursor:var(--cur-thread);margin-bottom:12px;position:relative}
 .us-chk input{position:absolute;opacity:0;width:0;height:0}
 .us-chk i{
   width:17px;height:17px;border-radius:5px;flex:0 0 auto;position:relative;
@@ -1204,7 +1204,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 }
 .us-chk span{font-size:12px;font-weight:700;color:var(--muted)}
 .us-add-btn{
-  width:100%;padding:12px;border-radius:11px;border:none;cursor:pointer;
+  width:100%;padding:12px;border-radius:11px;border:none;cursor:var(--cur-thread);
   font-size:13.5px;font-weight:900;color:#2A1C0E;
   background:linear-gradient(175deg,#D8AC72,#C49A6C 50%,#A87F4E);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 6px 16px rgba(0,0,0,.35);
@@ -1461,7 +1461,7 @@ body{
    single source: PNG needle on body, thread PNG ONLY on the slicer zone,
    the standard hand everywhere else interactive. */
 .drill-row,.kpi-drill,.chart.drillable,.chart svg .drillable,.chart svg .goal-hit,
-a,button,select,label,.icon-btn,.us-sw{cursor:pointer}
+a,button,select,label,.icon-btn,.us-sw{cursor:var(--cur-thread)}
 /* text fields keep a caret-friendly cursor */
 input,textarea{cursor:text}
 /* disabled things keep the system look */
@@ -1498,7 +1498,7 @@ button, .nav-btn, .side-btn, .data-btn, .att-tab, .su-tab, .scope-btn,
 a, .sw-btn, .us-ic, .us-save, .us-cancel, .us-add-btn, .tg-save, .tg-reset,
 .dp-act, .nd-btn, .cmp-btn, .lang-sw button, .lg-lang button, .lg-submit,
 .qp-btn, .set-sec-head, .au-x-btn, .seg-btn, .seg-mini button, .month-btn {
-  cursor: pointer;
+  cursor:var(--cur-thread);
 }
 /* the zone: date slicers + lines/sections/supervisors slicers + month picker */
 .scope-btn, #fLine, #fSection, #fSup, #fFrom, #fTo, #fMonth, .month-btn,
@@ -1664,7 +1664,7 @@ button:disabled, .us-ic:disabled, .us-sw input:disabled { cursor: not-allowed; }
 /* targets retro radios */
 .tg-apply { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .tg-apply label {
-  display: flex; gap: 8px; align-items: flex-start; cursor: pointer;
+  display: flex; gap: 8px; align-items: flex-start; cursor:var(--cur-thread);
   border: 1.5px solid rgba(169,183,199,.28); border-radius: 11px;
   padding: 10px 13px; flex: 1 1 240px; background: rgba(13,23,38,.5);
 }
@@ -1809,3 +1809,76 @@ input[type="date"] { color-scheme: dark; }
 .range-pick .rp-labs { margin: 0; }
 .range-pick .rp-labs .sep { visibility: hidden; }
 .range-pick { gap: 0; }
+
+/* ============================================================
+   R26 — (1) tab links, (2) needle-thread cursor everywhere,
+   (3) logo flush right (aligned with the gold spool rail),
+   (4) me-badge photo circle + settings profile section
+   ============================================================ */
+
+/* ---------- R26-3: the brand hugs the right edge — the same alignment
+   axis as the gold spool scrollbar on the far left. Logical padding
+   keeps the LTR mirror correct (inline-start = the brand side). */
+.topbar{padding-inline-start:3px;padding-inline-end:22px}
+
+/* ---------- R26-1: nav / sub-tabs became real <a> links ----------
+   Class rules already own the colors — anchors only need the link
+   chrome stripped so nothing shifts visually. */
+a.nav-btn,a.su-tab,a.att-tab{
+  text-decoration:none;color:inherit;-webkit-tap-highlight-color:transparent;
+}
+a.su-tab:focus-visible,a.att-tab:focus-visible,a.nav-btn:focus-visible{
+  outline:2px solid rgba(217,168,107,.6);outline-offset:2px;
+}
+
+/* ---------- R26-2 recap: every pointer replaced by the needle-thread
+   PNG above — the hand never shows on a clickable element again. ---------- */
+
+/* ---------- R26-4: me-badge — photo circle + name under it, far LEFT
+   of the title row (the الأداء العام / الأقسام… row) ---------- */
+.me-badge{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  flex:0 0 auto;min-width:76px;margin-inline-start:10px;
+}
+.me-av{
+  width:52px;height:52px;border-radius:50%;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(175deg,#22344B,#101A29);color:#E9C68A;
+  font-weight:800;font-size:19px;font-family:var(--ff-num);
+  border:1px solid rgba(217,168,107,.42);
+  box-shadow:0 4px 16px rgba(0,0,0,.42);
+}
+/* stitched gold ring around the circle */
+.me-av::before{
+  content:"";position:absolute;inset:-4.5px;border-radius:50%;
+  border:1.5px dashed rgba(217,168,107,.55);pointer-events:none;
+}
+.me-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.me-av.lg{width:64px;height:64px;font-size:24px}
+.me-nm{
+  font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.2px;
+  max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;
+}
+@media (max-width:1100px){ .me-badge{display:none!important} }
+
+/* photo version of the little topbar / users-modal circles */
+.uc-av.photo,.us-av.photo{
+  background-size:cover;background-position:center;color:transparent;
+}
+
+/* ---------- R26-4: settings → صورتك الشخصية ---------- */
+.pf-row{display:flex;align-items:center;gap:16px;padding:4px 2px 10px}
+.pf-row .me-av{flex:0 0 auto}
+.pf-mid{min-width:0;flex:1 1 auto}
+.pf-btns{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap}
+.pf-btn{
+  padding:7px 16px;border-radius:9px;border:1px solid transparent;
+  background:linear-gradient(175deg,#D8AC72,#C49A6C 55%,#A87F4E);color:#2A1C0E;
+  font-size:12px;font-weight:800;cursor:var(--cur-thread);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 5px 14px rgba(0,0,0,.3);
+  transition:filter .15s,transform .15s;
+}
+.pf-btn:hover{filter:brightness(1.09)}
+.pf-btn:active{transform:scale(.96)}
+.pf-btn.del{background:transparent;color:#E9C68A;border:1px dashed rgba(217,168,107,.45);box-shadow:none}
+.pf-btn.del:hover{background:rgba(217,168,107,.1)}

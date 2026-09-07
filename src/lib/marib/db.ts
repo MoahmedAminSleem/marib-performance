@@ -95,6 +95,10 @@ const BOOT_SQL: string[] = [
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by  TEXT
   )`,
+  /* R26: profile photo (data URL, ~a few tens of KB, client-resized
+     to 240px). IF NOT EXISTS keeps both PGlite and Neon migrations
+     idempotent — the column appears on the first boot after deploy. */
+  `ALTER TABLE marib_user ADD COLUMN IF NOT EXISTS photo TEXT`,
   `CREATE TABLE IF NOT EXISTS marib_data (
     id     TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
     month  TEXT NOT NULL,

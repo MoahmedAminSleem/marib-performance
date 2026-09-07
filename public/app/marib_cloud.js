@@ -44,6 +44,11 @@ var MaribCloud = (function () {
     return api("/api/users", { method: "PUT", body: Object.assign({ id: id }, patch) });
   }
   function userDelete(id) { return api("/api/users?id=" + encodeURIComponent(id), { method: "DELETE" }); }
+  /* R26: my profile photo — any signed-in user can set/clear their own
+     (the server only allows the self-photo patch for non-admins). */
+  function mePhoto(photo, uid) {
+    return api("/api/users", { method: "PUT", body: { id: uid, photo: photo } });
+  }
 
   /* ---------- data ---------- */
   function dataGet() { return api("/api/data"); }
@@ -71,6 +76,7 @@ var MaribCloud = (function () {
   return {
     session: session, login: login, logout: logout,
     usersList: usersList, userCreate: userCreate, userUpdate: userUpdate, userDelete: userDelete,
+    mePhoto: mePhoto,
     dataGet: dataGet, dataSync: dataSync,
     settingsGet: settingsGet, settingsPut: settingsPut,
     auditGet: auditGet, storageGet: storageGet
