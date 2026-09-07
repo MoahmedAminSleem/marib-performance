@@ -13,79 +13,12 @@ var App = (function () {
   /* round 11: denim/leather palette — gold thread accent, denim blues */
   var C_ACCENT = "#D9A86B", C_ACCENT2 = "#E9C68A", C_MUTED = "#A9B7C7",
       C_GOOD = "#4FD98D", C_WARN = "#F0BE55", C_BAD = "#F87C7C", C_F = "#7E92A8";
-  var LS_KEY = "marib_live_v2";
-  var LS_TH = "marib_targets_v1";
-  var LS_ROLES = "marib_roles_v1";   /* round 23: server role overrides mirror */
+  /* R23/R24: targets & groups live on the SERVER (marib_setting) — they
+     arrive via App.cloudLoad() → applySettings() and are applied per
+     date range by applyTargetsForRange() (retro / from-now rules). */
 
-  /* user-editable targets (round 7): load persisted values over the
-     defaults at startup so every chart/gauge/status chip follows them */
-  function loadTargets() {
-    try {
-      var raw = localStorage.getItem(LS_TH);
-      if (!raw) return;
-      var o = JSON.parse(raw);
-      ["achievement", "efficiency", "overtime", "attendance"].forEach(function (k) {
-        if (o[k] && isFinite(o[k].good)) TH[k].good = o[k].good;
-        if (o[k] && isFinite(o[k].warn)) TH[k].warn = o[k].warn;
-      });
-    } catch (err) { }
-  }
-  loadTargets();
-
-  var state = { tables: null, model: null, k: null, page: "overview", busy: false, source: "embed", qp: "all", cmp: {},
-    tmode: "both", supView: "sup", months: [], roles: {}, dimSets: null,
-    scopeSrc: null, scopeMode: null, scopeOut: null };
-
-  /* ---------------- round 23: people classification (roles) ----------------
-     Each name in the supervisors/leaders/managers union lands in ONE of
-     the three sub-tabs. Explicit overrides come from the server (set by
-     the admin in Settings); anything unassigned follows its natural
-     dimension: DD/PM supervisor → مشرف قسم, else leader, else manager. */
-  function loadRoleOverrides() {
-    try {
-      var o = JSON.parse(localStorage.getItem(LS_ROLES));
-      return (o && typeof o === "object") ? o : {};
-    } catch (e) { return {}; }
-  }
-  state.roles = loadRoleOverrides();
-  function computeDimSets() {
-    var m = state.model, s = { sup: {}, leader: {}, manager: {} };
-    if (!m) return s;
-    (m.supervisors || []).forEach(function (x) { s.sup[x] = 1; });
-    (m.leaders || []).forEach(function (x) { s.leader[x] = 1; });
-    (m.managers || []).forEach(function (x) { s.manager[x] = 1; });
-    return s;
-  }
-  function effCat(name) {
-    if (state.roles[name]) return state.roles[name];
-    if (!state.dimSets) state.dimSets = computeDimSets();
-    var s = state.dimSets;
-    if (s.sup[name]) return "sup";
-    if (s.leader[name]) return "leader";
-    if (s.manager[name]) return "manager";
-    return "sup";
-  }
-  function allPeople() {
-    var m = state.model;
-    if (!m) return [];
-    var seen = {}, out = [];
-    (m.supervisors || []).concat(m.leaders || [], m.managers || []).forEach(function (n) {
-      if (n != null && !seen[n]) { seen[n] = 1; out.push(n); }
-    });
-    return out.sort();
-  }
-  function fetchRoles() {
-    fetch("/api/settings", { credentials: "same-origin" })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        if (j && j.ok && j.roles && typeof j.roles === "object") {
-          state.roles = j.roles;
-          state.dimSets = null;
-          try { localStorage.setItem(LS_ROLES, JSON.stringify(j.roles)); } catch (e) { }
-          if (state.model) render();
-        }
-      }).catch(function () { });
-  }
+  var state = { tables: null, model: null, k: null, page: "overview", busy: false, source: "cloud", qp: "all", cmp: {},
+                scope: "both", suView: null, groups: null, targetsMeta: null, monthsMeta: [] };
 
   /* ---------------- i18n helpers ---------------- */
   var T = I18N.t, TP = I18N.ta, TV = I18N.tv, TS = I18N.ts, TB = I18N.tb;
@@ -99,7 +32,7 @@ var App = (function () {
 
   /* ---------------- tiny helpers ---------------- */
   function $(id) { return document.getElementById(id); }
-  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
   function stOf(v, t, inv) { return inv ? U.statusInv(v, t) : U.statusOf(v, t); }
   function stColor(st) { return st === "good" ? C_GOOD : st === "warn" ? C_WARN : C_BAD; }
   function chip(txt) { return '<span class="chip num">' + txt + "</span>"; }
@@ -226,20 +159,6 @@ var App = (function () {
      line/section/supervisor filters, and charts get a compare strip +
      ghost series + per-bar deltas.
      ============================================================ */
-  /* ---------------- round 23: time-mode scoped model ----------------
-     base/ot run the SAME compute() over a channel-scoped copy of the
-     model (see MaribCore.scopeModel); "both" passes the model through
-     untouched — byte-identical to previous rounds. */
-  function scopedModel() {
-    var m = state.model;
-    if (!m || state.tmode === "both" || !MaribCore.scopeModel) return m;
-    if (state.scopeSrc !== m || state.scopeMode !== state.tmode) {
-      state.scopeSrc = m; state.scopeMode = state.tmode;
-      state.scopeOut = MaribCore.scopeModel(m, state.tmode);
-    }
-    return state.scopeOut;
-  }
-
   var cmpCache = {};   /* mode -> {info, k} — rebuilt on every render */
 
   function pad2(n) { return (n < 10 ? "0" : "") + n; }
@@ -277,7 +196,7 @@ var App = (function () {
     var k2 = null;
     if (info) {
       try {
-        k2 = MaribCore.compute(scopedModel(), { from: info.from, to: info.to, line: f.line, section: f.section, sup: f.sup }, { noPrev: true });
+        k2 = MaribCore.compute((window.App && App.scopedModel ? App.scopedModel() : state.model) || state.model, { from: info.from, to: info.to, line: f.line, section: f.section, sup: f.sup }, { noPrev: true });
       } catch (e) { k2 = null; }
       if (k2 && !k2.factoryTarget && !k2.ddRows && !k2.attRows) k2 = null;  /* window has no records */
     }
@@ -747,87 +666,98 @@ var App = (function () {
   }
 
   /* ============================================================
-     PAGE: SUPERVISORS
+     PAGE: SUPERVISORS — R23 #6/#7 + R24 #2/#7
+     Three groups: مشرفي الأقسام / رؤساء الخطوط / مديري الصالة.
+     The page stays EMPTY until a group is chosen (like attendance),
+     the lists follow the settings classification (assignments first,
+     data-derived defaults otherwise), and the "needs attention" chart
+     shows ONLY the people below target.
      ============================================================ */
-  /* ---- round 23: supervisors page has 3 sub-tabs (supervisors /
-     leaders / managers); each person appears in the ONE sub-tab chosen
-     by the admin (Settings → People Classification, server-stored) or
-     by their natural dimension. Leaders/managers aggregate from Daily
-     Data rows (their OT minutes come from the OT sheet rows, which
-     carry the same person columns). ---- */
-  function supViewList(k, view) {
-    var cat = view || state.supView || "sup";
-    if (cat === "leader") {
-      return (k.byLeader || []).filter(function (p) { return effCat(p.person) === "leader"; })
-        .map(function (p) { return { name: p.person, target: p.target, actual: p.actual, achv: p.achv, otPct: p.otPct, minProd: p.minProd }; });
-    }
-    if (cat === "manager") {
-      return (k.byManager || []).filter(function (p) { return effCat(p.person) === "manager"; })
-        .map(function (p) { return { name: p.person, target: p.target, actual: p.actual, achv: p.achv, otPct: p.otPct, minProd: p.minProd }; });
-    }
-    return (k.bySupervisor || []).filter(function (p) { return effCat(p.supervisor) === "sup"; })
-      .map(function (p) { return { name: p.supervisor, target: p.target, actual: p.actual, achv: p.achv, otPct: p.otPct, minProd: p.minProd }; });
+  function groupOf(name) {
+    var a = state.groups && state.groups.assignments;
+    if (a && a[name]) return a[name];
+    var m = state.model || {};
+    if ((m.leaders || []).indexOf(name) >= 0 && (m.supervisors || []).indexOf(name) < 0) return "leader";
+    if ((m.managers || []).indexOf(name) >= 0 && (m.supervisors || []).indexOf(name) < 0) return "mgr";
+    return "sup";
   }
-  function supNouns(view) {
-    var AR = { sup: "المشرفين", leader: "رؤساء الخطوط", manager: "مديري الصالة" };
-    var EN = { sup: "SUPERVISORS", leader: "LINE LEADERS", manager: "HALL MANAGERS" };
-    var TR = { sup: "Bölüm Şefleri", leader: "Hat Liderleri", manager: "Salon Müdürleri" };
-    var lang = I18N.is("ar") ? "ar" : (I18N.is("tr") ? "tr" : "en");
-    var title = lang === "ar" ? AR[view] : (lang === "tr" ? TR[view] : EN[view].charAt(0) + EN[view].slice(1).toLowerCase());
-    var sub = (lang === "en") ? AR[view] : EN[view];
-    return { title: title, sub: sub, person: T(view === "leader" ? "t_leader" : view === "manager" ? "t_manager" : "t_sup") };
+
+  /* leader / manager metrics = the SAME measure engine re-pointed at the
+     leader or manager column (remap supervisor, then recompute) */
+  function groupK(k, m, G) {
+    if (!G || G === "sup") return k;
+    var col = G === "leader" ? "leader" : "manager";
+    var remap = function (rows) {
+      return (rows || []).map(function (r) {
+        var c = {}; for (var kk in r) c[kk] = r[kk];
+        c.supervisor = r[col] != null ? r[col] : null;
+        return c;
+      }).filter(function (r) { return r.supervisor != null; });
+    };
+    var m2 = {};
+    for (var key in m) m2[key] = m[key];
+    m2.dd = remap(m.dd);
+    m2.ot = remap(m.ot);
+    m2.pm = [];   /* pocket-machine rows carry the section supervisor only */
+    return MaribCore.compute(m2, readFilters());
   }
-  function setCardHead(chartId, main, sub) {
-    var el = $(chartId); if (!el) return;
-    var card = el.closest ? el.closest(".card") : null; if (!card) return;
-    var h = card.querySelector("h4"), e = card.querySelector(".en");
-    if (h) h.textContent = main;
-    if (e) setSub(e, sub);
+
+  function suNote(id, key) {
+    var host = $(id);
+    if (host) host.innerHTML = '<div class="su-empty-note">' + T(key) + "</div>";
   }
+
   function renderSups(k, m) {
-    var view = state.supView || "sup";
-    var byS = supViewList(k, view);
-    var drillable = view === "sup";
-    var N = supNouns(view);
+    var G = state.suView;
+    if (!G) return;   /* the prompt state is handled by render() */
+
+    var k2 = groupK(k, m, G);
+    var bySAll = k2.bySupervisor || [];
+    var byS = bySAll.filter(function (S) { return groupOf(S.supervisor) === G; });
     var wrap = $("svKpis"); wrap.innerHTML = "";
-    var best = byS[0], worst = byS[byS.length - 1];
+
+    if (!byS.length) {
+      suNote("svTop", "su_nogroup");
+      suNote("svBottom", "su_nogroup");
+      $("svTable").innerHTML = "<tbody><tr><td style='padding:16px;color:#A9B7C7'>" + T("su_nogroup") + "</td></tr></tbody>";
+      $("svTblChip").textContent = "";
+      return;
+    }
+
+    var best = byS[0];
     var avgA = byS.length ? byS.reduce(function (s, x) { return s + (x.achv || 0); }, 0) / byS.length : null;
 
-    wrap.appendChild(kpiTile({ id: "sv1", title: N.title, en: N.sub, fmt: fmtInt, unit: T("u_sup") }));
+    wrap.appendChild(kpiTile({ id: "sv1", title: TV("k_sv_count"), en: TS("k_sv_count"), badge: TB("k_sv_count"), fmt: fmtInt, unit: T("u_sup") }));
     wrap.appendChild(kpiTile({
       id: "sv2", title: TV("k_sv_best"), en: TS("k_sv_best"), badge: TB("k_sv_best"),
       fmt: pctF(1),
-      sub: best ? "<b>" + esc(best.name) + "</b>" : ""
+      sub: best ? "<b>" + esc(best.supervisor) + "</b>" : ""
     }));
     wrap.appendChild(kpiTile({ id: "sv3", title: TV("k_sv_avg"), en: TS("k_sv_avg"), badge: TB("k_sv_avg"), fmt: pctF(1) }));
     wrap.appendChild(kpiTile({
       id: "sv4", title: TV("k_sv_min"), en: TS("k_sv_min"), badge: TB("k_sv_min"),
-      fmt: fmtInt, unit: T("u_min"), sub: I18N.subOfAvail(k.totalMinAvail)
+      fmt: fmtInt, unit: T("u_min"), sub: I18N.subOfAvail(k2.totalMinAvail)
     }));
 
     setKpi("sv1", byS.length, fmtInt);
     setKpi("sv2", best ? best.achv * 100 : null, pctF(1));
     setKpi("sv3", avgA * 100, pctF(1));
-    setKpi("sv4", k.minProduced, fmtInt);
+    setKpi("sv4", k2.minProduced, fmtInt);
 
-    var cmpList2 = function (k2) {
-      var v2 = view;
-      if (v2 === "leader") return (k2.byLeader || []).filter(function (p) { return effCat(p.person) === "leader"; }).map(function (p) { return [shortName(p.person), p.achv == null ? null : p.achv * 100]; });
-      if (v2 === "manager") return (k2.byManager || []).filter(function (p) { return effCat(p.person) === "manager"; }).map(function (p) { return [shortName(p.person), p.achv == null ? null : p.achv * 100]; });
-      return (k2.bySupervisor || []).filter(function (p) { return effCat(p.supervisor) === "sup"; }).map(function (p) { return [shortName(p.supervisor), p.achv == null ? null : p.achv * 100]; });
-    };
-    var cmpSvTop = cmpCard("svTop", function (cmp, k2) {
-      cmp.cmpMap = {}; cmpList2(k2).forEach(function (pv) { cmp.cmpMap[pv[0]] = pv[1]; });
-      cmp.cells = [{ name: TV("k_sv_avg"), cur: avgA == null ? null : avgA * 100, cmp: k2.factoryAchv == null ? null : k2.factoryAchv * 100, fmt: pctF(0), goodUp: true }];
+    var cmpSvTop = cmpCard("svTop", function (cmp, kC) {
+      var m2 = {};
+      (kC.bySupervisor || []).forEach(function (S) { m2[shortName(S.supervisor)] = S.achv == null ? null : S.achv * 100; });
+      cmp.cmpMap = m2;
+      cmp.cells = [{ name: TV("k_sv_avg"), cur: avgA == null ? null : avgA * 100, cmp: kC.factoryAchv == null ? null : kC.factoryAchv * 100, fmt: pctF(0), goodUp: true }];
       cmp.fmt = pctF(0);
     });
     C.hbar($("svTop"), {
       items: byS.slice(0, 10).map(function (S) {
         var st = stOf(S.achv, TH.achievement);
         return {
-          label: shortName(S.name), value: Math.round((S.achv || 0) * 1000) / 10, color: stColor(st),
-          tip: [[N.person, S.name], [T("t_achv"), fmtPct(S.achv)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
-          drill: drillable ? { type: "sup", value: S.name } : null
+          label: shortName(S.supervisor), value: Math.round((S.achv || 0) * 1000) / 10, color: stColor(st),
+          tip: [[T("t_sup"), S.supervisor], [T("t_achv"), fmtPct(S.achv)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
+          drill: { type: "sup", value: S.supervisor }
         };
       }),
       fmt: pctF(0), valueName: T("vn_achv"),
@@ -835,43 +765,47 @@ var App = (function () {
       cmp: cmpSvTop
     });
 
-    var bottom = byS.slice(-6).filter(function (S) { return S.achv != null; });
-    var cmpSvB = cmpCard("svBottom", function (cmp, k2) {
-      cmp.cmpMap = {}; cmpList2(k2).forEach(function (pv) { cmp.cmpMap[pv[0]] = pv[1]; });
-      cmp.cells = [{ name: TV("k_sv_avg"), cur: avgA == null ? null : avgA * 100, cmp: k2.factoryAchv == null ? null : k2.factoryAchv * 100, fmt: pctF(0), goodUp: true }];
+    /* R24 #2 — "يحتاجون متابعة" shows ONLY the people below target;
+       when everyone is above target the card says so instead */
+    var bottom = byS.filter(function (S) { return S.achv != null && S.achv < TH.achievement.good; })
+      .sort(function (a, b) { return (a.achv || 0) - (b.achv || 0); });
+    var cmpSvB = cmpCard("svBottom", function (cmp, kC) {
+      var m2 = {};
+      (kC.bySupervisor || []).forEach(function (S) { m2[shortName(S.supervisor)] = S.achv == null ? null : S.achv * 100; });
+      cmp.cmpMap = m2;
+      cmp.cells = [{ name: TV("k_sv_avg"), cur: avgA == null ? null : avgA * 100, cmp: kC.factoryAchv == null ? null : kC.factoryAchv * 100, fmt: pctF(0), goodUp: true }];
       cmp.fmt = pctF(0);
     });
-    C.hbar($("svBottom"), {
-      items: bottom.map(function (S) {
-        return {
-          label: shortName(S.name), value: Math.round((S.achv || 0) * 1000) / 10, color: C_BAD,
-          tip: [[N.person, S.name], [T("t_achv"), fmtPct(S.achv)], [T("t_target"), fmtInt(S.target)], [T("t_gap"), fmtInt(Math.max(0, S.target - S.actual))], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
-          drill: drillable ? { type: "sup", value: S.name } : null
-        };
-      }),
-      fmt: pctF(0), valueName: T("vn_achv"), sort: "asc",
-      goal: { value: TH.achievement.good * 100 }, rowH: 34, labelW: 132,
-      cmp: cmpSvB
-    });
+    if (bottom.length) {
+      C.hbar($("svBottom"), {
+        items: bottom.map(function (S) {
+          return {
+            label: shortName(S.supervisor), value: Math.round((S.achv || 0) * 1000) / 10, color: C_BAD,
+            tip: [[T("t_sup"), S.supervisor], [T("t_achv"), fmtPct(S.achv)], [T("t_target"), fmtInt(S.target)], [T("t_gap"), fmtInt(Math.max(0, S.target - S.actual))], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
+            drill: { type: "sup", value: S.supervisor }
+          };
+        }),
+        fmt: pctF(0), valueName: T("vn_achv"), sort: "asc",
+        goal: { value: TH.achievement.good * 100 }, rowH: 34, labelW: 132,
+        cmp: cmpSvB
+      });
+    } else {
+      $("svBottom").innerHTML = '<div class="su-empty-note"><b>' + T("su_allgood") + "</b> ✓</div>";
+    }
 
     var rows = byS.map(function (S, i) {
       var st = stOf(S.achv, TH.achievement);
       var otst = S.otPct == null ? null : stOf(S.otPct, TH.overtime, true);
-      var pre = drillable ? "<tr class='drill-row' data-dt='sup' data-dv='" + esc(S.name) + "'>" : "<tr>";
-      return pre + "<td><span class='rank num" + (i < 3 ? " top" : "") + "'>" + (i + 1) + "</span></td>" +
-        "<td class='t-name'><b>" + esc(S.name) + "</b></td>" +
+      return "<tr class='drill-row' data-dt='sup' data-dv='" + esc(S.supervisor) + "'><td><span class='rank num" + (i < 3 ? " top" : "") + "'>" + (i + 1) + "</span></td>" +
+        "<td class='t-name'><b>" + esc(S.supervisor) + "</b></td>" +
         "<td class='num'>" + fmtInt(S.target) + "</td>" +
         "<td class='num'>" + fmtInt(S.actual) + "</td>" +
         "<td class='num' style='color:" + stColor(st) + ";font-weight:800'>" + fmtPct(S.achv) + "</td>" +
         "<td class='num' style='color:" + (otst ? stColor(otst) : C_MUTED) + ";font-weight:800'>" + fmtPct(S.otPct, 2) + "</td>" +
         "<td>" + stChip(S.achv, TH.achievement) + "</td></tr>";
     }).join("");
-    var ths = T("th_sups").slice();
-    ths[1] = N.person;
-    $("svTable").innerHTML = "<thead><tr>" + ths.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr></thead><tbody>" + rows + "</tbody>";
-    setCardHead("svTable", (I18N.is("tr") ? N.title + " Performans" : I18N.is("en") ? N.title + " Performance" : "أداء " + N.title),
-      (I18N.is("en") ? "أداء " + (view === "sup" ? "المشرفين" : view === "leader" ? "رؤساء الخطوط" : "مديري الصالة") : (view === "sup" ? "SUPERVISOR" : view === "leader" ? "LINE LEADERS" : "HALL MANAGERS") + " DETAILS"));
-    $("svTblChip").textContent = byS.length + " " + T("rl_cnt");
+    $("svTable").innerHTML = "<thead><tr>" + T("th_sups").map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr></thead><tbody>" + rows + "</tbody>";
+    $("svTblChip").textContent = I18N.count(byS.length, "sup");
   }
 
   /* ============================================================
@@ -1484,7 +1418,6 @@ var App = (function () {
     $("asTblChip").textContent = I18N.count(names.length, "sup");
   }
 
-
   /* ============================================================
      DRILL-THROUGH (Power BI style): click any visual element
      → detail page for that entity within the active period.
@@ -1501,7 +1434,7 @@ var App = (function () {
      the whole active range. */
   function openDrill(type, value, drill) {
     if (!state.model) return;
-    var m = state.model;
+    var m = scopedModel() || state.model;
     var f = readFilters();
     var domain = (drill && drill.domain) || "prod";
 
@@ -1841,80 +1774,10 @@ var App = (function () {
   /* ============================================================
      Filters / nav / render
      ============================================================ */
-  /* ---------------- round 23: month chip + auto month by date ----------------
-     The file/month dropdown is GONE: the active month follows the picked
-     date range (max-overlap month of [from,to]), the chip shows which
-     month is loaded, and the date inputs span the WHOLE archive. */
-  function lastDayOfKey(key) {
-    var y = +key.slice(0, 4), mth = +key.slice(5, 7);
-    return new Date(Date.UTC(y, mth, 0)).getUTCDate();
-  }
-  function updateMonthChip() {
-    var el = $("monthChip");
-    if (!el) return;
-    var key = (window.MaribStore && MaribStore.activeMonthKey) ? MaribStore.activeMonthKey() : null;
-    if (key && I18N.monthLabel) el.textContent = I18N.monthLabel(key);
-    el.style.display = key ? "" : "none";
-  }
-  function archiveBounds() {
-    var ms = state.months || [];
-    if (!ms.length) {
-      var m = state.model;
-      return { min: m && m.dateMin, max: m && m.dateMax };
-    }
-    var first = ms[ms.length - 1].key, last = ms[0].key;   /* desc order */
-    return { min: first + "-01", max: last + "-" + (lastDayOfKey(last) < 10 ? "0" + lastDayOfKey(last) : lastDayOfKey(last)) };
-  }
-  function pickMonthFor(from, to) {
-    /* candidates = the months of the range ENDPOINTS only (max overlap
-       between the two). A range whose endpoints live in no archived
-       month (or a mid-edit transitional span) never triggers a jump. */
-    var ms = state.months || [];
-    if (!ms.length || (!from && !to)) return null;
-    var keys = {};
-    ms.forEach(function (m) { keys[m.key] = m; });
-    var cands = [];
-    [from, to].forEach(function (d) {
-      if (!d) return;
-      var k = d.slice(0, 7);
-      if (keys[k] && cands.indexOf(k) < 0) cands.push(k);
-    });
-    if (!cands.length) return null;
-    var best = null, bestDays = -1;
-    cands.forEach(function (k) {
-      var e = k + "-" + (lastDayOfKey(k) < 10 ? "0" + lastDayOfKey(k) : lastDayOfKey(k));
-      var s = k + "-01";
-      var a = from > s ? from : s, b = to < e ? to : e;
-      var days = (a <= b) ? Math.round((Date.parse(b) - Date.parse(a)) / 86400000) + 1 : 0;
-      if (days > bestDays) { bestDays = days; best = k; }
-    });
-    return best;
-  }
-  function autoMonth() {
-    if (!window.MaribStore || !MaribStore.switchMonth || !(state.months || []).length) return false;
-    var fF = $("fFrom"), fT = $("fTo");
-    var a = fF.value, b = fT.value;
-    if (!a && !b) return false;
-    var from = a < b ? a : b, to = a < b ? b : a;
-    if (!from) { from = to; }
-    if (!to) { to = from; }
-    var key = pickMonthFor(from, to);
-    var active = MaribStore.activeMonthKey();
-    if (key && key !== active) {
-      MaribStore.switchMonth(key).then(function (rec) {
-        if (!rec) { toast(T("toast_no_month"), "err"); render(); return; }
-        updateMonthChip();
-      });
-      return true;
-    }
-    if (!key) toast(T("toast_no_month"), "err");
-    return false;
-  }
-
   function fillFilters(keep) {
     var m = state.model;
-    var lSel = $("fLine"), sSel = $("fSup"), cSel = $("fSection");
-    var lv = keep ? lSel.value : "", sv = keep ? sSel.value : "", cv = keep ? cSel.value : "";
+    var lSel = $("fLine"), sSel = $("fSup"), cSel = $("fSection"), mSel = $("fMonth");
+    var lv = keep ? lSel.value : "", sv = keep ? sSel.value : "", cv = keep ? cSel.value : "", mv = keep ? mSel.value : "";
     lSel.innerHTML = "";
     lSel.add(new Option(T("f_all_lines"), ""));
     (m.lines || []).forEach(function (v) { lSel.add(new Option(I18N.lineN(v), v)); });
@@ -1930,11 +1793,43 @@ var App = (function () {
     if (cv) cSel.value = cv;
     if (sv) sSel.value = sv;
 
+    /* month switcher — every month that actually carries data (R23) */
+    mSel.innerHTML = "";
+    mSel.add(new Option(T("m_all"), ""));
+    (m.months || []).forEach(function (mo) { mSel.add(new Option(mo.label, mo.key)); });
+    if (mv) mSel.value = mv;
+
     var fF = $("fFrom"), fT = $("fTo");
-    var gb = archiveBounds();
-    if (gb.min) { fF.min = gb.min; fT.min = gb.min; }
-    if (gb.max) { fF.max = gb.max; fT.max = gb.max; }
-    updateMonthChip();
+    if (m.dateMin) { fF.min = m.dateMin; fT.min = m.dateMin; }
+    if (m.dateMax) { fF.max = m.dateMax; fT.max = m.dateMax; }
+  }
+
+  function clearQP() {
+    document.querySelectorAll(".qp-btn").forEach(function (b) { b.className = "qp-btn"; });
+  }
+
+  /* R23: picking/uploading a month pins the date range to that month
+     (clamped to the days that actually carry data) */
+  function snapToMonth(key, quiet) {
+    var m = state.model;
+    if (!m || !key || !/^\d{4}-\d{2}$/.test(key)) return;
+    var y = +key.slice(0, 4), mth = +key.slice(5, 7);
+    var lastD = new Date(Date.UTC(y, mth, 0)).getUTCDate();
+    var first = key + "-01";
+    var last = key + "-" + (lastD < 10 ? "0" : "") + lastD;
+    if (m.dateMin && first < m.dateMin) first = m.dateMin;
+    if (m.dateMax && last > m.dateMax) last = m.dateMax;
+    if (first > last) { first = m.dateMin; last = m.dateMax; }
+    $("fFrom").value = first;
+    $("fTo").value = last;
+    $("fMonth").value = key;
+    state.qp = "custom";
+    clearQP();
+    render();
+    if (!quiet) {
+      var mo = (m.months || []).filter(function (x) { return x.key === key; })[0];
+      if (mo) toast(T("m_jump") + mo.label, "ok");
+    }
   }
 
   /* quick-period chips write the range into the date inputs; the
@@ -1985,9 +1880,6 @@ var App = (function () {
     document.querySelectorAll(".qp-btn").forEach(function (b) {
       b.className = "qp-btn" + (b.getAttribute("data-qp") === qp ? " on" : "");
     });
-    /* round 23: "last month" may target ANOTHER archived month (e.g. in
-       October it points at September) — let the auto-switch load it */
-    if (qp === "last30") { if (!autoMonth()) render(); return; }
     render();
   }
 
@@ -2005,28 +1897,89 @@ var App = (function () {
     return f;
   }
 
+  /* R23 #8 — scope segment: أساسي (regular time only) / إضافي (overtime
+     only) / الاثنين. The OT tab is inherently overtime-only, so the
+     segment is hidden there and the full model is used (R24 #5). */
+  function scopedModel() {
+    var m = state.model;
+    if (!m) return null;
+    if (!state.scope || state.scope === "both" || state.page === "ot") return m;
+    var o = {};
+    for (var key in m) o[key] = m[key];
+    if (state.scope === "base") {
+      o.ot = [];
+      o.pm = (m.pm || []).map(function (r) {
+        var c = {}; for (var kk in r) c[kk] = r[kk];
+        c.otProd = 0; c.otMin = 0;
+        return c;
+      });
+    }
+    if (state.scope === "ot") {
+      o.dd = []; o.lo = []; o.att = []; o.pm = [];
+    }
+    return o;
+  }
+
+  /* R24 #10 — pick the target revision that applies to the viewed range:
+     latest revision with effectiveFrom <= range end. A purely-old range
+     keeps the old targets; a range that touches newer dates takes the NEW
+     target (exactly the user's rule). Retroactive revisions apply always. */
+  function applyTargetsForRange(f) {
+    var t = state.targetsMeta;
+    if (!t) return;
+    var rangeEnd = (f && f.to) || (state.model && state.model.dateMax) || new Date().toISOString().slice(0, 10);
+    function pick(v) {
+      ["achievement", "efficiency", "overtime", "attendance"].forEach(function (k) {
+        if (v && v[k]) {
+          if (isFinite(v[k].good)) TH[k].good = v[k].good;
+          if (isFinite(v[k].warn)) TH[k].warn = v[k].warn;
+        }
+      });
+    }
+    var hist = (t.history || []).filter(function (h) { return h && h.v; });
+    var curFrom = (t.retroactive || !t.effectiveFrom) ? "0000-01-01" : t.effectiveFrom;
+    if (curFrom <= rangeEnd) { pick(t); return; }
+    /* the newest revision starts after the viewed range → fall back to the
+       latest revision that was already in effect */
+    var cands = hist.filter(function (h) { return (h.from || "0000-01-01") <= rangeEnd; });
+    if (cands.length) pick(cands[cands.length - 1].v);
+    else if (hist.length) pick(hist[0].v);
+  }
+
   function render() {
     if (!state.model) return;
     cmpCache = {};   /* round 8: compare windows are re-resolved per render */
     var f = readFilters();
-    var k = MaribCore.compute(scopedModel(), f);
+    applyTargetsForRange(f);
+    var sm = scopedModel() || state.model;
+    var k = MaribCore.compute(sm, f);
     state.k = k;
     var days = (k.datesInRange || []).length;
     var fromTxt = f.from || state.model.dateMin, toTxt = f.to || state.model.dateMax;
     $("dateChip").textContent =
       (fromTxt ? U.isoShort(fromTxt) : "—") + " — " + (toTxt ? U.isoShort(toTxt) : "—") + I18N.dateChip(days);
-    if (state.page === "overview") renderOverview(k, state.model);
-    else if (state.page === "lines") renderLines(k, state.model);
-    else if (state.page === "sections") renderSections(k, state.model);
-    else if (state.page === "sups") renderSups(k, state.model);
-    else if (state.page === "pm") renderPM(k, state.model);
-    else if (state.page === "ot") renderOT(k, state.model);
-    else if (state.page === "att") renderAtt(k, state.model);
+    if (state.page === "overview") renderOverview(k, sm);
+    else if (state.page === "lines") renderLines(k, sm);
+    else if (state.page === "sections") renderSections(k, sm);
+    else if (state.page === "sups") renderSups(k, sm);
+    else if (state.page === "pm") renderPM(k, sm);
+    else if (state.page === "ot") renderOT(k, sm);
+    else if (state.page === "att") renderAtt(k, sm);
+    else if (state.page === "data") renderDataPage();
+    /* R24 #5: the 3 scope buttons never show on the OT tab */
+    var seg = $("scopeSeg");
+    if (seg) seg.classList.toggle("hidden", state.page === "ot");
+    /* R24 #7: supervisors tab stays empty until a group is chosen */
+    var suP = $("suPrompt"), suV = $("suView");
+    if (suP && suV) {
+      var hasView = !!state.suView;
+      suP.style.display = hasView ? "none" : "";
+      suV.className = "su-view" + (hasView ? " on" : "");
+      document.querySelectorAll(".su-tab").forEach(function (b) {
+        b.classList.toggle("on", b.getAttribute("data-suview") === state.suView);
+      });
+    }
     syncCmpBtns();
-    /* round 14: every rendered state change (page / filters / compare)
-       is persisted so ANOTHER TAB opened from a sidebar link lands on
-       the same view with the same filters (deep link wins for the page) */
-    saveUI();
   }
 
   /* round 8: ⇄ button states follow the per-card compare modes */
@@ -2036,13 +1989,13 @@ var App = (function () {
     });
   }
 
-  var PAGES = ["overview", "lines", "sections", "sups", "pm", "ot", "att"];
-  /* round 13: the URL hash carries the active page (#ot, #pm, ...) —
-     links become shareable, refresh-stable and right-click/open-in-
-     new-tab works on the sidebar tabs (they are real <a href> now) */
-  function pageFromHash() {
-    var h = (location.hash || "").replace(/^#/, "").trim().toLowerCase();
-    return PAGES.indexOf(h) >= 0 ? h : null;
+  /* R24 #1 — the browser tab title follows the open site tab;
+     the login screen shows the company name instead */
+  function updateTitle() {
+    var me = window.MaribAuth ? MaribAuth.me() : null;
+    if (!me) { document.title = T("brand_name"); return; }
+    var label = T("nav_" + (state.page || "overview"));
+    document.title = label + (I18N.is("ar") ? " — مأرب" : " — Marib");
   }
 
   function goToPage(page) {
@@ -2053,52 +2006,39 @@ var App = (function () {
     document.querySelectorAll(".nav-btn").forEach(function (b) {
       b.className = "nav-btn" + (b.getAttribute("data-page") === page ? " on" : "");
     });
-    var t = TP("pg_" + page) || ["", ""];
+    var rawKey = "pg_" + page;
+    var raw = T(rawKey);
+    var t = (raw === rawKey) ? [T("nav_" + page), ""] : TP(rawKey);
     $("pageTitle").innerHTML = t[0];
     setSub($("pageSub"), t[1]);
     var ct = document.querySelector(".content");
     if (ct) ct.scrollTop = 0;
+    updateTitle();
     render();
-    /* keep the URL in sync without adding history entries — the
-       browser Back button behaves exactly like before */
-    try {
-      if (location.hash !== "#" + page) history.replaceState(history.state, "", "#" + page);
-    } catch (e) { }
   }
 
+
   /* ============================================================
-     Data loading (folder / files / drop) — zero dialogs
-     round 23: files are grouped per MONTH (each monthly Excel packs
-     and upserts on its own) — re-uploading a file UPDATES that month
-     exactly: added rows are added, removed rows removed, changed
-     values changed (the server pack is REPLACED, not merged).
+     Cloud sync status chip (replaces the unlabeled pulsing dot — R24 #6)
      ============================================================ */
-  /* ============================================================
-     round 23b: an upload boots its month — if the current date
-     range doesn't touch that month at all, snap the inputs to the
-     month's span (custom period). Uploading August while a
-     September-only range is active must never leave the dashboard
-     blank: every row of the fresh month would be filtered out.
-     An empty range ("الكل") already shows the whole month — kept.
-     ============================================================ */
-  function snapRangeToMonth(key) {
-    if (!/^\d{4}-\d{2}$/.test(String(key || ""))) return;
-    var fF = $("fFrom"), fT = $("fTo");
-    var a = fF.value, b = fT.value;
-    if (!a && !b) return;                    /* "all" covers the month */
-    var from, to;
-    if (a && b) { from = a < b ? a : b; to = a < b ? b : a; }
-    else { from = to = (a || b); }
-    var s = key + "-01";
-    var ld = lastDayOfKey(key);
-    var e = key + "-" + (ld < 10 ? "0" + ld : ld);
-    if (to < s || from > e) {                /* no intersection → snap */
-      fF.value = s; fT.value = e;
-      state.qp = "custom";
-      document.querySelectorAll(".qp-btn").forEach(function (btn) { btn.className = "qp-btn"; });
+  var curSyncMode = "busy";
+  function setSync(mode) {
+    curSyncMode = mode;
+    var chip = $("syncChip");
+    if (!chip) return;
+    var lab = chip.querySelector("span");
+    var key = "sync_" + (mode === "ok" ? "ok" : mode === "busy" ? "busy" : "err");
+    chip.className = mode;
+    if (lab) {
+      lab.textContent = T(key);
+      lab.setAttribute("data-i18n", key);
     }
   }
 
+  /* ============================================================
+     Data loading — cloud edition (R23 #9)
+     folder / file / drop → parse locally → POST per month (full sync)
+     ============================================================ */
   function collectFiles(fileList) {
     var files = [];
     for (var i = 0; i < fileList.length; i++) {
@@ -2108,10 +2048,6 @@ var App = (function () {
       files.push(f);
     }
     if (!files.length) { toast(T("toast_noexcel"), "err"); return; }
-    if (window.MaribAuth && MaribAuth.canUpload && !MaribAuth.canUpload()) {
-      toast(T("cloud_err_no_perm"), "err");
-      return;
-    }
     parseFiles(files);
   }
 
@@ -2125,87 +2061,73 @@ var App = (function () {
     });
   }
 
-  function mergedTables(fileRecs) {
-    var acc = { dd: [], ot: [], pm: [], att: [], lo: [] };
-    fileRecs.forEach(function (pf) {
-      for (var key in acc) if (acc[key]) acc[key] = acc[key].concat(pf.tables[key] || []);
+  /* one workbook may carry rows from more than one month — split it */
+  function splitByMonth(t) {
+    var out = {};
+    ["dd", "ot", "pm", "att", "lo"].forEach(function (k) {
+      (t[k] || []).forEach(function (r) {
+        if (!r.date) return;
+        var mo = String(r.date).slice(0, 7);
+        if (!/^\d{4}-\d{2}$/.test(mo)) return;
+        if (!out[mo]) out[mo] = { dd: [], ot: [], pm: [], att: [], lo: [] };
+        out[mo][k].push(r);
+      });
     });
-    return acc;
+    return out;
   }
 
+  /* full cloud sync: every parsed month is REPLACED on the server, so
+     re-uploading the same file updates rows and deletes missing ones.
+     After the sync the dashboard jumps to the newest synced month (R23b). */
   function parseFiles(files) {
-    var btn = $("btnData");
-    btn.classList.add("busy"); state.busy = true;
-    var cfg = MaribCore.DEFAULT_CONFIG;
-    var report = { errors: [], warnings: [], sheetsMissing: [], rows: {} };
-    var parsed = [];   /* { name, tables } — one record per file */
-    var done = 0;
-    Array.prototype.forEach.call(files, function (f) {
-      readFile(f).then(function (buf) {
-        try {
-          var t = MaribCore.parseWorkbook(new Uint8Array(buf), XLSX, cfg, report);
-          parsed.push({ name: f.name, tables: t });
-        } catch (e) { report.errors.push(f.name + ": " + e.message); }
-        done++;
-        if (done === files.length) finish();
-      }).catch(function () { done++; if (done === files.length) finish(); });
-    });
-    function finish() {
-      btn.classList.remove("busy"); state.busy = false;
-      if (report.errors.length) { toast(I18N.toastReadErr(report.errors.length), "err"); return; }
-      /* group the parsed files by their month — a folder may carry
-         several months, and a single sheet carries one */
-      var groups = {};
-      parsed.forEach(function (pf) {
-        var key = null;
-        try { key = (window.MaribStore && MaribStore.monthKeyOf) ? MaribStore.monthKeyOf(packTables(pf.tables)) : null; } catch (e) { key = null; }
-        if (!key) key = "__na";
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(pf);
-      });
-      var keys = Object.keys(groups).filter(function (k) { return k !== "__na"; })
-        .filter(function (k) { var t = mergedTables(groups[k]); return t.dd.length || t.lo.length; });
-      if (!keys.length) { toast(T("toast_nodata"), "err"); return; }
-      keys.sort();
-      var newest = keys[keys.length - 1];
-      /* round 23b: the active month follows the upload IMMEDIATELY (the
-         chip never shows a stale month while the POSTs are in flight),
-         and a date range that misses the uploaded month snaps to it */
-      if (window.MaribStore && MaribStore.setActiveMonth) MaribStore.setActiveMonth(newest);
-      snapRangeToMonth(newest);
-      /* boot the NEWEST uploaded month locally (same numbers the server
-         now holds for it) */
-      state.tables = mergedTables(groups[newest]);
-      state.source = "folder";
-      boot("folder", groups[newest].map(function (pf) { return pf.name; }));
-      /* upsert every month on the server — replacing the pack is exactly
-         the "update" semantics: deleted rows disappear, added appear */
-      keys.forEach(function (key) {
-        var pack = packTables(mergedTables(groups[key]));
-        var mnames = groups[key].map(function (pf) { return pf.name; });
-        if (window.MaribStore && MaribStore.saveMonth) {
-          MaribStore.saveMonth(key, pack, mnames, function (err, label) {
-            if (err) { toast(T(err), "err"); return; }
-            if (MaribStore.setActiveMonth) MaribStore.setActiveMonth(key);
-            if (keys.length === 1) toast(I18N.toastUploaded ? I18N.toastUploaded(label) : T("toast_uploaded"), "ok");
-          });
-        } else {
-          if (keys.length === 1) toast(I18N.toastParsed(1), "ok");
-        }
-      });
-      if (keys.length > 1) {
-        var labels = keys.map(function (k) { return I18N.monthLabel ? I18N.monthLabel(k) : k; });
-        toast(T("toast_months_saved") + labels.join(I18N.listSep ? I18N.listSep() : "، "), "ok");
-      }
-      /* refresh the archive list (new months may have appeared) */
-      if (window.MaribStore && MaribStore.getMonths) {
-        MaribStore.getMonths().then(function (ms) {
-          state.months = ms || [];
-          fillFilters(true);
-          updateMonthChip();
-        }).catch(function () { });
-      }
+    /* uploads replace server data — admin/dev only */
+    if (window.MaribAuth && MaribAuth.isAdmin && !MaribAuth.isAdmin()) {
+      toast(T("toast_need_admin"), "err");
+      return;
     }
+    state.busy = true;
+    setSync("busy");
+    var busyBtns = [];
+    ["dtFolder", "dtExcel", "ndBtn"].forEach(function (id) {
+      var b = $(id); if (b) { b.classList.add("busy"); busyBtns.push(b); }
+    });
+    var synced = [], names = [];
+    var chain = Promise.resolve();
+    Array.prototype.forEach.call(files, function (f) {
+      chain = chain.then(function () {
+        return readFile(f).then(function (buf) {
+          var report = { errors: [], warnings: [], sheetsMissing: [], rows: {} };
+          var t = MaribCore.parseWorkbook(new Uint8Array(buf), XLSX, MaribCore.DEFAULT_CONFIG, report);
+          if (report.errors.length) throw new Error(f.name);
+          names.push(f.name);
+          var byMonth = splitByMonth(t);
+          var keys = Object.keys(byMonth).sort();
+          var inner = Promise.resolve();
+          keys.forEach(function (mo) {
+            inner = inner.then(function () {
+              return MaribCloud.dataSync(mo, packTables(byMonth[mo]), [f.name]).then(function () {
+                synced.push(mo);
+              });
+            });
+          });
+          return inner;
+        });
+      });
+    });
+    chain.then(function () {
+      busyBtns.forEach(function (b) { b.classList.remove("busy"); });
+      state.busy = false;
+      toast(T("toast_synced"), "ok");
+      return cloudLoad().then(function () {
+        if (synced.length) snapToMonth(synced[synced.length - 1]);
+        if (state.page === "data") renderDataPage();
+      });
+    }).catch(function () {
+      busyBtns.forEach(function (b) { b.classList.remove("busy"); });
+      state.busy = false;
+      setSync("err");
+      toast(T("toast_sync_err"), "err");
+    });
   }
 
   function packTables(t) {
@@ -2242,123 +2164,454 @@ var App = (function () {
     return out;
   }
 
+  function applySettings(s) {
+    if (s && s.targets) state.targetsMeta = s.targets;
+    if (s && s.groups) state.groups = s.groups;
+  }
+
+  /* fetch server data + settings — called after login/session and after
+     every upload; the boot veil is owned by MaribAuth (R23 #5: no flash) */
+  function cloudLoad() {
+    setSync("busy");
+    return Promise.all([
+      MaribCloud.dataGet(),
+      MaribCloud.settingsGet().catch(function () { return {}; })
+    ]).then(function (res) {
+      var d = res[0] || {}, s = res[1] || {};
+      var months = d.months || [];
+      applySettings(s);
+      if (months.length) {
+        var tables = { dd: [], ot: [], pm: [], att: [], lo: [] };
+        var monthsMeta = [];
+        months.forEach(function (mo) {
+          var t = unpackTables(d.pack[mo] || {});
+          var cnt = 0;
+          Object.keys(tables).forEach(function (k) { tables[k] = tables[k].concat(t[k] || []); cnt += (t[k] || []).length; });
+          monthsMeta.push({ key: mo, rows: cnt, last: (d.lastSync || {})[mo] || null });
+        });
+        state.tables = tables;
+        state.monthsMeta = monthsMeta;
+        state.source = "cloud";
+        boot("cloud", months);
+        snapToMonth(months[months.length - 1], true);
+        var nd = $("noData"); if (nd) nd.classList.remove("on");
+      } else {
+        state.tables = { dd: [], ot: [], pm: [], att: [], lo: [] };
+        state.monthsMeta = [];
+        state.source = "none";
+        var nd2 = $("noData"); if (nd2) nd2.classList.add("on");
+        boot("cloud", []);
+      }
+      setSync("ok");
+    }).catch(function () {
+      setSync("err");
+      toast(T("toast_offline"), "err");
+    });
+  }
+
+  /* ---------- data tab: months table + totals ---------- */
+  function monthLabelOf(key) {
+    var ms = (state.model && state.model.months) || [];
+    for (var i = 0; i < ms.length; i++) if (ms[i].key === key) return ms[i].label;
+    return key;
+  }
+  function renderDataPage() {
+    var host = $("dtMonths");
+    if (!host) return;
+    var mm = (state.monthsMeta || []).slice().sort(function (a, b) { return a.key < b.key ? 1 : -1; });
+    var total = 0;
+    mm.forEach(function (x) { total += x.rows; });
+    var chip = $("dtSyncChip");
+    if (chip) chip.textContent = I18N.fmtInt(total) + " / " + I18N.count(mm.length, "rec");
+    if (!mm.length) {
+      host.innerHTML = "<tbody><tr><td style='padding:20px;color:#A9B7C7'>" + T("dt_empty") + "</td></tr></tbody>";
+      return;
+    }
+    var head = "<thead><tr><th>" + T("dt_month") + "</th><th>" + T("dt_rows") + "</th><th>" + T("dt_last_sync") + "</th></tr></thead>";
+    var rows = mm.map(function (x) {
+      var last = x.last ? esc(x.last.actor) + " · " + auWhen(x.last.at) : "—";
+      return "<tr><td><b>" + esc(monthLabelOf(x.key)) + "</b></td><td class='num'>" + I18N.fmtInt(x.rows) + "</td><td>" + last + "</td></tr>";
+    }).join("");
+    host.innerHTML = head + "<tbody>" + rows + "</tbody>";
+  }
+
+  /* ============================================================
+     Settings panel (R23 #2 — targets / classification / audit / storage)
+     ============================================================ */
+  function openSettings() {
+    var admin = MaribAuth.isAdmin ? MaribAuth.isAdmin() : false;
+    var dev = MaribAuth.isDev ? MaribAuth.isDev() : false;
+    var st = $("secTargets"); if (st) st.style.display = admin ? "" : "none";
+    var sg = $("secGroups"); if (sg) sg.style.display = "";
+    var sa = $("secAudit"); if (sa) sa.style.display = dev ? "" : "none";
+    var ss = $("secStorage"); if (ss) ss.style.display = dev ? "" : "none";
+    var cs = $("clsSave"); if (cs) cs.disabled = !admin;
+    tgFill();
+    buildClsList();
+    if (dev) { loadAudit(); loadStorage(); }
+    $("setPop").classList.add("on");
+  }
+
+  /* ---------- targets section (R24 #10: admin-only + apply mode) ---------- */
+  var DEF_TH = MaribCore.DEFAULT_CONFIG.thresholds;
+  var TG_FIELDS = [
+    ["tgAchvGood", "achievement", "good"], ["tgAchvWarn", "achievement", "warn"],
+    ["tgEffGood", "efficiency", "good"], ["tgEffWarn", "efficiency", "warn"],
+    ["tgOtGood", "overtime", "good"], ["tgOtWarn", "overtime", "warn"],
+    ["tgAttGood", "attendance", "good"], ["tgAttWarn", "attendance", "warn"]
+  ];
+  function tgVals(src) {
+    return {
+      achievement: src && src.achievement, efficiency: src && src.efficiency,
+      overtime: src && src.overtime, attendance: src && src.attendance
+    };
+  }
+  function tgFill() {
+    var t = state.targetsMeta || {};
+    TG_FIELDS.forEach(function (fd) {
+      var cur = (t[fd[1]] && isFinite(t[fd[1]][fd[2]])) ? t[fd[1]][fd[2]] : DEF_TH[fd[1]][fd[2]];
+      $(fd[0]).value = Math.round(cur * 1000) / 10;
+    });
+    var mode = (t.retroactive || !t.effectiveFrom) ? "retro" : "now";
+    var r = document.querySelector('input[name="tgApplyMode"][value="' + mode + '"]');
+    if (r) r.checked = true;
+  }
+
+  function bindTargetsPanel() {
+    $("tgSave").addEventListener("click", function () {
+      if (!(MaribAuth.isAdmin && MaribAuth.isAdmin())) { toast(T("toast_need_admin"), "err"); return; }
+      var ok = true, o = {};
+      TG_FIELDS.forEach(function (fd) {
+        var v = parseFloat($(fd[0]).value);
+        if (!isFinite(v) || v <= 0 || v > 100) { ok = false; return; }
+        o[fd[1]] = o[fd[1]] || {};
+        o[fd[1]][fd[2]] = v / 100;
+      });
+      if (!ok) { toast(T("tg_bad"), "bad"); return; }
+      var sel = document.querySelector('input[name="tgApplyMode"]:checked');
+      var mode = sel ? sel.value : "now";
+      var retro = mode === "retro";
+      var today = new Date().toISOString().slice(0, 10);
+      var prev = state.targetsMeta || {};
+      var hist = (prev.history || []).slice();
+      if (prev.achievement) {
+        hist.push({
+          v: tgVals(prev),
+          from: (prev.retroactive || !prev.effectiveFrom) ? "0000-01-01" : prev.effectiveFrom,
+          at: new Date().toISOString(),
+          by: MaribAuth.me() ? MaribAuth.me().username : "?"
+        });
+      }
+      var payload = {
+        achievement: o.achievement, efficiency: o.efficiency, overtime: o.overtime, attendance: o.attendance,
+        effectiveFrom: retro ? null : today,
+        retroactive: retro,
+        history: hist.slice(-8)
+      };
+      MaribCloud.settingsPut("targets", payload).then(function () {
+        state.targetsMeta = payload;
+        applyTargetsForRange(readFilters());
+        render();
+        toast(T("tg_saved"), "ok");
+      }).catch(function (e) {
+        toast(e && e.status === 403 ? T("toast_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
+
+    $("tgReset").addEventListener("click", function () {
+      if (!(MaribAuth.isAdmin && MaribAuth.isAdmin())) { toast(T("toast_need_admin"), "err"); return; }
+      var payload = {
+        achievement: { good: DEF_TH.achievement.good, warn: DEF_TH.achievement.warn },
+        efficiency: { good: DEF_TH.efficiency.good, warn: DEF_TH.efficiency.warn },
+        overtime: { good: DEF_TH.overtime.good, warn: DEF_TH.overtime.warn },
+        attendance: { good: DEF_TH.attendance.good, warn: DEF_TH.attendance.warn },
+        effectiveFrom: null, retroactive: true,
+        history: (state.targetsMeta && state.targetsMeta.history) || []
+      };
+      MaribCloud.settingsPut("targets", payload).then(function () {
+        state.targetsMeta = payload;
+        tgFill();
+        applyTargetsForRange(readFilters());
+        render();
+        toast(T("tg_reset_ok"), "ok");
+      }).catch(function (e) {
+        toast(e && e.status === 403 ? T("toast_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
+  }
+
+  /* ---------- classification section (R23 #7 / R24 #3) ---------- */
+  var pendingAsg = {};
+  function derivedGroupOf(name) {
+    var m = state.model || {};
+    if ((m.leaders || []).indexOf(name) >= 0 && (m.supervisors || []).indexOf(name) < 0) return "leader";
+    if ((m.managers || []).indexOf(name) >= 0 && (m.supervisors || []).indexOf(name) < 0) return "mgr";
+    if ((m.supervisors || []).indexOf(name) >= 0) return "sup";
+    if ((m.leaders || []).indexOf(name) >= 0) return "leader";
+    if ((m.managers || []).indexOf(name) >= 0) return "mgr";
+    return "sup";
+  }
+  function effectiveGroupOf(name) {
+    var a = state.groups && state.groups.assignments;
+    return (a && a[name]) || derivedGroupOf(name);
+  }
+  function buildClsList() {
+    var host = $("clsPeople");
+    if (!host || !state.model) return;
+    var m = state.model;
+    var seen = {};
+    var names = [];
+    (m.supervisors || []).concat(m.leaders || []).concat(m.managers || []).forEach(function (n) {
+      if (n == null || seen[n]) return;
+      seen[n] = 1; names.push(n);
+    });
+    names.sort();
+    var g = state.clsFilter || "sup";
+    var rows = names.filter(function (n) { return effectiveGroupOf(n) === g; });
+    host.innerHTML = "";
+    rows.forEach(function (n) {
+      var cur = pendingAsg[n] || effectiveGroupOf(n);
+      var row = document.createElement("div");
+      row.className = "cls-row";
+      row.innerHTML =
+        '<span class="nm">' + esc(n) + "</span>" +
+        (pendingAsg[n] && pendingAsg[n] !== derivedGroupOf(n) ? '<span class="from">✓</span>' : "") +
+        '<span class="seg-mini"></span>';
+      var seg = row.querySelector(".seg-mini");
+      [["sup", "su_sup"], ["leader", "su_leader"], ["mgr", "su_mgr"]].forEach(function (gd) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = T(gd[1]);
+        if (cur === gd[0]) b.className = "on";
+        b.addEventListener("click", function () {
+          pendingAsg[n] = gd[0];
+          seg.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
+          b.classList.add("on");
+        });
+        seg.appendChild(b);
+      });
+      host.appendChild(row);
+    });
+    var cc = $("clsCount");
+    if (cc) cc.textContent = rows.length + T("cls_count");
+  }
+  function bindGroupsPanel() {
+    document.querySelectorAll("#clsFilter .seg-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.clsFilter = b.getAttribute("data-g");
+        document.querySelectorAll("#clsFilter .seg-btn").forEach(function (x) { x.classList.toggle("on", x === b); });
+        buildClsList();
+      });
+    });
+    $("clsSave").addEventListener("click", function () {
+      if (!(MaribAuth.isAdmin && MaribAuth.isAdmin())) { toast(T("toast_need_admin"), "err"); return; }
+      var names = Object.keys(pendingAsg);
+      if (!names.length) { toast(T("cls_saved"), "ok"); return; }
+      var cur = (state.groups && JSON.parse(JSON.stringify(state.groups))) || { assignments: {} };
+      cur.assignments = cur.assignments || {};
+      names.forEach(function (n) { cur.assignments[n] = pendingAsg[n]; });
+      MaribCloud.settingsPut("groups", cur).then(function () {
+        state.groups = cur;
+        pendingAsg = {};
+        buildClsList();
+        render();
+        toast(T("cls_saved"), "ok");
+      }).catch(function (e) {
+        toast(e && e.status === 403 ? T("toast_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
+  }
+
+  /* ---------- audit section (R24 #9 — Amin only) ---------- */
+  var auData = null;
+  function auWhen(iso) {
+    if (!iso) return "—";
+    return String(iso).replace("T", " ").slice(0, 16);
+  }
+  function auEntityPretty(x) {
+    var e = x.entity || "";
+    if (e.indexOf("data:") === 0) return T("dt_month") + " " + monthLabelOf(e.slice(5));
+    if (e === "settings:targets") return T("set_targets");
+    if (e === "settings:groups") return T("set_groups");
+    if (e === "settings:storage_quota") return T("set_storage");
+    if (e.indexOf("users:") === 0) return T("nav_users") + " · " + e.slice(6);
+    if (e === "site") return T("set_title");
+    return e;
+  }
+  function loadAudit() {
+    var from = $("auFrom").value, to = $("auTo").value;
+    MaribCloud.auditGet(from, to).then(function (r) {
+      auData = r;
+      renderAudit();
+    }).catch(function (e) {
+      toast(e && e.status === 403 ? T("toast_need_dev") : T("toast_sync_err"), "err");
+    });
+  }
+  function renderAudit() {
+    if (!auData) return;
+    var ents = auData.entities || [];
+    var eh = "<thead><tr><th>" + T("au_entities") + "</th><th>" + T("au_creator") + "</th><th>" + T("au_edits") + "</th><th>" + T("au_total_edits") + "</th></tr></thead>";
+    var rows = ents.map(function (x) {
+      var edits = (x.edits || []).map(function (ed) {
+        return '<span class="au-chip edit">' + esc(ed.actor) + " · " + auWhen(ed.at) + "</span>";
+      }).join(" ");
+      if (!edits) edits = '<span style="color:#7E92A8">' + T("au_no_edits") + "</span>";
+      return "<tr><td><b>" + esc(auEntityPretty(x)) + "</b>" + (x.label ? '<br><small style="color:#7E92A8">' + esc(x.label) + "</small>" : "") + "</td>" +
+        '<td class="num"><b>' + esc(x.creator.actor) + "</b><br><small style='color:#7E92A8'>" + auWhen(x.creator.at) + "</small></td>" +
+        "<td>" + edits + "</td><td class='num'>" + x.totalEdits + "</td></tr>";
+    }).join("");
+    if (!ents.length) rows = "<tr><td colspan='4' style='padding:16px;color:#A9B7C7'>" + T("au_empty") + "</td></tr>";
+    $("auEntities").innerHTML = eh + "<tbody>" + rows + "</tbody>";
+
+    var evs = auData.events || [];
+    var vh = "<thead><tr><th>" + T("f_from") + "</th><th>" + T("t_sup") + "</th><th>—</th><th>" + T("dt_month") + "</th></tr></thead>";
+    /* events table: time · actor · action · subject */
+    vh = "<thead><tr><th>🕒</th><th></th><th></th><th></th></tr></thead>";
+    var vrows = evs.map(function (ev) {
+      var cls = "au-chip act-" + (/^[a-z]+$/.test(ev.action || "") ? ev.action : "edit");
+      var subj = ev.entity && ev.entity.indexOf("data:") === 0 ? monthLabelOf(ev.entity.slice(5)) : auEntityPretty(ev);
+      return "<tr><td class='num'>" + auWhen(ev.at) + "</td><td><b>" + esc(ev.actor) + "</b></td>" +
+        '<td><span class="' + cls + '">' + esc(T("au_a_" + ev.action)) + "</span></td>" +
+        "<td>" + esc(subj) + (ev.label ? ' <small style="color:#7E92A8">· ' + esc(ev.label) + "</small>" : "") + "</td></tr>";
+    }).join("");
+    if (!evs.length) vrows = "<tr><td colspan='4' style='padding:16px;color:#A9B7C7'>" + T("au_empty") + "</td></tr>";
+    $("auEvents").innerHTML = "<thead><tr><th>" + T("dt_last_sync") + "</th><th>" + T("t_sup") + "</th><th>" + T("set_audit") + "</th><th>" + T("dt_month") + "</th></tr></thead><tbody>" + vrows + "</tbody>";
+  }
+  function exportAudit() {
+    if (!auData) { toast(T("toast_sync_err"), "err"); return; }
+    try {
+      var wb = XLSX.utils.book_new();
+      function xesc(v) {
+        var sv = String(v == null ? "" : v);
+        return /^[=+\-@]/.test(sv) ? "'" + sv : sv;   /* Excel formula-injection guard */
+      }
+      var ents = auData.entities || [];
+      var r1 = [[T("au_entities")], [T("dt_month"), T("au_creator"), T("f_from"), T("au_edits"), T("au_total_edits")]];
+      ents.forEach(function (x) {
+        var edits = (x.edits || []).map(function (ed) { return ed.actor + " @ " + auWhen(ed.at); }).join(" | ");
+        r1.push([xesc(auEntityPretty(x) + (x.label ? " · " + x.label : "")), xesc(x.creator.actor), auWhen(x.creator.at), xesc(edits || T("au_no_edits")), x.totalEdits]);
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r1), "Log");
+      var evs = auData.events || [];
+      var r2 = [[T("dt_last_sync"), T("t_sup"), T("set_audit"), T("dt_month"), T("dt_month")]];
+      evs.forEach(function (ev) {
+        r2.push([auWhen(ev.at), xesc(ev.actor), T("au_a_" + ev.action), xesc(auEntityPretty(ev)), xesc(ev.label || "")]);
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r2), "Events");
+      XLSX.writeFile(wb, "marib-activity-log.xlsx");
+      toast(T("au_exported"), "ok");
+    } catch (e) {
+      toast(T("toast_sync_err"), "err");
+    }
+  }
+  function bindAuditPanel() {
+    ["auFrom", "auTo"].forEach(function (id) {
+      $(id).addEventListener("change", loadAudit);
+    });
+    $("auAll").addEventListener("click", function () {
+      $("auFrom").value = ""; $("auTo").value = "";
+      loadAudit();
+    });
+    $("auExport").addEventListener("click", exportAudit);
+  }
+
+  /* ---------- storage section (R24 #13 — Amin only) ---------- */
+  function fmtBytes(n) {
+    if (n == null || !isFinite(n)) return "—";
+    var u = ["B", "KB", "MB", "GB", "TB"];
+    var i = 0;
+    while (n >= 1024 && i < 4) { n /= 1024; i++; }
+    return (i ? n.toFixed(1) : Math.round(n)) + " " + u[i];
+  }
+  function loadStorage() {
+    MaribCloud.storageGet().then(function (r) {
+      var pct = r.quota ? (r.bytes / r.quota) * 100 : 0;
+      var fill = $("stgFill");
+      if (fill) {
+        fill.style.width = Math.max(1.5, Math.min(100, pct)) + "%";
+        fill.className = pct >= 85 ? "danger" : pct >= 60 ? "warn" : "";
+      }
+      $("stgUsed").textContent = fmtBytes(r.bytes);
+      $("stgQuota").textContent = fmtBytes(r.quota);
+      $("stgPct").textContent = pct < 0.1 ? "<0.1%" : I18N.pctV(pct, 1);
+      $("stgRows").textContent = I18N.fmtInt(r.rows);
+      $("stgMonths").textContent = I18N.fmtInt(r.months);
+      $("stgQuotaIn").value = (r.quota / (1024 * 1024 * 1024)).toFixed(1);
+      var t = $("stgTables");
+      if (t) {
+        t.innerHTML = "<thead><tr><th>" + T("stg_top") + "</th><th>" + T("stg_used") + "</th></tr></thead><tbody>" +
+          (r.tables || []).map(function (x) {
+            return "<tr><td>" + esc(x.name) + "</td><td class='num'>" + fmtBytes(x.bytes) + "</td></tr>";
+          }).join("") + "</tbody>";
+      }
+    }).catch(function (e) {
+      toast(e && e.status === 403 ? T("toast_need_dev") : T("toast_sync_err"), "err");
+    });
+  }
+  function bindStoragePanel() {
+    $("stgSave").addEventListener("click", function () {
+      var gb = parseFloat($("stgQuotaIn").value);
+      if (!isFinite(gb) || gb <= 0) { toast(T("tg_bad"), "err"); return; }
+      MaribCloud.settingsPut("storage_quota", { gb: gb }).then(function () {
+        toast(T("stg_saved"), "ok");
+        loadStorage();
+      }).catch(function (e) {
+        toast(e && e.status === 403 ? T("toast_need_dev") : T("toast_sync_err"), "err");
+      });
+    });
+  }
+
+  /* ============================================================
+     Thread-spool scrollbar (R24 #11)
+     The thumb is drawn as a wooden spool (CSS). While scrolling, the
+     diagonal windings shift along the spool — pulling the thread out
+     when scrolling down and winding it back when scrolling up.
+     ============================================================ */
+  function initSpoolScroll() {
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var tracked = [];
+    var raf = 0;
+    function loop() {
+      var dirty = false;
+      for (var i = 0; i < tracked.length; i++) {
+        var el = tracked[i];
+        var cur = el.__spoolCur || 0, tgt = el.__spoolTgt || 0;
+        if (Math.abs(tgt - cur) > 0.06) {
+          cur += (tgt - cur) * 0.15;
+          el.style.setProperty("--spool-shift", cur.toFixed(2) + "px");
+          el.__spoolCur = cur;
+          dirty = true;
+        }
+      }
+      raf = dirty ? requestAnimationFrame(loop) : 0;
+    }
+    document.addEventListener("scroll", function (e) {
+      var t = e.target;
+      if (t === document || t === window || !t.nodeType) t = document.scrollingElement;
+      if (!t || t.nodeType !== 1) return;
+      if (tracked.indexOf(t) < 0) tracked.push(t);
+      var st = t.scrollTop || 0;
+      var d = st - (t.__spoolLast || 0);
+      t.__spoolLast = st;
+      t.__spoolTgt = (t.__spoolTgt || 0) + d / 5;
+      if (!raf) raf = requestAnimationFrame(loop);
+    }, true);
+  }
+
   /* ---------------- boot ---------------- */
   function boot(source, fileNames) {
     var cfg = MaribCore.DEFAULT_CONFIG;
     var model = MaribCore.buildModel(state.tables, cfg);
     state.model = model;
-    state.dimSets = null;                 /* round 23: recompute person sets */
-    state.scopeSrc = null; state.scopeOut = null;   /* scope cache follows the model */
-    /* round 10: data arrived — clear the empty state + note */
-    var nd = $("noData"); if (nd) nd.classList.remove("on");
-    var dn = $("dpNote"); if (dn) dn.classList.remove("on");
+    var nd = $("noData");
+    if (nd) nd.classList.toggle("on", !(model.dates && model.dates.length));
     fillFilters();
     render();
   }
 
-  /* ============================================================
-     round 14: cross-tab session state
-     - UI snapshot (page / period / filters / compare modes) saved on
-       every render, restored after a data restore
-     - tables restored from MaribStore (IndexedDB) at open time
-     - BroadcastChannel: an upload in one tab reaches the others
-     ============================================================ */
-  var uiSaveT = null;
-  function uiSnapshot() {
-    var attBtn = document.querySelector(".att-tab.on");
-    return {
-      v: 1,
-      page: state.page,
-      qp: state.qp || "custom",
-      from: $("fFrom").value || "",
-      to: $("fTo").value || "",
-      line: $("fLine").value || "",
-      section: $("fSection").value || "",
-      sup: $("fSup").value || "",
-      cmp: state.cmp || {},
-      attView: attBtn ? (attBtn.getAttribute("data-attview") || "workers") : "workers",
-      tmode: state.tmode || "both",
-      supView: state.supView || "sup"
-    };
-  }
-  function saveUI() {
-    if (!window.MaribStore) return;
-    clearTimeout(uiSaveT);
-    uiSaveT = setTimeout(function () {
-      try { MaribStore.saveUI(uiSnapshot()); } catch (e) { }
-    }, 250);
-  }
-  function applySavedUI() {
-    if (!window.MaribStore) return;
-    var o;
-    try { o = MaribStore.loadUI(); } catch (e) { return; }
-    if (!o || o.v !== 1) return;
-    /* filters — the inputs are the single source of truth */
-    if (o.from) $("fFrom").value = o.from;
-    if (o.to) $("fTo").value = o.to;
-    if (o.line) $("fLine").value = o.line;
-    if (o.section) $("fSection").value = o.section;
-    if (o.sup) $("fSup").value = o.sup;
-    state.qp = o.qp || "custom";
-    document.querySelectorAll(".qp-btn").forEach(function (b) {
-      b.className = "qp-btn" + (b.getAttribute("data-qp") === state.qp ? " on" : "");
-    });
-    if (o.cmp && typeof o.cmp === "object") state.cmp = o.cmp;
-    /* round 23: time-mode + supervisors sub-tab */
-    if (o.tmode === "base" || o.tmode === "ot") state.tmode = o.tmode; else state.tmode = "both";
-    document.querySelectorAll("#tm .tm-btn").forEach(function (b) {
-      b.className = "tm-btn" + (b.getAttribute("data-tm") === state.tmode ? " on" : "");
-    });
-    if (o.supView === "leader" || o.supView === "manager") state.supView = o.supView; else state.supView = "sup";
-    document.querySelectorAll("#supTabs .att-tab").forEach(function (b) {
-      b.className = "att-tab" + (b.getAttribute("data-supview") === state.supView ? " on" : "");
-    });
-    if (o.attView) {
-      var tb = document.querySelector('.att-tab[data-attview="' + o.attView + '"]');
-      if (tb) tb.click();
-    }
-    /* the deep-link hash wins (right-click "open in new tab" → #page);
-     otherwise fall back to the page the user was on */
-    var hashPage = pageFromHash();
-    var target = hashPage || (PAGES.indexOf(o.page) >= 0 ? o.page : null);
-    if (target && target !== state.page) goToPage(target);
-    else render();
-  }
-
-  var restoredCbs = [];
-  function notifyRestored() {
-    var cbs = restoredCbs.splice(0);
-    cbs.forEach(function (f) { try { f(); } catch (e) { } });
-  }
-  function restoreSession() {
-    if (!window.MaribStore || !MaribStore.loadData) return;
-    state.restoring = true;
-    MaribStore.loadData().then(function (saved) {
-      var done = function () { state.restoring = false; notifyRestored(); };
-      if (!saved || !saved.pack) { done(); return; }
-      var t;
-      try { t = unpackTables(saved.pack); } catch (e) { done(); return; }
-      if (!t || (!t.dd.length && !t.lo.length)) { done(); return; }
-      state.tables = t;
-      state.source = "restored";
-      state.months = saved.months || state.months || [];
-      boot("restored", saved.names || []);
-      applySavedUI();
-      /* round 21: notify AFTER boot — a waiter (MaribAuth enterApp)
-         must see the final hasData() state, or it opens the upload
-         prompt over data that already arrived */
-      done();
-      fetchRoles();
-      toast(T("toast_restored"), "ok");
-    }).catch(function () {
-      state.restoring = false;
-      notifyRestored();
-    });
-  }
-
   function init() {
-    /* logo */
-    $("brandLogo").src = "data:image/png;base64," + EMBED.logo;
+    /* logo (static file — no EMBED) */
+    $("brandLogo").src = "/app/logo.png";
 
     /* language switcher */
     document.querySelectorAll("#langSw .sw-btn").forEach(function (b) {
@@ -2366,80 +2619,53 @@ var App = (function () {
     });
     I18N.onChange(function () {
       closeDrill();
-      updateMonthChip();
+      updateTitle();
+      setSync(curSyncMode);
       if (!state.model) return;
       fillFilters(true);
-      var t = TP("pg_" + state.page) || ["", ""];
-      $("pageTitle").innerHTML = t[0];
-      setSub($("pageSub"), t[1]);
+      var rawKey2 = "pg_" + state.page;
+      var raw2 = T(rawKey2);
+      var t2 = (raw2 === rawKey2) ? [T("nav_" + state.page), ""] : TP(rawKey2);
+      $("pageTitle").innerHTML = t2[0];
+      setSub($("pageSub"), t2[1]);
       render();
     });
 
-    /* nav — round 13: tabs are real links. Plain left-click stays
-       inside the SPA (preventDefault); ctrl/cmd/shift/alt-click and
-       middle-click are left to the browser so "open in new tab" and
-       the right-click link menu work natively */
+    /* nav */
     document.querySelectorAll(".nav-btn").forEach(function (b) {
-      b.addEventListener("click", function (ev) {
-        if (ev.defaultPrevented) return;
-        if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
-        ev.preventDefault();
-        goToPage(b.getAttribute("data-page"));
-      });
+      b.addEventListener("click", function () { goToPage(b.getAttribute("data-page")); });
     });
-    /* live hash edits (paste a link / back-forward) switch the page */
-    window.addEventListener("hashchange", function () {
-      var p = pageFromHash();
-      if (p && p !== state.page) goToPage(p);
-    });
-    /* deep link: #page present at open time (new tab / refresh / shared
-       link) — applied now; after sign-in + folder upload the requested
-       page is the one that comes alive */
-    var hashPage = pageFromHash();
-    if (hashPage && hashPage !== state.page) goToPage(hashPage);
 
     /* quick period chips */
     document.querySelectorAll(".qp-btn").forEach(function (b) {
       b.addEventListener("click", function () { applyQP(b.getAttribute("data-qp")); });
     });
 
-    /* custom range inputs (manual change = custom period) — round 23:
-       a range in ANOTHER archived month auto-loads that month */
-    ["fFrom", "fTo"].forEach(function (id) {
-      $(id).addEventListener("change", function () {
-        state.qp = "custom";
-        document.querySelectorAll(".qp-btn").forEach(function (b) { b.className = "qp-btn"; });
-        if (!autoMonth()) render();
-      });
-    });
-
-    /* round 23: time-mode segmented control (base / ot / both) — a
-       GLOBAL filter visible on every page; "both" = exact previous
-       behavior */
-    document.querySelectorAll("#tm .tm-btn").forEach(function (b) {
+    /* scope segment (R23 #8 / R24 #5) */
+    document.querySelectorAll(".scope-btn").forEach(function (b) {
       b.addEventListener("click", function () {
-        var v = b.getAttribute("data-tm");
-        if (state.tmode === v) return;
-        state.tmode = v;
-        document.querySelectorAll("#tm .tm-btn").forEach(function (x) {
-          x.className = "tm-btn" + (x.getAttribute("data-tm") === v ? " on" : "");
-        });
+        state.scope = b.getAttribute("data-scope");
+        document.querySelectorAll(".scope-btn").forEach(function (x) { x.classList.toggle("on", x === b); });
         render();
       });
     });
 
-    /* round 23: supervisors page sub-tabs (supervisors / leaders /
-       managers) — same page, different person list */
-    document.querySelectorAll("#supTabs .att-tab").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var v = b.getAttribute("data-supview");
-        if (state.supView === v) return;
-        state.supView = v;
-        document.querySelectorAll("#supTabs .att-tab").forEach(function (x) {
-          x.className = "att-tab" + (x === b ? " on" : "");
-        });
-        if (state.model) render();
-        saveUI();
+    /* month switcher (R23) */
+    $("fMonth").addEventListener("change", function () {
+      if (this.value) snapToMonth(this.value, true);
+      else { $("fFrom").value = ""; $("fTo").value = ""; state.qp = "all"; render(); }
+    });
+
+    /* custom range inputs (manual change = custom period) */
+    ["fFrom", "fTo"].forEach(function (id) {
+      $(id).addEventListener("change", function () {
+        state.qp = "custom";
+        clearQP();
+        var v = ($("fFrom").value || $("fTo").value || "").slice(0, 7);
+        var mSel = $("fMonth");
+        var okMonth = v && (state.model && state.model.months || []).some(function (mo) { return mo.key === v; });
+        if (mSel) mSel.value = okMonth ? v : "";
+        render();
       });
     });
 
@@ -2448,8 +2674,15 @@ var App = (function () {
       $(id).addEventListener("change", render);
     });
 
-    /* drill rows in tables (event delegation) — round 8: rows may carry a
-       data-domain so OT/attendance rows open the matching detail page */
+    /* supervisors sub-tabs (R23 #6 / R24 #7 — nothing shows until chosen) */
+    document.querySelectorAll(".su-tab").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.suView = b.getAttribute("data-suview");
+        render();
+      });
+    });
+
+    /* drill rows in tables (event delegation) */
     document.querySelectorAll(".tbl").forEach(function (tbl) {
       tbl.addEventListener("click", function (e) {
         var tr = e.target.closest ? e.target.closest("tr.drill-row") : null;
@@ -2465,176 +2698,34 @@ var App = (function () {
     $("drill").addEventListener("click", function (e) { if (e.target === this) closeDrill(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeDrill(); });
 
-    /* data menu — opens as a CENTERED modal dialog (direction-safe, never
-       clipped by the sidebar scroll). Closes on backdrop click, ✕ or Esc.
-       round 23: TWO actions — upload a months FOLDER (each month packed
-       and upserted on its own) or upload a single Excel SHEET (updates
-       that month exactly: added→added, removed→removed, changed→changed) */
-    var pop = $("dataPop");
-    function openPop() {
-      var n = $("dpNote"); if (n) n.classList.toggle("on", !state.model);
-      pop.classList.add("on");
-    }
-    function closePop() { pop.classList.remove("on"); }
-    $("btnData").addEventListener("click", function (e) {
-      e.stopPropagation();
-      if (pop.classList.contains("on")) { closePop(); } else { openPop(); }
-    });
-    pop.addEventListener("click", function (e) { if (e.target === this) closePop(); });
-    $("dpClose").addEventListener("click", closePop);
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePop(); });
-    $("actFolder").addEventListener("click", function () {
-      closePop();
-      $("dirPick").click();
-    });
-    $("actFile").addEventListener("click", function () {
-      closePop();
-      $("filePick").click();
-    });
+    /* data page (R23 #9: folder + single Excel, cloud sync) */
+    $("dtFolder").addEventListener("click", function () { $("dirPick").click(); });
+    $("dtExcel").addEventListener("click", function () { $("xlsxPick").click(); });
     $("dirPick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
-    $("filePick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
+    $("xlsxPick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
+    if ($("ndBtn")) $("ndBtn").addEventListener("click", function () { $("dirPick").click(); });
 
-    /* round 10: the big button on the empty state opens the same data modal */
-    if ($("ndBtn")) $("ndBtn").addEventListener("click", openPop);
-
-    /* ---- round 23: SETTINGS modal (sidebar button) — two tabs:
-       targets & thresholds (round 7 UI, moved here from the filter bar)
-       + people classification (which name shows under Supervisors /
-       Leaders / Managers; admin edits, server-stored, everyone sees) ---- */
-    var tg = $("setPop");
-    var DEF_TH = MaribCore.DEFAULT_CONFIG.thresholds;
-    var TG_FIELDS = [
-      ["tgAchvGood", "achievement", "good"], ["tgAchvWarn", "achievement", "warn"],
-      ["tgEffGood", "efficiency", "good"], ["tgEffWarn", "efficiency", "warn"],
-      ["tgOtGood", "overtime", "good"], ["tgOtWarn", "overtime", "warn"],
-      ["tgAttGood", "attendance", "good"], ["tgAttWarn", "attendance", "warn"]
-    ];
-    function tgFill() {
-      TG_FIELDS.forEach(function (fd) {
-        $(fd[0]).value = Math.round(TH[fd[1]][fd[2]] * 1000) / 10;
-      });
-    }
-    function isAdminUser() {
-      try {
-        var me = window.MaribAuth && MaribAuth.me ? MaribAuth.me() : null;
-        return !!me && (me.role === "dev" || me.role === "admin");
-      } catch (e) { return false; }
-    }
-    function selectSetTab(v) {
-      document.querySelectorAll("#setTabs .att-tab").forEach(function (x) {
-        x.className = "att-tab" + (x.getAttribute("data-setview") === v ? " on" : "");
-      });
-      $("setTargets").className = "set-view" + (v === "targets" ? " on" : "");
-      $("setRoles").className = "set-view" + (v === "roles" ? " on" : "");
-    }
-    function openSet(tab) {
-      tgFill();
-      buildRolesList();
-      var admin = isAdminUser();
-      var tabRoles = $("setTabRoles");
-      if (tabRoles) tabRoles.style.display = admin ? "" : "none";
-      selectSetTab(tab === "roles" && admin ? "roles" : "targets");
-      tg.classList.add("on");
-    }
-    function closeSet() { tg.classList.remove("on"); }
+    /* settings panel (R23 #2 — the gear) */
+    var sp = $("setPop");
     $("btnSettings").addEventListener("click", function (e) {
       e.stopPropagation();
-      if (tg.classList.contains("on")) { closeSet(); } else { openSet(); }
+      if (sp.classList.contains("on")) sp.classList.remove("on");
+      else openSettings();
     });
-    tg.addEventListener("click", function (e) { if (e.target === this) closeSet(); });
-    $("setClose").addEventListener("click", closeSet);
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSet(); });
-    document.querySelectorAll("#setTabs .att-tab").forEach(function (b) {
-      b.addEventListener("click", function () {
-        selectSetTab(b.getAttribute("data-setview"));
+    $("setClose").addEventListener("click", function () { sp.classList.remove("on"); });
+    sp.addEventListener("click", function (e) { if (e.target === sp) sp.classList.remove("on"); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") sp.classList.remove("on"); });
+    document.querySelectorAll(".set-sec-head").forEach(function (h) {
+      h.addEventListener("click", function () {
+        h.closest(".set-sec").classList.toggle("closed");
       });
     });
-    function buildRolesList() {
-      var list = $("rlList");
-      if (!list) return;
-      var people = allPeople();
-      var admin = isAdminUser();
-      if (!people.length) {
-        list.innerHTML = '<p class="rl-empty">' + esc(T("dp_empty")) + "</p>";
-      } else {
-        var html = "";
-        people.forEach(function (n) {
-          var cat = effCat(n);
-          html += '<div class="rl-row" data-name="' + esc(n) + '">' +
-            '<span class="rl-name">' + esc(n) + '</span>' +
-            '<div class="rl-seg">' +
-            ["sup", "leader", "manager"].map(function (c) {
-              return '<button type="button" class="rl-opt' + (cat === c ? " on" : "") + '" data-cat="' + c + '"' + (admin ? "" : " disabled") + ' data-i18n="sv_tab_' + c + '">' + esc(T("sv_tab_" + c)) + "</button>";
-            }).join("") +
-            "</div></div>";
-        });
-        list.innerHTML = html;
-      }
-      var note = $("rlAdminNote"); if (note) note.style.display = admin ? "none" : "";
-      var save = $("rlSave"); if (save) save.style.display = admin ? "" : "none";
-    }
-    $("rlList").addEventListener("click", function (e) {
-      var b = e.target.closest ? e.target.closest(".rl-opt") : null;
-      if (!b || b.disabled) return;
-      var row = b.closest(".rl-row");
-      if (!row) return;
-      row.querySelectorAll(".rl-opt").forEach(function (x) { x.classList.toggle("on", x === b); });
-    });
-    $("rlSave").addEventListener("click", function () {
-      var roles = {};
-      document.querySelectorAll("#rlList .rl-row").forEach(function (r) {
-        var b = r.querySelector(".rl-opt.on");
-        if (b) roles[r.getAttribute("data-name")] = b.getAttribute("data-cat");
-      });
-      fetch("/api/settings", {
-        method: "PUT",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roles: roles })
-      }).then(function (r) { return r.json(); }).then(function (j) {
-        if (j && j.ok) {
-          state.roles = roles;
-          state.dimSets = null;
-          try { localStorage.setItem(LS_ROLES, JSON.stringify(roles)); } catch (err) { }
-          closeSet();
-          render();
-          toast(T("rl_saved"), "ok");
-        } else {
-          toast(T(j && (j.error === "forbidden" || j.error === "auth") ? "cloud_err_no_perm" : "rl_err"), "err");
-        }
-      }).catch(function () { toast(T("rl_err"), "err"); });
-    });
-    $("tgSave").addEventListener("click", function () {
-      var ok = true, o = {};
-      TG_FIELDS.forEach(function (fd) {
-        var v = parseFloat($(fd[0]).value);
-        if (!isFinite(v) || v <= 0 || v > 100) { ok = false; return; }
-        o[fd[1]] = o[fd[1]] || {};
-        o[fd[1]][fd[2]] = v / 100;
-      });
-      if (!ok) { toast(T("tg_bad"), "bad"); return; }
-      ["achievement", "efficiency", "overtime", "attendance"].forEach(function (k) {
-        if (o[k]) {
-          if (isFinite(o[k].good)) TH[k].good = o[k].good;
-          if (isFinite(o[k].warn)) TH[k].warn = o[k].warn;
-        }
-      });
-      try { localStorage.setItem(LS_TH, JSON.stringify(o)); } catch (err) { }
-      closeTg();
-      render();
-      toast(T("tg_saved"), "ok");
-    });
-    $("tgReset").addEventListener("click", function () {
-      ["achievement", "efficiency", "overtime", "attendance"].forEach(function (k) {
-        TH[k].good = DEF_TH[k].good; TH[k].warn = DEF_TH[k].warn;
-      });
-      try { localStorage.removeItem(LS_TH); } catch (err) { }
-      tgFill();
-      render();
-      toast(T("tg_reset_ok"), "ok");
-    });
+    bindTargetsPanel();
+    bindGroupsPanel();
+    bindAuditPanel();
+    bindStoragePanel();
 
-    /* ---- attendance sub-tabs: workers / supervisors ---- */
+    /* attendance sub-tabs: workers / supervisors */
     document.querySelectorAll(".att-tab").forEach(function (b) {
       b.addEventListener("click", function () {
         var v = b.getAttribute("data-attview");
@@ -2643,15 +2734,11 @@ var App = (function () {
         });
         $("attWorkers").className = "att-view" + (v === "workers" ? " on" : "");
         $("attSups").className = "att-view" + (v === "sups" ? " on" : "");
-        /* round 9: a view that was hidden while its page re-rendered drew
-           its charts at the 260px fallback — re-fit them now it is visible */
         C.redrawIn(v === "workers" ? $("attWorkers") : $("attSups"));
-        /* round 14: the sub-tab choice is part of the saved UI state */
-        saveUI();
       });
     });
 
-    /* ---- round 8: OT gauge + sources card click → full OT details ---- */
+    /* OT gauge + sources card click → full OT details */
     ["otGauge", "otSrc"].forEach(function (id) {
       var el = $(id);
       if (!el) return;
@@ -2659,11 +2746,7 @@ var App = (function () {
       el.addEventListener("click", function () { openDrill("period", null, { domain: "ot" }); });
     });
 
-    /* ============================================================
-       round 8: COMPARE — a ⇄ button on every chart card opens a small
-       popover; the chosen period re-renders that chart with a compare
-       strip, ghost series and per-bar deltas.
-       ============================================================ */
+    /* ---- COMPARE — ⇄ button on every chart card ---- */
     document.querySelectorAll(".pages .card").forEach(function (card) {
       var chart = card.querySelector(".chart");
       var head = card.querySelector(".card-head");
@@ -2728,7 +2811,7 @@ var App = (function () {
     });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeCmpPop(); });
 
-    /* drag & drop (files or folders) */
+    /* drag & drop (files or folders) → cloud sync */
     var dz = $("dropZone"), depth = 0;
     function scanEntry(entry) {
       return new Promise(function (res) {
@@ -2771,64 +2854,30 @@ var App = (function () {
       } else if (e.dataTransfer.files) collectFiles(e.dataTransfer.files);
     });
 
-    /* round 10 — NO bundled data: the old embedded August sheet is
-       gone; the app opens EMPTY for a first-time visitor.
-       round 14 — BUT a returning visitor (or a NEW TAB opened from a
-       sidebar link) gets the last session's tables back from
-       IndexedDB: no re-login (MaribAuth session), no re-upload. */
+    /* thread-spool scrollbar */
+    initSpoolScroll();
+
+    /* the session layer (MaribAuth) owns the boot veil and triggers
+       cloudLoad() as soon as the session resolves — the dashboard itself
+       starts empty and hidden behind the veil (no "upload" flash). */
     state.tables = { dd: [], ot: [], pm: [], att: [], lo: [] };
     state.source = "none";
-    var nd0 = $("noData"); if (nd0) nd0.classList.add("on");
-    restoreSession();
-
-    /* another tab uploaded fresh data → reload it here too */
-    if (window.MaribStore && MaribStore.onDataMessage) {
-      MaribStore.onDataMessage(function () {
-        MaribStore.loadData().then(function (saved) {
-          if (!saved || !saved.pack) return;
-          var t;
-          try { t = unpackTables(saved.pack); } catch (e) { return; }
-          if (!t || (!t.dd.length && !t.lo.length)) return;
-          state.tables = t;
-          state.source = "restored";
-          state.months = saved.months || state.months || [];
-          boot("restored", saved.names || []);
-          updateMonthChip();
-          toast(T("toast_restored"), "ok");
-        }).catch(function () { });
-      });
-    }
-
-    /* subtle re-draw on resize handled by MaribCharts registry */
+    var nd0 = $("noData");
+    if (nd0) nd0.classList.add("on");
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  document.addEventListener("DOMContentLoaded", init);
 
   return {
     state: state, render: render, goToPage: goToPage, openDrill: openDrill, applyQP: applyQP,
-    /* round 21 (online): month switch + cloud restore retry after login */
-    setTables: function (t, src) {
-      if (!t) return;
-      state.tables = t;
-      state.source = src || "restored";
-      boot("restored", []);
-    },
-    unpackTables: unpackTables, packTables: packTables,
-    retryRestore: function () { restoreSession(); },
-    hasData: function () { return !!state.model; },
-    /* round 14: cross-tab restore handshake (MaribAuth waits for the
-       IndexedDB restore before deciding to prompt for an upload) */
-    isRestoring: function () { return !!state.restoring; },
-    onRestored: function (fn) {
-      if (!state.restoring) { try { fn(); } catch (e) { } return; }
-      restoredCbs.push(fn);
-    },
+    scopedModel: scopedModel,
+    hasData: function () { return !!(state.model && state.model.dates && state.model.dates.length); },
+    cloudLoad: cloudLoad,
+    updateTitle: updateTitle,
     promptData: function () {
-      var p = $("dataPop");
-      if (!p) return;
-      var n = $("dpNote"); if (n) n.classList.toggle("on", !state.model);
-      p.classList.add("on");
+      var nd = $("noData");
+      if (nd) nd.classList.add("on");
+      goToPage("data");
     }
   };
 })();

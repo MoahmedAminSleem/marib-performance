@@ -1,71 +1,29 @@
-"use client"
+/* Marib Performance — online edition (R23/R24)
+   The whole dashboard is the vanilla-JS denim app under /public/app:
+   the skeleton DOM below + the module scripts in load order.
+   The boot veil sits inside the skeleton — the session check decides
+   login screen vs. dashboard BEFORE anything is revealed (no flash). */
 
-import { useEffect } from "react"
-import { SKELETON_HTML } from "./skeleton-html"
-
-/* ============================================================
-   Marib Performance Studio — ONLINE shell.
-   The whole battle-tested offline app (theme, sewing-machine login
-   theater, 7 pages, charts, i18n, MaribCore parsing) runs exactly
-   as before as classic scripts; only the storage/auth layers talk
-   to the server (see public/app/marib_cloud.js + app_auth.js).
-   Scripts load strictly in order AFTER the skeleton DOM is parsed.
-   ============================================================ */
+import { SKELETON } from "./skeleton";
 
 const SCRIPTS = [
-  "/app/xlsx.js",
-  "/app/marib-core.js",
-  "/app/i18n.js",
-  "/app/marib-charts.js",
-  "/app/embed.js",
-  "/app/marib_cloud.js",
-  // app_a + app_b + app_c are ONE IIFE module split across files —
-  // served combined as app_main.js (scripts/build_online_site.py)
-  "/app/app_main.js",
-  "/app/app_auth.js",
-]
-
-declare global {
-  interface Window {
-    __maribBooted?: boolean
-    __meCheck?: Promise<{ ok: boolean; user?: unknown } | null>
-  }
-}
+  "/app/xlsx.full.min.js", // SheetJS — reads the month's Excel locally
+  "/app/app_core.js",      // MaribCore — parsing + the 42 measures
+  "/app/i18n_dict.js",     // AR / EN / TR dictionary
+  "/app/i18n_core.js",     // i18n engine
+  "/app/app_charts.js",    // MaribCharts
+  "/app/marib_cloud.js",   // server sync client (R23)
+  "/app/app_main.js",      // App module (a+b+c concatenated — one closure)
+  "/app/app_auth.js",      // MaribAuth — server login gate
+];
 
 export default function Home() {
-  useEffect(() => {
-    if (window.__maribBooted) return
-    window.__maribBooted = true
-    /* round 22: pre-start the session check while the heavy app
-       scripts are still downloading — app_auth.js consumes this
-       in-flight promise (window.__meCheck) so the boot veil drops
-       at the earliest possible moment. */
-    try {
-      window.__meCheck = fetch("/api/auth/me", { credentials: "same-origin" })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null)
-    } catch (e) {
-      console.warn("[marib] me prefetch failed", e)
-    }
-    /* round 22: safety — if app_auth.js never arrives (network
-       hiccup), lift the boot veil after 12s so the login screen is
-       at least reachable (bye = invisible + click-through). */
-    setTimeout(() => {
-      const v = document.getElementById("bootVeil")
-      if (v && !v.classList.contains("bye")) v.classList.add("bye")
-    }, 12000)
-    let i = 0
-    const loadNext = () => {
-      if (i >= SCRIPTS.length) return
-      const s = document.createElement("script")
-      s.src = SCRIPTS[i++]
-      s.async = false // preserve execution order
-      s.onload = loadNext
-      s.onerror = () => console.error("[marib] failed to load", s.src)
-      document.body.appendChild(s)
-    }
-    loadNext()
-  }, [])
-
-  return <div id="maribRoot" dangerouslySetInnerHTML={{ __html: SKELETON_HTML }} />
+  return (
+    <>
+      <div id="maribApp" dangerouslySetInnerHTML={{ __html: SKELETON }} />
+      {SCRIPTS.map((src) => (
+        <script key={src} src={src} />
+      ))}
+    </>
+  );
 }
