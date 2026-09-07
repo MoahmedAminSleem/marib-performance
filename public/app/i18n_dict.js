@@ -42,7 +42,11 @@ window.MARIB_I18N_DICT = {
   /* ---------- filters ---------- */
   f_last1:      { ar: "آخر يوم", en: "Last Day", tr: "Son Gün" },
   f_last7:      { ar: "آخر أسبوع", en: "Last Week", tr: "Son Hafta" },
-  f_last30:     { ar: "آخر شهر", en: "Last Month", tr: "Son Ay" },
+  /* R25: آخر شهر (rolling window / previous calendar month) replaced by
+     two DATA-driven month quick-filters — the whole latest uploaded
+     month and the whole month before it */
+  f_cur:        { ar: "الشهر الحالي", en: "Current Month", tr: "Bu Ay" },
+  f_prev:       { ar: "الشهر السابق", en: "Previous Month", tr: "Geçen Ay" },
   f_all:        { ar: "الكل", en: "All", tr: "Tümü" },
   f_from:       { ar: "من", en: "From", tr: "Başlangıç" },
   f_to:         { ar: "إلى", en: "To", tr: "Bitiş" },

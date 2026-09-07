@@ -21,7 +21,12 @@ const SCRIPTS = [
 export default function Home() {
   return (
     <>
-      <div id="maribApp" dangerouslySetInnerHTML={{ __html: SKELETON }} />
+      {/* suppressHydrationWarning: the vanilla scripts (i18n, auth boot)
+          start mutating this subtree right after parse — before React
+          hydrates — so the innerHTML diff would warn on every load.
+          React never reconciles inside dangerouslySetInnerHTML anyway;
+          the whole dashboard DOM belongs to /public/app. */}
+      <div id="maribApp" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: SKELETON }} />
       {SCRIPTS.map((src) => (
         <script key={src} src={src} />
       ))}

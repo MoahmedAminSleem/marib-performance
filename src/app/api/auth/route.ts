@@ -1,11 +1,17 @@
-/* /api/auth — login (POST) · session (GET) · logout (DELETE) */
+/* /api/auth — login (POST) · session (GET) · logout (DELETE)
+   R25: refactored onto the shared http helpers + structured logging
+   (login attempts, throttling, logins and logouts are now visible in
+   the Vercel runtime logs and logs/marib.log locally). */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ensureBoot, q, audit } from "@/lib/marib/db";
-import { sessionUser, issueToken, verifyPassword, COOKIE_NAME, type SessionUser } from "@/lib/marib/session";
+import { q, audit } from "@/lib/marib/db";
+import { issueToken, verifyPassword, COOKIE_NAME, type SessionUser } from "@/lib/marib/session";
+import { fail, serverFail, readJson, logger, requireUser } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const lg = logger("auth");
 
 /* login throttle — per username+IP, in-memory (survives HMR via globalThis) */
 const g = globalThis as unknown as { __maribFails?: Map<string, { n: number; until: number }> };
@@ -34,27 +40,30 @@ function clearFails(key: string): void {
 
 export async function GET(req: NextRequest) {
   try {
-    await ensureBoot();
-    const u = sessionUser(req);
-    if (!u) return NextResponse.json({ user: null }, { status: 401 });
-    return NextResponse.json({ user: u });
+    const g = await requireUser(req, "auth", "GET");
+    /* the login screen expects the exact { user: null } body on
+       no-session (401 status, null user — original shape kept) */
+    if (g.res) return NextResponse.json({ user: null }, { status: 401 });
+    return NextResponse.json({ user: g.user });
   } catch (e) {
-    console.error("auth GET", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("auth", "GET", e);
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    await ensureBoot();
-    const body = await req.json().catch(() => ({}));
+    const body = await readJson(req);
+    if (!body) return fail("body", 413);
     const username = String(body.username || "").trim();
     const password = String(body.password || "");
     const remember = !!body.remember;
-    if (!username || !password) return NextResponse.json({ error: "fill" }, { status: 400 });
+    if (!username || !password) return fail("fill", 400);
 
     const tKey = throttleKey(req, username);
-    if (isLocked(tKey)) return NextResponse.json({ error: "locked" }, { status: 429 });
+    if (isLocked(tKey)) {
+      lg.warn("login blocked (throttle)", { user: username, fails: fails.get(tKey)?.n });
+      return fail("locked", 429);
+    }
 
     const rows = await q(
       "SELECT id, username, pass_hash, role FROM marib_user WHERE LOWER(username) = LOWER($1) LIMIT 1",
@@ -63,15 +72,17 @@ export async function POST(req: NextRequest) {
     const rec = rows[0] as { id: string; username: string; pass_hash: string; role: SessionUser["role"] } | undefined;
     /* dummy verify on unknown user keeps the timing flat (no enumeration) */
     const stored = rec ? rec.pass_hash : "scrypt$00$00000000000000000000000000000000";
-    const ok = verifyPassword(password, stored) && !!rec;
-    if (!ok) {
+    const okPass = verifyPassword(password, stored) && !!rec;
+    if (!okPass) {
       noteFail(tKey);
-      return NextResponse.json({ error: "bad" }, { status: 401 });
+      lg.warn("login failed", { user: username, attempt: fails.get(tKey)?.n });
+      return fail("bad", 401);
     }
     clearFails(tKey);
     const u: SessionUser = { uid: rec!.id, username: rec!.username, role: rec!.role };
     const { token, maxAge } = issueToken(u, remember);
     await audit(u.username, "login", "site", null, null);
+    lg.info("login ok", { user: u.username, role: u.role, remember });
 
     const res = NextResponse.json({ user: u });
     res.cookies.set(COOKIE_NAME, token, {
@@ -83,20 +94,21 @@ export async function POST(req: NextRequest) {
     });
     return res;
   } catch (e) {
-    console.error("auth POST", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("auth", "POST", e);
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    const u = sessionUser(req);
-    if (u) await audit(u.username, "logout", "site", null, null);
+    const me = (await requireUser(req, "auth", "DELETE")).user;
+    if (me) {
+      await audit(me.username, "logout", "site", null, null);
+      lg.info("logout", { user: me.username });
+    }
     const res = NextResponse.json({ ok: true });
     res.cookies.set(COOKIE_NAME, "", { httpOnly: true, path: "/", maxAge: 0 });
     return res;
   } catch (e) {
-    console.error("auth DELETE", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("auth", "DELETE", e);
   }
 }

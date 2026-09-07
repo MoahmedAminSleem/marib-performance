@@ -1,14 +1,18 @@
 /* /api/data — production data sync (Neon)
    GET  → all months, packed (c=columns, r=rows) per sheet
    POST → full month sync: replaces the month's rows completely
-          (re-uploading the same file = upsert + delete of missing rows) */
+          (re-uploading the same file = upsert + delete of missing rows)
+   R25: refactored onto the shared http helpers + structured logging
+   (every sync is logged with its month + row counts). */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ensureBoot, q, audit, withTransaction } from "@/lib/marib/db";
-import { currentUser, sessionUser, isAdmin } from "@/lib/marib/session";
+import { q, audit, withTransaction } from "@/lib/marib/db";
+import { fail, serverFail, readJson, logger, requireUser, requireRoleBody } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const lg = logger("data");
 
 const SHEETS = ["dd", "ot", "pm", "att", "lo"];
 
@@ -29,9 +33,8 @@ function validPack(pack: unknown): pack is Record<string, Packed> {
 
 export async function GET(req: NextRequest) {
   try {
-    await ensureBoot();
-    const me = sessionUser(req);
-    if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });
+    const g = await requireUser(req, "data", "GET");   /* sync session check, like the original */
+    if (g.res) return g.res;
 
     const rows = await q(
       "SELECT month, sheet, rown, data FROM marib_data ORDER BY month ASC, sheet ASC, rown ASC"
@@ -68,27 +71,26 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ months, pack, lastSync });
   } catch (e) {
-    console.error("data GET", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("data", "GET", e);
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    await ensureBoot();
-    const me = await currentUser(req);
-    if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });
     /* replacing a month on the server is destructive — admin/dev only */
-    if (!isAdmin(me)) return NextResponse.json({ error: "admin" }, { status: 403 });
+    const g = await requireRoleBody(req, "admin");
+    if (g.res) return g.res;
+    const me = g.user!;
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readJson(req);
+    if (!body) return fail("body", 413);
     const month = String(body.month || "");
     const files = Array.isArray(body.files) ? (body.files as string[]).map(String).slice(0, 12) : [];
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
-      return NextResponse.json({ error: "month" }, { status: 400 });
+      return fail("month", 400);
     }
     const pack = body.pack;
-    if (!validPack(pack)) return NextResponse.json({ error: "pack" }, { status: 400 });
+    if (!validPack(pack)) return fail("pack", 400);
 
     /* payload guard rails — keep Neon storage and memory sane */
     const MAX_ROWS = 50000, MAX_COLS = 256, MAX_CELL = 2000;
@@ -99,17 +101,17 @@ export async function POST(req: NextRequest) {
       counts[sheet] = s ? s.r.length : 0;
       totalRows += counts[sheet];
       if (s) {
-        if (s.c.length > MAX_COLS) return NextResponse.json({ error: "cols" }, { status: 413 });
+        if (s.c.length > MAX_COLS) return fail("cols", 413);
         for (const row of s.r) {
           for (const cell of row) {
             if (typeof cell === "string" && cell.length > MAX_CELL) {
-              return NextResponse.json({ error: "cell" }, { status: 413 });
+              return fail("cell", 413);
             }
           }
         }
       }
     }
-    if (totalRows > MAX_ROWS) return NextResponse.json({ error: "rows" }, { status: 413 });
+    if (totalRows > MAX_ROWS) return fail("rows", 413);
 
     const statements: unknown[][] = [];
 
@@ -153,9 +155,9 @@ export async function POST(req: NextRequest) {
       files: files.map((f) => f.slice(0, 200)),
       rows: counts,
     });
+    lg.info("month synced", { month, rows: counts, total: totalRows, by: me.username });
     return NextResponse.json({ ok: true, month, rows: counts });
   } catch (e) {
-    console.error("data POST", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("data", "POST", e);
   }
 }

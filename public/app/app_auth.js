@@ -40,6 +40,9 @@ var MaribAuth = (function () {
      ============================================================ */
   var pwVisible = false, animating = false, curEnd = null;
   var RM = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null;
+  /* R25: the theater runs noticeably slower than R24 — the user asked for
+     a smoother, less frantic machine ride (sew ~1.0s, unpick ~0.9s).
+     ?pwslow=<ms> still adds extra slowness on top. */
   var SLOW = 0;
   try { SLOW = parseInt(new URLSearchParams(location.search).get("pwslow"), 10) || 0; } catch (e) { }
   var NEEDLE_X = 62;   /* needle tip x-offset inside the machine svg (86px render) */
@@ -134,7 +137,7 @@ var MaribAuth = (function () {
     field.classList.add("stitching");
     setStatus("lg_status_hide");
 
-    var DUR = 680 + SLOW, t0 = null;
+    var DUR = 1020 + SLOW, t0 = null;   /* R25: 680 → 1020ms base */
     function end() {
       animating = false; curEnd = null;
       stitch.style.clipPath = "inset(0 0 0 0)";
@@ -192,7 +195,7 @@ var MaribAuth = (function () {
     theater.classList.add("rip");
     setStatus("lg_status_show");
 
-    var DUR = 620 + SLOW, t0 = null;
+    var DUR = 940 + SLOW, t0 = null;   /* R25: 620 → 940ms base */
     function end() {
       animating = false; curEnd = null;
       stitch.style.display = "none";
@@ -284,6 +287,10 @@ var MaribAuth = (function () {
       shell.setAttribute("aria-hidden", "true");
     }
     document.title = T("brand_name");
+    /* R25: React's hydration can restore the SSR <title> a moment AFTER
+       the vanilla script already set it (a dev-mode race). Re-assert the
+       login title once more — by then hydration has settled for good. */
+    setTimeout(function () { if (!me) document.title = T("brand_name"); }, 900);
     setTimeout(function () { var u = $("lgUser"); if (u) { try { u.focus(); } catch (e) { } } }, 130);
   }
 

@@ -18,7 +18,15 @@ var App = (function () {
      date range by applyTargetsForRange() (retro / from-now rules). */
 
   var state = { tables: null, model: null, k: null, page: "overview", busy: false, source: "cloud", qp: "all", cmp: {},
-                scope: "both", suView: null, groups: null, targetsMeta: null, monthsMeta: [] };
+                scope: "both", suView: null, attView: "workers", groups: null, targetsMeta: null, monthsMeta: [] };
+
+  /* R25: the incoming URL is captured at script-load time — BEFORE the
+     first render calls syncUrl() and rewrites the query string. Without
+     this, opening ?qp=prevMonth&from=.. in a new tab would lose its state:
+     boot → snap-to-latest → render → syncUrl would overwrite the query
+     before applyQueryState() ever got to read it. */
+  var bootQuery = "";
+  try { bootQuery = location.search || ""; } catch (e) { }
 
   /* ---------------- i18n helpers ---------------- */
   var T = I18N.t, TP = I18N.ta, TV = I18N.tv, TS = I18N.ts, TB = I18N.tb;
@@ -140,7 +148,7 @@ var App = (function () {
         '<span class="en">' + o.en + "</span></div>" +
         (o.badge ? '<span class="kpi-badge num">' + o.badge + "</span>" : "") + "</div>" +
       '<div class="kpi-ring">' +
-        '<div class="ring"><svg viewBox="0 0 92 92">' +
+        '<div class="mring"><svg viewBox="0 0 92 92">' +
           '<circle class="track" cx="46" cy="46" r="40"/>' +
           '<circle class="bar" id="' + o.id + '" cx="46" cy="46" r="40" stroke-dasharray="' + CIRC + '" stroke-dashoffset="' + CIRC + '"/>' +
         '</svg><div class="val num" id="' + o.id + 'v">0%</div></div>' +
@@ -1829,19 +1837,14 @@ var App = (function () {
   }
 
   /* R23: picking/uploading a month pins the date range to that month
-     (clamped to the days that actually carry data) */
+     (clamped to the days that actually carry data).
+     R25: shares monthRange() with the month quick-filters. */
   function snapToMonth(key, quiet) {
     var m = state.model;
     if (!m || !key || !/^\d{4}-\d{2}$/.test(key)) return;
-    var y = +key.slice(0, 4), mth = +key.slice(5, 7);
-    var lastD = new Date(Date.UTC(y, mth, 0)).getUTCDate();
-    var first = key + "-01";
-    var last = key + "-" + (lastD < 10 ? "0" : "") + lastD;
-    if (m.dateMin && first < m.dateMin) first = m.dateMin;
-    if (m.dateMax && last > m.dateMax) last = m.dateMax;
-    if (first > last) { first = m.dateMin; last = m.dateMax; }
-    $("fFrom").value = first;
-    $("fTo").value = last;
+    var rng = monthRange(key, m);
+    $("fFrom").value = rng.from;
+    $("fTo").value = rng.to;
     $("fMonth").value = key;
     state.qp = "custom";
     clearQP();
@@ -1854,49 +1857,46 @@ var App = (function () {
 
   /* quick-period chips write the range into the date inputs; the
      inputs are the single source of truth for readFilters() */
-  function prevCalendarMonth(iso) {
-    /* iso "YYYY-MM-DD" → first day of the PREVIOUS calendar month */
-    var y = +iso.slice(0, 4), mth = +iso.slice(5, 7) - 1;   /* 0-based */
-    mth -= 1;
-    if (mth < 0) { mth = 11; y -= 1; }
-    var mm = (mth + 1) < 10 ? "0" + (mth + 1) : "" + (mth + 1);
-    return y + "-" + mm + "-01";
-  }
   function lastDayOfMonth(y, mth0) {
     var d = new Date(Date.UTC(y, mth0 + 1, 0));   /* 0 → last day of mth0 */
     return d.getUTCDate();
   }
+  /* whole calendar month of key "YYYY-MM" as an iso range, clamped to
+     the days that actually carry data */
+  function monthRange(key, m) {
+    var y = +key.slice(0, 4), mth = +key.slice(5, 7) - 1;
+    var lastD = lastDayOfMonth(y, mth);
+    var first = key + "-01";
+    var last = key + "-" + (lastD < 10 ? "0" : "") + lastD;
+    if (m.dateMin && first < m.dateMin) first = m.dateMin;
+    if (m.dateMax && last > m.dateMax) last = m.dateMax;
+    if (first > last) { first = m.dateMin; last = m.dateMax; }
+    return { from: first, to: last };
+  }
   function applyQP(qp) {
     state.qp = qp;
     var m = state.model;
-    var fF = $("fFrom"), fT = $("fTo");
+    var fF = $("fFrom"), fT = $("fTo"), mSel = $("fMonth");
     if (m && m.dateMax) {
-      if (qp === "last1") { fF.value = m.dateMax; fT.value = m.dateMax; }
-      else if (qp === "last7") { fF.value = U.isoAddDays(m.dateMax, -6); fT.value = m.dateMax; }
-      else if (qp === "last30") {
-        /* "last month" = the previous CALENDAR month (Sept → August),
-           even if only a few days are recorded — not a 30-day window.
-           Reference: real today, falling back to the data's latest month
-           when the calendar month has no records at all. */
-        var now = new Date();
-        var ref = now.getUTCFullYear() + "-" + (now.getUTCMonth() + 1 < 10 ? "0" + (now.getUTCMonth() + 1) : now.getUTCMonth() + 1) + "-01";
-        var from = prevCalendarMonth(ref);
-        var fy = +from.slice(0, 4), fm = +from.slice(5, 7) - 1;
-        var to = from.slice(0, 8) + (lastDayOfMonth(fy, fm) < 10 ? "0" + lastDayOfMonth(fy, fm) : lastDayOfMonth(fy, fm));
-        if (m.dateMin && (to < m.dateMin || from > m.dateMax)) {
-          /* previous real calendar month has no records → fall back to
-             the LATEST data month (the last month we actually have) */
-          var dFrom = m.dateMax.slice(0, 8) + "01";
-          var dy = +dFrom.slice(0, 4), dm = +dFrom.slice(5, 7) - 1;
-          var dLast = lastDayOfMonth(dy, dm);
-          var dTo = dFrom.slice(0, 8) + (dLast < 10 ? "0" + dLast : dLast);
-          from = dFrom > m.dateMin ? dFrom : m.dateMin;
-          to = dTo < m.dateMax ? dTo : m.dateMax;
+      if (qp === "last1") { fF.value = m.dateMax; fT.value = m.dateMax; if (mSel) mSel.value = ""; }
+      else if (qp === "last7") { fF.value = U.isoAddDays(m.dateMax, -6); fT.value = m.dateMax; if (mSel) mSel.value = ""; }
+      else if (qp === "curMonth" || qp === "prevMonth") {
+        /* R25: month quick-filters are driven by the UPLOADED months —
+           "الشهر الحالي" = the whole latest month we have a file for,
+           "الشهر السابق" = the whole month before it (user request:
+           each shows the FULL month, not just days with records). */
+        var keys = (m.months || []).map(function (x) { return x.key; }).sort();
+        var idx = keys.length - (qp === "curMonth" ? 1 : 2);
+        if (idx >= 0 && keys[idx]) {
+          var rng = monthRange(keys[idx], m);
+          fF.value = rng.from; fT.value = rng.to;
+          if (mSel) mSel.value = keys[idx];
+        } else {
+          fF.value = ""; fT.value = ""; if (mSel) mSel.value = "";
         }
-        fF.value = from; fT.value = to;
       }
     }
-    if (qp === "all") { fF.value = ""; fT.value = ""; }
+    if (qp === "all") { fF.value = ""; fT.value = ""; if (mSel) mSel.value = ""; }
     document.querySelectorAll(".qp-btn").forEach(function (b) {
       b.className = "qp-btn" + (b.getAttribute("data-qp") === qp ? " on" : "");
     });
@@ -1915,6 +1915,94 @@ var App = (function () {
     if ($("fSection").value) f.section = new Set([$("fSection").value]);
     if ($("fSup").value) f.sup = new Set([$("fSup").value]);
     return f;
+  }
+
+  /* ============================================================
+     R25 — URL state (open the dashboard in a new tab / share a link
+     and land on the SAME page with the SAME filters)
+     The full view state lives in the query string:
+       ?page=lines&qp=curMonth&from=..&to=..&month=2026-09
+        &line=3&section=Front&sup=..&scope=base&su=sec&att=sups
+     syncUrl() runs after every render (single funnel); the session
+     cookie keeps the user logged in in the new tab, so restoring
+     the URL = restoring the whole view. No history entries are
+     created — replaceState only, the back button stays clean.
+     ============================================================ */
+  function syncUrl() {
+    try {
+      if (!state.model || !history || !history.replaceState) return;
+      var p = new URLSearchParams();
+      if (state.page && state.page !== "overview") p.set("page", state.page);
+      if (state.qp && state.qp !== "custom" && state.qp !== "all") p.set("qp", state.qp);
+      var fF = $("fFrom"), fT = $("fTo"), mSel = $("fMonth");
+      if (fF && fF.value) p.set("from", fF.value);
+      if (fT && fT.value) p.set("to", fT.value);
+      if (mSel && mSel.value) p.set("month", mSel.value);
+      if ($("fLine") && $("fLine").value) p.set("line", $("fLine").value);
+      if ($("fSection") && $("fSection").value) p.set("section", $("fSection").value);
+      if ($("fSup") && $("fSup").value) p.set("sup", $("fSup").value);
+      if (state.scope && state.scope !== "both") p.set("scope", state.scope);
+      if (state.suView) p.set("su", state.suView);
+      if (state.attView && state.attView !== "workers") p.set("att", state.attView);
+      var q = p.toString();
+      history.replaceState(null, "", q ? "?" + q : location.pathname);
+    } catch (e) { /* URL writing must never break the app */ }
+  }
+
+  /* boot-time restore: reads the query string back into the DOM
+     controls + state, then renders once. Returns true when the URL
+     carried a view (so the caller can skip the default snap). */
+  function applyQueryState() {
+    try {
+      if (!state.model) return false;
+      var p = new URLSearchParams(bootQuery);   /* captured at load — syncUrl can't clobber it */
+      if (!Array.from(p.keys()).length) return false;
+      var from = p.get("from"), to = p.get("to");
+      if (from) $("fFrom").value = from;
+      if (to) $("fTo").value = to;
+      var qp = p.get("qp");
+      if (qp) state.qp = qp;
+      else if (from || to) state.qp = "custom";
+      document.querySelectorAll(".qp-btn").forEach(function (b) {
+        b.className = "qp-btn" + (qp && b.getAttribute("data-qp") === qp ? " on" : "");
+      });
+      var mv = p.get("month");
+      if (mv && $("fMonth")) { try { $("fMonth").value = mv; } catch (e) { } }
+      var selMap = { line: "fLine", section: "fSection", sup: "fSup" };
+      Object.keys(selMap).forEach(function (k) {
+        var v = p.get(k);
+        if (v !== null) { var el = $(selMap[k]); if (el) { try { el.value = v; } catch (e) { } } }
+      });
+      var scope = p.get("scope");
+      if (scope === "base" || scope === "ot" || scope === "both") {
+        state.scope = scope;
+        document.querySelectorAll(".scope-btn").forEach(function (x) {
+          x.classList.toggle("on", x.getAttribute("data-scope") === scope);
+        });
+      }
+      var su = p.get("su");
+      if (su) state.suView = su;
+      var att = p.get("att");
+      if (att === "sups" || att === "workers") setAttView(att);
+      var page = p.get("page");
+      if (page && $("page-" + page)) goToPage(page);
+      else render();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* attendance sub-view switch, shared by the tab buttons and the
+     URL restore (keeps one code path) */
+  function setAttView(v) {
+    state.attView = v;
+    document.querySelectorAll(".att-tab").forEach(function (x) {
+      x.className = "att-tab" + (x.getAttribute("data-attview") === v ? " on" : "");
+    });
+    if ($("attWorkers")) $("attWorkers").className = "att-view" + (v === "workers" ? " on" : "");
+    if ($("attSups")) $("attSups").className = "att-view" + (v === "sups" ? " on" : "");
+    if (window.MaribCharts && MaribCharts.redrawIn) {
+      MaribCharts.redrawIn(v === "workers" ? $("attWorkers") : $("attSups"));
+    }
   }
 
   /* R23 #8 — scope segment: أساسي (regular time only) / إضافي (overtime
@@ -2000,6 +2088,7 @@ var App = (function () {
       });
     }
     syncCmpBtns();
+    syncUrl();   /* R25: every render refreshes the shareable URL */
   }
 
   /* round 8: ⇄ button states follow the per-card compare modes */
@@ -2216,7 +2305,18 @@ var App = (function () {
         state.source = "cloud";
         boot("cloud", months);
         snapToMonth(months[months.length - 1], true);
+        /* R25: a URL that carries a view (?page=..&from=..) wins over the
+           default "snap to latest month" — opening the link in a new tab
+           (or refreshing it) rebuilds exactly the view it was shared from */
+        applyQueryState();
         var nd = $("noData"); if (nd) nd.classList.remove("on");
+        /* R25: React hydration can restore the SSR <title> once, AFTER
+           the app already set the tab title (dev-mode race). Re-assert
+           the correct title a few times — by the last tap hydration has
+           settled for good, and this never fights the user. */
+        [700, 1800, 3600].forEach(function (ms) {
+          setTimeout(function () { if (state.model) updateTitle(); }, ms);
+        });
       } else {
         state.tables = { dd: [], ot: [], pm: [], att: [], lo: [] };
         state.monthsMeta = [];
@@ -2763,16 +2863,12 @@ var App = (function () {
     bindAuditPanel();
     bindStoragePanel();
 
-    /* attendance sub-tabs: workers / supervisors */
+    /* attendance sub-tabs: workers / supervisors (R25: one shared
+       setAttView() path — also used by the URL restore) */
     document.querySelectorAll(".att-tab").forEach(function (b) {
       b.addEventListener("click", function () {
-        var v = b.getAttribute("data-attview");
-        document.querySelectorAll(".att-tab").forEach(function (x) {
-          x.className = "att-tab" + (x === b ? " on" : "");
-        });
-        $("attWorkers").className = "att-view" + (v === "workers" ? " on" : "");
-        $("attSups").className = "att-view" + (v === "sups" ? " on" : "");
-        C.redrawIn(v === "workers" ? $("attWorkers") : $("attSups"));
+        setAttView(b.getAttribute("data-attview"));
+        syncUrl();
       });
     });
 

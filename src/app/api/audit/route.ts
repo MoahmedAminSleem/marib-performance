@@ -2,21 +2,20 @@
    GET ?from=YYYY-MM-DD&to=YYYY-MM-DD →
    { events: [...desc], entities: [{ entity, label, creator:{actor,at}, edits:[{actor,at} ×≤3] }] }
    The grouped view keeps the CREATOR untouched and carries the last 3
-   editors only — a new edit drops the oldest of the three (rolling window). */
+   editors only — a new edit drops the oldest of the three (rolling window).
+   R25: refactored onto the shared http helpers. */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ensureBoot, q } from "@/lib/marib/db";
-import { sessionUser, isDev } from "@/lib/marib/session";
+import { q } from "@/lib/marib/db";
+import { serverFail, requireRole } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
-    await ensureBoot();
-    const me = sessionUser(req);
-    if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });
-    if (!isDev(me)) return NextResponse.json({ error: "dev" }, { status: 403 });
+    const g = await requireRole(req, "dev", "audit", "GET");
+    if (g.res) return g.res;
 
     const from = req.nextUrl.searchParams.get("from") || "";
     const to = req.nextUrl.searchParams.get("to") || "";
@@ -48,18 +47,18 @@ export async function GET(req: NextRequest) {
     for (const e of events) {
       const ent = e.entity as string;
       if (!byEntity.has(ent)) byEntity.set(ent, { entity: ent, label: (e.label as string) ?? null, events: [] });
-      const g = byEntity.get(ent)!;
-      if (!g.label && e.label) g.label = e.label as string;
-      g.events.push({ at: e.at as string, actor: e.actor as string, action: e.action as string });
+      const g2 = byEntity.get(ent)!;
+      if (!g2.label && e.label) g2.label = e.label as string;
+      g2.events.push({ at: e.at as string, actor: e.actor as string, action: e.action as string });
     }
-    const entities = Array.from(byEntity.values()).map((g) => {
-      const evs = g.events;
+    const entities = Array.from(byEntity.values()).map((g2) => {
+      const evs = g2.events;
       const creator = evs[0];
       // edits = everything after the creation event; keep the LATEST three
       const edits = evs.slice(1).slice(-3).reverse();
       return {
-        entity: g.entity,
-        label: g.label,
+        entity: g2.entity,
+        label: g2.label,
         creator: { actor: creator.actor, at: creator.at, action: creator.action },
         edits: edits.map((x) => ({ actor: x.actor, at: x.at, action: x.action })),
         totalEdits: Math.max(0, evs.length - 1),
@@ -78,7 +77,6 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ events: list, entities });
   } catch (e) {
-    console.error("audit GET", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("audit", "GET", e);
   }
 }

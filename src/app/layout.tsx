@@ -7,7 +7,12 @@ import "./globals.css";
    title + favicon + viewport. document.title is then driven dynamically
    by the app itself (login → company name, inside → the open tab). */
 export const metadata: Metadata = {
-  title: "marib international garments",
+  /* R25: the app's own updateTitle() drives this dynamically (login →
+     company name, inside → the open tab). The STATIC default is the
+     Arabic company name — Arabic-first site, and if React's hydration
+     restores the head after the vanilla script already set the title,
+     it restores the SAME string instead of clobbering it. */
+  title: "مأرب العالمية للملابس الجاهزة",
   description:
     "لوحة أداء مصنع مأرب — مأرب العالمية للملابس الجاهزة. مزامنة سحابية مباشرة مع قاعدة بيانات Neon.",
   icons: {
@@ -35,7 +40,12 @@ export default function RootLayout({
         <link rel="stylesheet" href="/app/app.css" />
         <meta name="color-scheme" content="dark" />
       </head>
-      <body>{children}</body>
+      {/* R25: the vanilla app scripts tag <body> with lg-locked (scroll
+          lock) while the login screen is up — that happens between SSR
+          and hydration, so React would warn on every load. This body is
+          React-opaque; the whole dashboard DOM inside is managed by
+          /public/app anyway. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

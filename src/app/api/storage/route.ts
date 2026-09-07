@@ -1,23 +1,27 @@
 /* /api/storage — Neon database storage meter (dev/Amin only)
    Reports the real Postgres size (pg_database_size, with a
    sum-of-relations fallback) + the biggest tables, against the
-   plan quota (stored in settings, default 3 GB). */
+   plan quota (stored in settings).
+   R25: default quota corrected to 0.5 GB — the VERIFIED Neon Free
+   plan limit (neon.com/pricing: "0.5 GB of storage per project").
+   The previous 3 GB figure was an unverified default. A dev can
+   still override it from the settings panel (Launch = 5 GB+). */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ensureBoot, q } from "@/lib/marib/db";
-import { sessionUser, isDev } from "@/lib/marib/session";
+import { q } from "@/lib/marib/db";
+import { serverFail, logger, requireRole } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const DEFAULT_QUOTA = 3 * 1024 * 1024 * 1024; // 3 GB (Neon free plan default)
+const lg = logger("storage");
+
+const DEFAULT_QUOTA = 0.5 * 1024 * 1024 * 1024; // 0.5 GB — Neon Free plan (verified 2026-09)
 
 export async function GET(req: NextRequest) {
   try {
-    await ensureBoot();
-    const me = sessionUser(req);
-    if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });
-    if (!isDev(me)) return NextResponse.json({ error: "dev" }, { status: 403 });
+    const g = await requireRole(req, "dev", "storage", "GET");
+    if (g.res) return g.res;
 
     let bytes = 0;
     let method = "database";
@@ -55,6 +59,7 @@ export async function GET(req: NextRequest) {
     const maribRows = await q("SELECT COUNT(*)::int AS n FROM marib_data");
     const months = await q("SELECT COUNT(DISTINCT month)::int AS n FROM marib_data");
 
+    lg.info("storage metered", { bytes, quota, months: (months[0]?.n as number) ?? 0 });
     return NextResponse.json({
       bytes,
       method,
@@ -64,7 +69,6 @@ export async function GET(req: NextRequest) {
       months: (months[0]?.n as number) ?? 0,
     });
   } catch (e) {
-    console.error("storage GET", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("storage", "GET", e);
   }
 }

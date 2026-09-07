@@ -1,14 +1,18 @@
 /* /api/settings — app settings stored on the server (Neon)
    GET → { targets, groups, storage_quota }   (any signed-in user)
    PUT → { key, value }  · targets & groups: admin/dev · storage_quota: dev
-         every change is audited (old → new) */
+         every change is audited (old → new)
+   R25: refactored onto the shared http helpers + structured logging. */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ensureBoot, q, audit } from "@/lib/marib/db";
-import { currentUser, sessionUser, isAdmin, isDev } from "@/lib/marib/session";
+import { q, audit } from "@/lib/marib/db";
+import { isAdmin, isDev } from "@/lib/marib/session";
+import { fail, serverFail, readJson, logger, requireUser, requireRoleBody } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const lg = logger("settings");
 
 const KEYS = ["targets", "groups", "storage_quota"];
 
@@ -21,30 +25,29 @@ async function loadSettings(): Promise<Record<string, unknown>> {
 
 export async function GET(req: NextRequest) {
   try {
-    await ensureBoot();
-    const me = sessionUser(req);
-    if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });
+    const g = await requireUser(req, "settings", "GET");
+    if (g.res) return g.res;
     return NextResponse.json(await loadSettings());
   } catch (e) {
-    console.error("settings GET", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("settings", "GET", e);
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    await ensureBoot();
-    const me = await currentUser(req);
-    if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });
+    const g = await requireRoleBody(req, "user");
+    if (g.res) return g.res;
+    const me = g.user!;
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readJson(req);
+    if (!body) return fail("body", 413);
     const key = String(body.key || "");
     const value = body.value;
-    if (!KEYS.includes(key)) return NextResponse.json({ error: "key" }, { status: 400 });
+    if (!KEYS.includes(key)) return fail("key", 400);
     if (key === "storage_quota") {
-      if (!isDev(me)) return NextResponse.json({ error: "dev" }, { status: 403 });
+      if (!isDev(me)) return fail("dev", 403);
     } else if (!isAdmin(me)) {
-      return NextResponse.json({ error: "admin" }, { status: 403 });
+      return fail("admin", 403);
     }
 
     const prev = await q("SELECT value FROM marib_setting WHERE key = $1", [key]);
@@ -72,9 +75,9 @@ export async function PUT(req: NextRequest) {
       summary = { quota: value };
     }
     await audit(me.username, "edit", "settings:" + key, key, { from: oldValue, to: summary ?? value });
+    lg.info("setting saved", { key, by: me.username });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("settings PUT", e);
-    return NextResponse.json({ error: "server" }, { status: 500 });
+    return serverFail("settings", "PUT", e);
   }
 }
