@@ -7,7 +7,6 @@
 import { SKELETON } from "./skeleton";
 
 const SCRIPTS = [
-  "/app/xlsx.full.min.js", // SheetJS — reads the month's Excel locally
   "/app/app_core.js",      // MaribCore — parsing + the 42 measures
   "/app/i18n_dict.js",     // AR / EN / TR dictionary
   "/app/i18n_core.js",     // i18n engine
@@ -16,6 +15,8 @@ const SCRIPTS = [
   "/app/app_main.js",      // App module (a+b+c concatenated — one closure)
   "/app/app_auth.js",      // MaribAuth — server login gate
 ];
+/* xlsx.full.min.js (~950KB) is NOT loaded upfront anymore: App.ensureXLSX()
+   pulls it on first upload/export (R24 perf — the first paint got heavy). */
 
 export default function Home() {
   return (

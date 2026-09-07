@@ -32,6 +32,26 @@ var App = (function () {
 
   /* ---------------- tiny helpers ---------------- */
   function $(id) { return document.getElementById(id); }
+
+  /* ---------------- lazy SheetJS (R24 perf) ----------------
+     xlsx.full.min.js is ~950KB and is ONLY needed when an Excel file
+     is parsed (upload) or exported (activity log). Loading it upfront
+     made the first paint heavy; it now loads on first use and is
+     cached by the browser afterwards. */
+  var _xlsxP = null;
+  function ensureXLSX() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (!_xlsxP) {
+      _xlsxP = new Promise(function (res, rej) {
+        var s = document.createElement("script");
+        s.src = "/app/xlsx.full.min.js";
+        s.onload = function () { window.XLSX ? res(window.XLSX) : rej(new Error("XLSX missing")); };
+        s.onerror = function () { _xlsxP = null; rej(new Error("XLSX load failed")); };
+        document.head.appendChild(s);
+      });
+    }
+    return _xlsxP;
+  }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
   function stOf(v, t, inv) { return inv ? U.statusInv(v, t) : U.statusOf(v, t); }
   function stColor(st) { return st === "good" ? C_GOOD : st === "warn" ? C_WARN : C_BAD; }
@@ -2096,21 +2116,23 @@ var App = (function () {
     Array.prototype.forEach.call(files, function (f) {
       chain = chain.then(function () {
         return readFile(f).then(function (buf) {
-          var report = { errors: [], warnings: [], sheetsMissing: [], rows: {} };
-          var t = MaribCore.parseWorkbook(new Uint8Array(buf), XLSX, MaribCore.DEFAULT_CONFIG, report);
-          if (report.errors.length) throw new Error(f.name);
-          names.push(f.name);
-          var byMonth = splitByMonth(t);
-          var keys = Object.keys(byMonth).sort();
-          var inner = Promise.resolve();
-          keys.forEach(function (mo) {
-            inner = inner.then(function () {
-              return MaribCloud.dataSync(mo, packTables(byMonth[mo]), [f.name]).then(function () {
-                synced.push(mo);
+          return ensureXLSX().then(function (XLSXlib) {
+            var report = { errors: [], warnings: [], sheetsMissing: [], rows: {} };
+            var t = MaribCore.parseWorkbook(new Uint8Array(buf), XLSXlib, MaribCore.DEFAULT_CONFIG, report);
+            if (report.errors.length) throw new Error(f.name);
+            names.push(f.name);
+            var byMonth = splitByMonth(t);
+            var keys = Object.keys(byMonth).sort();
+            var inner = Promise.resolve();
+            keys.forEach(function (mo) {
+              inner = inner.then(function () {
+                return MaribCloud.dataSync(mo, packTables(byMonth[mo]), [f.name]).then(function () {
+                  synced.push(mo);
+                });
               });
             });
+            return inner;
           });
-          return inner;
         });
       });
     });
@@ -2479,6 +2501,8 @@ var App = (function () {
   }
   function exportAudit() {
     if (!auData) { toast(T("toast_sync_err"), "err"); return; }
+    /* SheetJS loads on demand (R24 perf) — the export waits for it once */
+    ensureXLSX().then(function () {
     try {
       var wb = XLSX.utils.book_new();
       function xesc(v) {
@@ -2503,6 +2527,7 @@ var App = (function () {
     } catch (e) {
       toast(T("toast_sync_err"), "err");
     }
+    }).catch(function () { toast(T("toast_sync_err"), "err"); });
   }
   function bindAuditPanel() {
     ["auFrom", "auTo"].forEach(function (id) {
@@ -2571,14 +2596,28 @@ var App = (function () {
     if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     var tracked = [];
     var raf = 0;
+    /* R24 perf: the winding pattern repeats every 5.44px along x — the
+       target wraps into that period (numbers stay tiny), and a style write
+       fires ONLY when the shift visibly moved >=1.2px. Writing every frame
+       invalidated the whole scroll subtree and made scrolling feel heavy. */
+    var PERIOD = 5.44;
+    function norm(v) { v = v % PERIOD; if (v < 0) v += PERIOD; return v; }
+    function nearest(v, ref) {
+      var k = Math.round((ref - v) / PERIOD);
+      return v + k * PERIOD;
+    }
     function loop() {
       var dirty = false;
       for (var i = 0; i < tracked.length; i++) {
         var el = tracked[i];
-        var cur = el.__spoolCur || 0, tgt = el.__spoolTgt || 0;
-        if (Math.abs(tgt - cur) > 0.06) {
-          cur += (tgt - cur) * 0.15;
-          el.style.setProperty("--spool-shift", cur.toFixed(2) + "px");
+        var cur = el.__spoolCur || 0;
+        var tgt = nearest(norm(el.__spoolTgt || 0), cur);
+        if (Math.abs(tgt - cur) > 0.35) {
+          cur += (tgt - cur) * 0.16;
+          if (Math.abs(cur - (el.__spoolW || 0)) >= 1.2 || Math.abs(tgt - cur) < 0.5) {
+            el.style.setProperty("--spool-shift", norm(cur).toFixed(1) + "px");
+            el.__spoolW = cur;
+          }
           el.__spoolCur = cur;
           dirty = true;
         }
@@ -2593,12 +2632,11 @@ var App = (function () {
       var st = t.scrollTop || 0;
       var d = st - (t.__spoolLast || 0);
       t.__spoolLast = st;
-      t.__spoolTgt = (t.__spoolTgt || 0) + d / 5;
+      t.__spoolTgt = norm((t.__spoolTgt || 0) + d / 5);
       if (!raf) raf = requestAnimationFrame(loop);
     }, true);
   }
 
-  /* ---------------- boot ---------------- */
   function boot(source, fileNames) {
     var cfg = MaribCore.DEFAULT_CONFIG;
     var model = MaribCore.buildModel(state.tables, cfg);

@@ -42,8 +42,9 @@ var MaribAuth = (function () {
   var RM = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null;
   var SLOW = 0;
   try { SLOW = parseInt(new URLSearchParams(location.search).get("pwslow"), 10) || 0; } catch (e) { }
-  var NEEDLE_X = 62;  /* needle tip x-offset inside the machine svg (86px render) */
-  var RIP_X = 17;     /* hook tip x-offset inside the ripper svg (34px render) */
+  var NEEDLE_X = 62;   /* needle tip x-offset inside the machine svg (86px render) */
+  var NEEDLE_TIP = 115;/* needle tip y-offset inside the machine svg (120px render) */
+  var RIP_X = 17;      /* hook tip x-offset inside the ripper svg (34px render) */
 
   function setStatus(key) {
     var s = $("lgStatus");
@@ -82,8 +83,9 @@ var MaribAuth = (function () {
     return spans;
   }
 
-  function prepStitch(stitch, W, H) {
+  function prepStitch(stitch, X0, W, H) {
     stitch.setAttribute("viewBox", "0 0 " + W + " " + H);
+    stitch.style.left = X0 + "px";   /* start at the TEXT zone — never on the lock icon */
     stitch.style.width = W + "px";
     stitch.style.display = "block";
     var mid = (H / 2).toFixed(1);
@@ -93,30 +95,46 @@ var MaribAuth = (function () {
     $("pwStitchGlow").setAttribute("d", d);
   }
 
-  /* ---- sew: machine sweeps L→R, needle vibrating, gold stitches grow,
-          characters fade under the stitches one by one ---- */
+  /* theater geometry — everything is INPUT-relative: the stitch, the
+     machine sweep and the ripper all live INSIDE the text zone and never
+     touch the lock icon on the left or the eye toggle on the right.
+     (R24 fix: the stitch used to start at field x=2, crossing the lock.) */
+  function theaterGeom() {
+    var inp = $("lgPass"), field = $("lgPwField"), eye = $("lgEye");
+    var X0 = inp.offsetLeft;
+    /* the eye toggle floats over the input's right end — the fabric
+       (stitch zone) must stop BEFORE it, not run underneath it */
+    var eyeL = eye && eye.offsetLeft ? eye.offsetLeft : field.clientWidth - 46;
+    var W = Math.max(40, eyeL - X0 - 12);
+    var H = field.clientHeight;
+    return { X0: X0, W: W, H: H, FW: field.clientWidth };
+  }
+
+  /* ---- sew: machine rides ON TOP of the field (only the needle dips
+          in), gold stitches grow, characters fade under them one by one ---- */
   function runSew() {
     var inp = $("lgPass"), field = $("lgPwField"), theater = $("pwTheater");
     var mirror = $("pwMirror"), stitch = $("pwStitchSvg");
     var mach = $("pwMach"), rip = $("pwRip"), threadEl = $("pwThread"), threadPath = $("pwThreadPath");
     var val = inp.value;
-    var W = field.clientWidth - 58;
-    var H = field.clientHeight;
+    var G = theaterGeom(), X0 = G.X0, W = G.W, H = G.H, FW = G.FW;
     if (W < 40) { inp.type = "password"; pwVisible = false; field.classList.add("sewn"); syncToggle(); return; }
 
     inp.type = "password";
     inp.readOnly = true;
     var spans = buildMirror(mirror, inp, val, false);
     var cxs = spans.map(function (b) { return b.offsetLeft + b.offsetWidth / 2; });
-    prepStitch(stitch, W, H);
+    prepStitch(stitch, X0, W, H);
     stitch.style.clipPath = "inset(0 " + (W + 16) + "px 0 0)";
     rip.style.display = "none";
-    threadEl.setAttribute("viewBox", "0 0 " + W + " " + H);
+    mach.style.left = X0 + "px";
+    mach.style.top = (H / 2 + 2 - NEEDLE_TIP).toFixed(1) + "px"; /* plate above the field, tip at the stitch line */
+    threadEl.setAttribute("viewBox", "0 0 " + FW + " " + H);
     theater.classList.add("run");
     field.classList.add("stitching");
     setStatus("lg_status_hide");
 
-    var DUR = 1050 + SLOW, t0 = null;
+    var DUR = 680 + SLOW, t0 = null;
     function end() {
       animating = false; curEnd = null;
       stitch.style.clipPath = "inset(0 0 0 0)";
@@ -136,13 +154,13 @@ var MaribAuth = (function () {
       if (t0 === null) t0 = t;
       var p = Math.min(1, (t - t0) / DUR);
       var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-      var x = -14 + e * (W + 16);
+      var x = -16 + e * (W + 26);
       stitch.style.clipPath = "inset(0 " + Math.max(0, W - x).toFixed(1) + "px 0 0)";
       mach.style.transform = "translateX(" + (x - NEEDLE_X).toFixed(1) + "px)";
       /* trailing thread from the spool down to the needle point */
-      var sx = (x - NEEDLE_X) + 40;
+      var sx = X0 + (x - NEEDLE_X) + 40, nx = X0 + x;
       threadPath.setAttribute("d",
-        "M " + sx.toFixed(1) + " -50 C " + (sx - 26).toFixed(1) + " -44, " + (x - 16).toFixed(1) + " -4, " + x.toFixed(1) + " " + (H / 2).toFixed(1));
+        "M " + sx.toFixed(1) + " -66 C " + (sx - 26).toFixed(1) + " -54, " + (nx - 16).toFixed(1) + " -6, " + nx.toFixed(1) + " " + (H / 2 + 2).toFixed(1));
       for (var i = 0; i < spans.length; i++) {
         if (cxs[i] <= x + 6 && !spans[i].classList.contains("done")) spans[i].classList.add("done");
       }
@@ -159,21 +177,22 @@ var MaribAuth = (function () {
     var mirror = $("pwMirror"), stitch = $("pwStitchSvg");
     var mach = $("pwMach"), rip = $("pwRip"), threadPath = $("pwThreadPath");
     var val = inp.value;
-    var W = field.clientWidth - 58;
-    var H = field.clientHeight;
+    var G = theaterGeom(), X0 = G.X0, W = G.W, H = G.H;
     if (W < 40) { inp.type = "text"; pwVisible = true; field.classList.remove("sewn"); syncToggle(); return; }
 
     inp.readOnly = true;
     var spans = buildMirror(mirror, inp, val, true);
     var cxs = spans.map(function (b) { return b.offsetLeft + b.offsetWidth / 2; });
-    prepStitch(stitch, W, H);
+    prepStitch(stitch, X0, W, H);
     stitch.style.clipPath = "inset(0 0 0 0)";
     mach.style.display = "none";
     rip.style.display = "block";
+    rip.style.left = X0 + "px";
+    rip.style.top = (H / 2 - 47).toFixed(1) + "px"; /* hook tip on the stitch line */
     theater.classList.add("rip");
     setStatus("lg_status_show");
 
-    var DUR = 900 + SLOW, t0 = null;
+    var DUR = 620 + SLOW, t0 = null;
     function end() {
       animating = false; curEnd = null;
       stitch.style.display = "none";
@@ -216,9 +235,9 @@ var MaribAuth = (function () {
     if (!field || !stitch) return;
     if (animating) return;
     if (show && inp && inp.value) {
-      var W = field.clientWidth - 58, H = field.clientHeight;
-      if (W < 40) return;
-      prepStitch(stitch, W, H);
+      var G = theaterGeom();
+      if (G.W < 40) return;
+      prepStitch(stitch, G.X0, G.W, G.H);
       stitch.style.clipPath = "inset(0 0 0 0)";
     } else {
       stitch.style.display = "none";
@@ -521,12 +540,17 @@ var MaribAuth = (function () {
     if (!window.matchMedia) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || matchMedia("(pointer: coarse)").matches) return;
     var root = $("loginScreen");
+    /* R24 perf: coalesce mousemove into one write per frame */
+    var pendX = 0, pendY = 0, pxRaf = 0;
     root.addEventListener("mousemove", function (e) {
       var r = root.getBoundingClientRect();
-      var nx = ((e.clientX - r.left) / r.width - 0.5) * 2;
-      var ny = ((e.clientY - r.top) / r.height - 0.5) * 2;
-      root.style.setProperty("--px", nx.toFixed(3));
-      root.style.setProperty("--py", ny.toFixed(3));
+      pendX = ((e.clientX - r.left) / r.width - 0.5) * 2;
+      pendY = ((e.clientY - r.top) / r.height - 0.5) * 2;
+      if (!pxRaf) pxRaf = requestAnimationFrame(function () {
+        pxRaf = 0;
+        root.style.setProperty("--px", pendX.toFixed(3));
+        root.style.setProperty("--py", pendY.toFixed(3));
+      });
     });
     root.addEventListener("mouseleave", function () {
       root.style.setProperty("--px", "0");

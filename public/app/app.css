@@ -905,12 +905,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 .pw-mirror b.done{opacity:0;filter:blur(3px);transform:translateY(2px)}
 .pw-stitch-svg{position:absolute;top:0;left:0;height:100%;overflow:visible;display:none}
 .pw-mach{
-  position:absolute;top:-64px;left:0;width:86px;height:98px;
+  position:absolute;top:-87px;left:0;width:86px;height:120px;
   opacity:0;transition:opacity .16s;overflow:visible;
   filter:drop-shadow(0 8px 16px rgba(0,0,0,.5));
 }
 .pw-rip{
-  position:absolute;top:-28px;left:0;width:34px;height:54px;
+  position:absolute;top:-22px;left:0;width:34px;height:54px;
   opacity:0;transition:opacity .16s;overflow:visible;
   filter:drop-shadow(0 6px 12px rgba(0,0,0,.5));
 }
@@ -1445,16 +1445,14 @@ body{
 .page.on .card:nth-child(7),.page.on .kpi:nth-child(7){animation-delay:.29s}
 .page.on .card:nth-child(8),.page.on .kpi:nth-child(8){animation-delay:.33s}
 
-/* ---------- needle cursor (round 11) ---------- */
-body{cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%0A%3Cdefs%3E%0A%3ClinearGradient id='ns' x1='0' y1='0' x2='1' y2='1'%3E%0A%3Cstop offset='0' stop-color='%23F4F7FA'/%3E%0A%3Cstop offset='.5' stop-color='%23B9C4CE'/%3E%0A%3Cstop offset='1' stop-color='%237C8996'/%3E%0A%3C/linearGradient%3E%0A%3C/defs%3E%0A%3Cpath d='M3.4 3.4 L25.9 21.8 L22.7 25 L2.9 5.1 Z' fill='rgba(0,0,0,.45)' transform='translate(1.3,1.3)'/%3E%0A%3Cpath d='M2 2 L24.6 20.5 L21.4 23.7 L1.6 3.9 Z' fill='url(%23ns)' stroke='rgba(20,28,40,.35)' stroke-width='.4'/%3E%0A%3Cellipse cx='17.2' cy='17.3' rx='1.35' ry='2.9' transform='rotate(45 17.2 17.3)' fill='%230C1420' stroke='rgba(255,255,255,.28)' stroke-width='.5'/%3E%0A%3Ccircle cx='22.4' cy='22.5' r='1.5' fill='url(%23ns)'/%3E%0A%3Cpath d='M22.3 22.4 l1.4 1.4' stroke='%23E7EDF2' stroke-width='.8' stroke-linecap='round'/%3E%0A%3C/svg%3E") 2 2, auto;}
-
-/* interactive elements = needle with a gold thread through the eye */
-a,button,select,label,.nav-btn,.qp-btn,.att-tab,.side-btn,.data-btn,.icon-btn,
-.cmp-btn,.lang-sw .sw-btn,.lg-lang button,.pw-toggle,.us-ic,.us-add-btn,
-.us-save,.us-cancel,.tg-save,.tg-reset,.nd-btn,.dp-act,.us-sw,
-.drill-row,.kpi-drill,.chart.drillable,.chart svg .drillable,.chart svg .goal-hit{
-  cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%0A%3Cdefs%3E%0A%3ClinearGradient id='ns' x1='0' y1='0' x2='1' y2='1'%3E%0A%3Cstop offset='0' stop-color='%23F4F7FA'/%3E%0A%3Cstop offset='.5' stop-color='%23B9C4CE'/%3E%0A%3Cstop offset='1' stop-color='%237C8996'/%3E%0A%3C/linearGradient%3E%0A%3C/defs%3E%0A%3Cpath d='M3.4 3.4 L25.9 21.8 L22.7 25 L2.9 5.1 Z' fill='rgba(0,0,0,.45)' transform='translate(1.3,1.3)'/%3E%0A%3Cpath d='M2 2 L24.6 20.5 L21.4 23.7 L1.6 3.9 Z' fill='url(%23ns)' stroke='rgba(20,28,40,.35)' stroke-width='.4'/%3E%0A%3Cellipse cx='17.2' cy='17.3' rx='1.35' ry='2.9' transform='rotate(45 17.2 17.3)' fill='%230C1420' stroke='rgba(255,255,255,.28)' stroke-width='.5'/%3E%0A%3Ccircle cx='22.4' cy='22.5' r='1.5' fill='url(%23ns)'/%3E%0A%3Cpath d='M22.3 22.4 l1.4 1.4' stroke='%23E7EDF2' stroke-width='.8' stroke-linecap='round'/%3E%0A%3Cpath d='M16.2 18.3 C 12.5 22.6, 8 20.4, 4.2 24.2' stroke='%23D9A86B' stroke-width='1.7' fill='none' stroke-linecap='round'/%3E%0A%3Ccircle cx='4.2' cy='24.2' r='1.1' fill='%23D9A86B'/%3E%0A%3C/svg%3E") 2 2, pointer;
-}
+/* ---------- cursors (round 11 legacy removed, R24 PNG system owns it) ----------
+   The old SVG data-URL cursors rendered inconsistently (Chrome fell back
+   to the hand) and leaked the needle-with-thread onto the password eye
+   toggle and drill rows. The R24 section later in this file is now the
+   single source: PNG needle on body, thread PNG ONLY on the slicer zone,
+   the standard hand everywhere else interactive. */
+.drill-row,.kpi-drill,.chart.drillable,.chart svg .drillable,.chart svg .goal-hit,
+a,button,select,label,.icon-btn,.us-sw{cursor:pointer}
 /* text fields keep a caret-friendly cursor */
 input,textarea{cursor:text}
 /* disabled things keep the system look */
@@ -1484,15 +1482,18 @@ button:disabled,.us-ic:disabled,.us-sw input:disabled{cursor:not-allowed}
   --cur-thread: url("/app/cursor_needle_thread.png") 2 2, pointer;
 }
 body { cursor: var(--cur-needle); }
+/* interactive elements: the standard hand. The needle-with-thread stays
+   ONLY in its zone — the slicers (R24 #8) — and never leaks onto login
+   controls or other buttons. */
 button, .nav-btn, .side-btn, .data-btn, .att-tab, .su-tab, .scope-btn,
 a, .sw-btn, .us-ic, .us-save, .us-cancel, .us-add-btn, .tg-save, .tg-reset,
 .dp-act, .nd-btn, .cmp-btn, .lang-sw button, .lg-lang button, .lg-submit,
 .qp-btn, .set-sec-head, .au-x-btn, .seg-btn, .seg-mini button, .month-btn {
-  cursor: var(--cur-thread);
+  cursor: pointer;
 }
-/* the user's explicit ask: needle-with-thread on the 3 scope buttons,
-   the date slicers and the All-Lines/All-Sections/All-Supervisors slicers */
-.scope-btn, #fLine, #fSection, #fSup, #fFrom, #fTo, #fMonth, .range-pick input[type=date] {
+/* the zone: date slicers + lines/sections/supervisors slicers + month picker */
+.scope-btn, #fLine, #fSection, #fSup, #fFrom, #fTo, #fMonth, .month-btn,
+.range-pick input[type=date] {
   cursor: var(--cur-thread);
 }
 input, textarea { cursor: text; }
@@ -1629,7 +1630,7 @@ button:disabled, .us-ic:disabled, .us-sw input:disabled { cursor: not-allowed; }
 /* targets retro radios */
 .tg-apply { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .tg-apply label {
-  display: flex; gap: 8px; align-items: flex-start; cursor: var(--cur-thread);
+  display: flex; gap: 8px; align-items: flex-start; cursor: pointer;
   border: 1.5px solid rgba(169,183,199,.28); border-radius: 11px;
   padding: 10px 13px; flex: 1 1 240px; background: rgba(13,23,38,.5);
 }
