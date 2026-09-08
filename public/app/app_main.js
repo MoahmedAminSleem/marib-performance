@@ -18,7 +18,8 @@ var App = (function () {
      date range by applyTargetsForRange() (retro / from-now rules). */
 
   var state = { tables: null, model: null, k: null, page: "overview", busy: false, source: "cloud", qp: "all", cmp: {},
-                scope: "both", suView: null, attView: "workers", groups: null, targetsMeta: null, monthsMeta: [] };
+                scope: "both", suView: null, attView: "workers", groups: null, targetsMeta: null, monthsMeta: [],
+                mhome: null, mhGran: "day" };   /* R30: manager-home visibility + GÜN/HAFTA/AY granularity */
 
   /* R25: the incoming URL is captured at script-load time — BEFORE the
      first render calls syncUrl() and rewrites the query string. Without
@@ -1952,6 +1953,157 @@ var App = (function () {
      the URL = restoring the whole view. No history entries are
      created — replaceState only, the back button stays clean.
      ============================================================ */
+  /* ============================================================
+     R30 — Manager home ("Grafik" view, GÜN / HAFTA / AY)
+     Mirrors the manager's Turkish Excel Grafik sheet: a 3-box
+     granularity switch (daily / weekly / monthly) driving the 6
+     metric charts (VERİMLİLİK + target · output per man-shift ·
+     total workers · avg model time · overtime % · absenteeism %).
+     It lives BESIDE the classic overview — nothing is removed: the
+     dev picks who sees it (settings → رئيسية المدير) and everyone
+     else keeps the classic home. On this page only the date-range +
+     line + section filters apply (qp / scope / month / supervisor
+     are hidden — and any supervisor selection is cleared on entry
+     so nothing filters the data invisibly).
+     ============================================================ */
+  function mhomeActive() {
+    var me = window.MaribAuth ? MaribAuth.me() : null;
+    if (!me || !state.mhome || !state.mhome.users || !state.mhome.users.length) return false;
+    var uid = String(me.uid);
+    for (var i = 0; i < state.mhome.users.length; i++) {
+      if (String(state.mhome.users[i]) === uid) return true;
+    }
+    return false;
+  }
+
+  function mhIsoWeek(iso) {
+    var d = new Date(iso + "T00:00:00Z");
+    var day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - day);
+    var y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - y0) / 86400000) + 1) / 7);
+  }
+
+  function mhMonthLabel(key) {
+    var ms = (state.model && state.model.months) || [];
+    for (var i = 0; i < ms.length; i++) if (ms[i].key === key) return ms[i].label;
+    return key;
+  }
+
+  function mhBuckets() {
+    var ser = (state.k && state.k.series) || [];
+    var gran = state.mhGran || "day";
+    var out = {}, order = [];
+    ser.forEach(function (s) {
+      var key, label;
+      if (gran === "week") {
+        var w = mhIsoWeek(s.date);
+        key = s.date.slice(0, 4) + "-W" + (w < 10 ? "0" : "") + w;
+        label = "W" + w;
+      } else if (gran === "month") {
+        key = s.date.slice(0, 7);
+        label = mhMonthLabel(key);
+      } else {
+        key = s.date;
+        label = s.label;
+      }
+      if (!out[key]) { out[key] = { key: key, label: label, rows: [] }; order.push(key); }
+      out[key].rows.push(s);
+    });
+    order.sort();
+    return order.map(function (k) { return out[k]; });
+  }
+
+  function mhAgg(rows) {
+    var a = { days: rows.length, loA: 0, loT: 0, minProd: 0, avail: 0, otMin: 0,
+              absent: 0, reg: 0, wrk: 0, samSum: 0, samCnt: 0, first: rows[0] && rows[0].date };
+    rows.forEach(function (s) {
+      a.loA += s.loA || 0; a.loT += s.loT || 0; a.minProd += s.minProd || 0;
+      a.avail += s.totalMinAvail || 0; a.otMin += s.otMin || 0; a.absent += s.absent || 0;
+      a.reg += s.regWorkers || 0; a.wrk += s.ddAttW || 0;
+      if (s.sam != null) { a.samSum += s.sam; a.samCnt += 1; }
+    });
+    a.eff = a.avail ? a.minProd / a.avail : null;
+    a.otPct = a.avail ? a.otMin / a.avail : null;
+    a.absPct = (a.reg + a.absent) ? a.absent / (a.reg + a.absent) : null;
+    a.pcsW = a.wrk ? a.loA / a.wrk : null;
+    a.avgWrk = a.days ? a.wrk / a.days : null;
+    a.sam = a.samCnt ? a.samSum / a.samCnt : null;
+    return a;
+  }
+
+  function renderMhome() {
+    var bk = mhBuckets();
+    var agg = bk.map(function (b) { return mhAgg(b.rows); });
+    var gran = state.mhGran || "day";
+    function drill(b, domain) {
+      return gran === "day" && b.rows[0] ? { type: "date", value: b.rows[0].date, domain: domain } : null;
+    }
+    /* 1 — VERİMLİLİK: efficiency bars + dashed target line (Excel combo) */
+    C.vbar($("mhEff"), {
+      items: bk.map(function (b, i) {
+        var a = agg[i], st = stOf(a.eff, TH.efficiency);
+        return { label: b.label, value: a.eff == null ? 0 : Math.round(a.eff * 1000) / 10, color: stColor(st),
+          tip: [[T("t_eff"), fmtPct(a.eff, 1)], [T("t_minprod"), fmtInt(a.minProd)], [T("t_availmin"), fmtInt(a.avail)], [T("t_days"), String(a.days)]],
+          drill: drill(b, "eff") };
+      }),
+      fmt: pctF(0), valueName: T("t_eff"),
+      goal: { value: TH.efficiency.good * 100, color: C_GOOD, tipTitle: "t_goal_line" },
+      height: 260
+    });
+    /* 2 — ÜRETİM ADETİ / ADAM·VARDİYA: output pieces per worker */
+    C.vbar($("mhProd"), {
+      items: bk.map(function (b, i) {
+        var a = agg[i];
+        return { label: b.label, value: a.pcsW == null ? 0 : Math.round(a.pcsW * 10) / 10, color: C_ACCENT,
+          tip: [[T("t_actual"), fmtInt(a.loA)], [T("t_wrk"), fmtInt(a.wrk)], [T("t_pcs_w"), a.pcsW == null ? "—" : I18N.dec(a.pcsW.toFixed(1))], [T("t_days"), String(a.days)]] };
+      }),
+      valueName: T("t_pcs_w"), height: 260
+    });
+    /* 3 — TOPLAM ÇALIŞAN K.Ş.: total workers (avg of days on week/month) */
+    C.vbar($("mhWrk"), {
+      items: bk.map(function (b, i) {
+        var a = agg[i];
+        var v = gran === "day" ? a.wrk : (a.avgWrk == null ? 0 : Math.round(a.avgWrk));
+        return { label: b.label, value: v, color: C_ACCENT2,
+          tip: [[T("t_wrk"), fmtInt(Math.round(v))], [T("t_days"), String(a.days)]],
+          drill: drill(b, "att") };
+      }),
+      valueName: T("t_wrk"), height: 260
+    });
+    /* 4 — ORT. MODEL ZAMANI: average model time (SAM) */
+    C.vbar($("mhSam"), {
+      items: bk.map(function (b, i) {
+        var a = agg[i];
+        return { label: b.label, value: a.sam == null ? 0 : Math.round(a.sam * 100) / 100, color: C_WARN,
+          tip: [[T("t_sam"), a.sam == null ? "—" : I18N.dec(a.sam.toFixed(2))], [T("t_days"), String(a.days)]] };
+      }),
+      valueName: T("t_sam"), height: 260
+    });
+    /* 5 — FAZLA MESAİ ORANI: overtime % (inverted thresholds + safe goal) */
+    C.vbar($("mhOt"), {
+      items: bk.map(function (b, i) {
+        var a = agg[i], st = stOf(a.otPct, TH.overtime, true);
+        return { label: b.label, value: a.otPct == null ? 0 : Math.round(a.otPct * 1000) / 10, color: stColor(st),
+          tip: [[T("t_ot_pct"), fmtPct(a.otPct, 2)], [T("t_ot_min2"), fmtInt(a.otMin)], [T("t_availmin"), fmtInt(a.avail)]],
+          drill: drill(b, "ot") };
+      }),
+      fmt: pctF(1), valueName: T("t_ot_pct"),
+      goal: { value: TH.overtime.good * 100, color: C_GOOD, tipTitle: "t_goal_safe" },
+      height: 260
+    });
+    /* 6 — DEVAMSIZLIK ORANI: absenteeism % */
+    C.vbar($("mhAbs"), {
+      items: bk.map(function (b, i) {
+        var a = agg[i];
+        return { label: b.label, value: a.absPct == null ? 0 : Math.round(a.absPct * 1000) / 10, color: C_BAD,
+          tip: [[T("t_abs_rate"), fmtPct(a.absPct, 1)], [T("t_absent"), fmtInt(a.absent)], [T("t_wrk"), fmtInt(a.reg + a.absent)], [T("t_days"), String(a.days)]],
+          drill: drill(b, "att") };
+      }),
+      fmt: pctF(1), valueName: T("t_abs_rate"), height: 260
+    });
+  }
+
   /* R26: the current view as a URLSearchParams — shared by syncUrl()
      (writes the address bar) and syncLinkHrefs() (keeps the tab links
      pointing at this exact view so right-click → new tab reopens it). */
@@ -2135,6 +2287,7 @@ var App = (function () {
     $("dateChip").textContent =
       (fromTxt ? U.isoShort(fromTxt) : "—") + " — " + (toTxt ? U.isoShort(toTxt) : "—") + I18N.dateChip(days);
     if (state.page === "overview") renderOverview(k, sm);
+    else if (state.page === "mhome") renderMhome();
     else if (state.page === "lines") renderLines(k, sm);
     else if (state.page === "sections") renderSections(k, sm);
     else if (state.page === "sups") renderSups(k, sm);
@@ -2176,12 +2329,29 @@ var App = (function () {
   }
 
   function goToPage(page) {
+    /* R30: the manager home replaces the classic overview for users the
+       dev picked in settings (settings → رئيسية المدير) — and only them. */
+    if (page === "overview" && mhomeActive()) page = "mhome";
+    if (page === "mhome" && !mhomeActive()) page = "overview";
     state.page = page;
+    document.body.classList.toggle("pg-mhome", page === "mhome");
+    if (page === "mhome") {
+      /* supervisor filter + scope segment are HIDDEN here — clear any active
+         selection so nothing filters the manager's numbers invisibly. */
+      var fs = $("fSup"); if (fs && fs.value) fs.value = "";
+      if (state.scope !== "both") {
+        state.scope = "both";
+        document.querySelectorAll(".scope-btn").forEach(function (x) {
+          x.classList.toggle("on", x.getAttribute("data-scope") === "both");
+        });
+      }
+    }
     document.querySelectorAll(".page").forEach(function (p) {
       p.className = "page" + (p.id === "page-" + page ? " on" : "");
     });
     document.querySelectorAll(".nav-btn").forEach(function (b) {
-      b.className = "nav-btn" + (b.getAttribute("data-page") === page ? " on" : "");
+      var dp = b.getAttribute("data-page");
+      b.className = "nav-btn" + (dp === page || (page === "mhome" && dp === "overview") ? " on" : "");
     });
     var rawKey = "pg_" + page;
     var raw = T(rawKey);
@@ -2346,6 +2516,7 @@ var App = (function () {
   function applySettings(s) {
     if (s && s.targets) state.targetsMeta = s.targets;
     if (s && s.groups) state.groups = s.groups;
+    state.mhome = (s && s.mhome) || null;   /* R30: { users: [id, ...] } — dev-picked viewers of the manager home */
   }
 
   /* fetch server data + settings — called after login/session and after
@@ -2434,7 +2605,8 @@ var App = (function () {
     targets: "set_targets",
     groups: "set_groups",
     audit: "set_audit",
-    storage: "set_storage"
+    storage: "set_storage",
+    mhome: "set_mhome"
   };
   var setCurView = null; /* last opened view — kept for future "reopen
      where you left" behaviour (review#10: currently write-only) */
@@ -2467,6 +2639,7 @@ var App = (function () {
     /* entering a view loads its data (same calls the old accordion did) */
     if (view === "audit" && MaribAuth.isDev && MaribAuth.isDev()) loadAudit();
     if (view === "storage" && MaribAuth.isDev && MaribAuth.isDev()) loadStorage();
+    if (view === "mhome" && MaribAuth.isDev && MaribAuth.isDev()) loadMhome();
   }
 
   function goSettingsHome() {
@@ -2852,6 +3025,59 @@ var App = (function () {
   }
 
   /* ============================================================
+     R30 — settings: "رئيسية المدير" (manager-home visibility, dev only)
+     The dev picks which users see the Grafik-style home; everyone else
+     keeps the classic overview. Stored as the "mhome" key in
+     marib_setting → { users: [id, ...] } — purely additive: no user rows
+     and no existing settings are ever touched.
+     ============================================================ */
+  function mhRoleKey(r) {
+    return r === "dev" ? "us_role_dev" : r === "admin" ? "us_role_admin" : "us_role_user";
+  }
+  function syncMhomeCount() {
+    var el = $("mhCount");
+    if (el) {
+      var n = document.querySelectorAll("#mhUsers input:checked").length;
+      el.textContent = n + " " + T("mh_count");
+    }
+  }
+  function loadMhome() {
+    var box = $("mhUsers");
+    if (!box) return;
+    var sel = {};
+    ((state.mhome && state.mhome.users) || []).forEach(function (id) { sel[String(id)] = true; });
+    MaribCloud.usersList().then(function (r) {
+      var users = (r && r.users) || [];
+      box.innerHTML = users.map(function (u) {
+        return '<label class="mh-user"><input type="checkbox" data-uid="' + esc(String(u.id)) + '"' + (sel[String(u.id)] ? " checked" : "") + '>'
+          + '<span class="mh-uav">' + esc((u.username || "?").charAt(0).toUpperCase()) + '</span>'
+          + '<span class="mh-utx"><b>' + esc(u.username || "?") + '</b><small>' + esc(T(mhRoleKey(u.role))) + '</small></span>'
+          + '<i class="mh-dot"></i></label>';
+      }).join("") || '<p class="cls-count">' + esc(T("mh_none")) + "</p>";
+      syncMhomeCount();
+    }).catch(function (e) {
+      toast(e && e.status === 403 ? T("toast_need_dev") : T("toast_sync_err"), "err");
+    });
+  }
+  function bindMhomePanel() {
+    var box = $("mhUsers");
+    if (box) box.addEventListener("change", syncMhomeCount);
+    $("mhSave").addEventListener("click", function () {
+      var ids = Array.prototype.slice.call(document.querySelectorAll("#mhUsers input[type=checkbox]:checked"))
+        .map(function (i) { return i.getAttribute("data-uid"); });
+      MaribCloud.settingsPut("mhome", { users: ids }).then(function () {
+        state.mhome = { users: ids };
+        toast(T("mh_saved"), "ok");
+        /* removed myself from the list while sitting on the manager home
+           → fall back to the classic overview right away */
+        if (state.page === "mhome" && !mhomeActive()) goToPage("overview");
+      }).catch(function (e) {
+        toast(e && e.status === 403 ? T("toast_need_dev") : T("toast_sync_err"), "err");
+      });
+    });
+  }
+
+  /* ============================================================
      Thread-spool scrollbar (R24 #11)
      The thumb is drawn as a wooden spool (CSS). While scrolling, the
      diagonal windings shift along the spool — pulling the thread out
@@ -2959,6 +3185,15 @@ var App = (function () {
       });
     });
 
+    /* R30 — manager home granularity boxes (GÜN / HAFTA / AY) */
+    document.querySelectorAll("#mhSeg .mh-box").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.mhGran = b.getAttribute("data-mh");
+        document.querySelectorAll("#mhSeg .mh-box").forEach(function (x) { x.classList.toggle("on", x === b); });
+        render();
+      });
+    });
+
     /* month switcher (R23) */
     $("fMonth").addEventListener("change", function () {
       if (this.value) snapToMonth(this.value, true);
@@ -3036,6 +3271,7 @@ var App = (function () {
     bindGroupsPanel();
     bindAuditPanel();
     bindStoragePanel();
+    bindMhomePanel();   /* R30: manager-home visibility (dev) */
 
     /* attendance sub-tabs: workers / supervisors (R25: one shared
        setAttView() path — also used by the URL restore; R26: anchors) */

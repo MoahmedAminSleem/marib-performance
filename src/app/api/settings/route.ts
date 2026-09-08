@@ -1,5 +1,5 @@
 /* /api/settings — app settings stored on the server (Neon)
-   GET → { targets, groups, storage_quota }   (any signed-in user)
+   GET → { targets, groups, storage_quota, mhome }   (any signed-in user)
    PUT → { key, value }  · targets & groups: admin/dev · storage_quota: dev
          every change is audited (old → new)
    R25: refactored onto the shared http helpers + structured logging. */
@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 
 const lg = logger("settings");
 
-const KEYS = ["targets", "groups", "storage_quota"];
+const KEYS = ["targets", "groups", "storage_quota", "mhome"];
 
 async function loadSettings(): Promise<Record<string, unknown>> {
   const rows = await q("SELECT key, value FROM marib_setting");
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest) {
     const key = String(body.key || "");
     const value = body.value;
     if (!KEYS.includes(key)) return fail("key", 400);
-    if (key === "storage_quota") {
+    if (key === "storage_quota" || key === "mhome") {   /* R30: mhome = dev only */
       if (!isDev(me)) return fail("dev", 403);
     } else if (!isAdmin(me)) {
       return fail("admin", 403);
@@ -73,6 +73,9 @@ export async function PUT(req: NextRequest) {
       summary = { people: Object.keys(a).length };
     } else if (key === "storage_quota") {
       summary = { quota: value };
+    } else if (key === "mhome") {
+      const u = (value as { users?: unknown[] })?.users;
+      summary = { people: Array.isArray(u) ? u.length : 0 };
     }
     await audit(me.username, "edit", "settings:" + key, key, { from: oldValue, to: summary ?? value });
     lg.info("setting saved", { key, by: me.username });

@@ -429,9 +429,9 @@ var MaribCore = (function () {
 
     /* ---- daily series ---- */
     var daily = {};
-    function slot(d) { if (!daily[d]) daily[d] = { date: d, loA: 0, loT: 0, ddAttW: 0, ddMinAvail: 0, otAvail: 0, pmOT: 0, pmMinAvail: 0, pmReg: 0, minProd: 0, attScore: 0, attCount: 0, absent: 0, regWorkers: 0 }; return daily[d]; }
+    function slot(d) { if (!daily[d]) daily[d] = { date: d, loA: 0, loT: 0, ddAttW: 0, ddMinAvail: 0, otAvail: 0, pmOT: 0, pmMinAvail: 0, pmReg: 0, minProd: 0, attScore: 0, attCount: 0, absent: 0, regWorkers: 0, samSum: 0, samCnt: 0 }; return daily[d]; }
     lo.forEach(function (x) { var s = slot(x.date); s.loA += x.actual || 0; s.loT += x.target || 0; });
-    dd.forEach(function (x) { var s = slot(x.date); s.ddAttW += x.attWorkers || 0; s.ddMinAvail += x.minAvail || 0; s.minProd += x.minProd || 0; s.absent += x.absent || 0; s.regWorkers += x.regWorkers || 0; });
+    dd.forEach(function (x) { var s = slot(x.date); s.ddAttW += x.attWorkers || 0; s.ddMinAvail += x.minAvail || 0; s.minProd += x.minProd || 0; s.absent += x.absent || 0; s.regWorkers += x.regWorkers || 0; if (x.sam != null) { s.samSum += x.sam; s.samCnt += 1; } });
     ot.forEach(function (x) { var s = slot(x.date); s.otAvail += x.minAvail || 0; s.minProd += x.minProd || 0; });
     pm.forEach(function (x) { var s = slot(x.date); s.pmOT += x.otMin || 0; var ma = (x.minAvail || 0) + (x.otMin || 0); s.pmMinAvail += ma; s.pmReg += (x.minAvail || 0); s.minProd += x.minProd || 0; });
     att.forEach(function (x) { var s = slot(x.date); s.attScore += x.score || 0; s.attCount += 1; });
@@ -450,7 +450,9 @@ var MaribCore = (function () {
         minProd: s.minProd,
         attPct: s.attCount ? s.attScore / s.attCount : null,
         absent: s.absent,
-        ddAttW: s.ddAttW
+        ddAttW: s.ddAttW,
+        regWorkers: s.regWorkers,
+        sam: s.samCnt ? s.samSum / s.samCnt : null
       };
     });
     k.series = series;

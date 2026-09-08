@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الجولة 30 — رئيسية المدير (شكل الجرافيك التركي) — لوحة أداء مصنع مأرب</title>
+<style>
+  :root{
+    --bg:#0A101C; --card:#131E2E; --card2:#0F1826; --line:rgba(217,168,107,.22);
+    --gold:#D9A86B; --gold2:#E9C68A; --txt:#F2EBDD; --dim:#A9B7C7; --red:#F87C7C; --green:#4FD98D;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);
+    font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',Arial,sans-serif;line-height:1.9;
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 6px)}
+  .wrap{max-width:840px;margin:0 auto;padding:28px 16px 60px}
+  header.hero{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+    border-radius:16px;padding:32px 24px;text-align:center;margin-bottom:24px}
+  .brand{color:var(--gold);font-weight:900;letter-spacing:.22em;font-size:11px;display:block;margin-bottom:6px}
+  .hero h1{font-size:24px;font-weight:900;margin-bottom:4px}
+  .sub{color:var(--dim);font-size:14px}
+  .badge{display:inline-block;border:1px dashed var(--gold);color:var(--gold2);border-radius:8px;
+    padding:6px 14px;font-size:12px;font-weight:700;margin-top:14px}
+  .note{background:rgba(79,217,141,.07);border:1px solid rgba(79,217,141,.3);border-radius:12px;
+    padding:14px 18px;font-size:13.5px;color:#A8D5B5;margin-bottom:24px}
+  .note b{color:var(--green)}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px;margin-bottom:18px}
+  .step h2{font-size:17px;font-weight:800;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .num{flex-shrink:0;width:38px;height:38px;border-radius:50%;background:rgba(217,168,107,.12);
+    border:1px solid rgba(217,168,107,.45);color:var(--gold2);font-weight:900;font-size:16px;
+    display:flex;align-items:center;justify-content:center}
+  .step p{font-size:14px;color:var(--dim);margin-bottom:8px}
+  .step p:last-child{margin-bottom:0}
+  .path{direction:ltr;text-align:left;display:inline-block;background:var(--card2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 10px;margin:4px 0;
+    font-family:Consolas,Monaco,monospace;font-size:13px;color:var(--gold2);word-break:break-all}
+  ul{margin:6px 18px 6px 0}
+  li{font-size:14px;color:var(--dim);margin-bottom:6px}
+  li b{color:var(--txt)}
+  .table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  .table th{background:var(--card2);color:var(--gold2);font-weight:700;text-align:right;
+    padding:10px 12px;border:1px solid var(--line)}
+  .table td{padding:9px 12px;border:1px solid var(--line);color:var(--dim);vertical-align:top}
+  .table td:first-child{color:var(--txt);font-weight:600}
+  .en{direction:ltr;display:inline-block;font-family:Consolas,monospace;font-size:.92em;color:var(--gold2)}
+  .warn{background:rgba(217,168,107,.07);border:1px solid rgba(217,168,107,.35);border-radius:12px;
+    padding:14px 18px;font-size:13.5px;color:#E3C9A0;margin-top:14px}
+  .warn b{color:var(--gold2)}
+  .faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;margin-bottom:12px}
+  .faq summary{font-size:15px;font-weight:700;color:var(--gold2);cursor:pointer}
+  .faq p{font-size:13.5px;color:var(--dim);margin-top:8px}
+  .grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  @media (max-width:600px){.grid6{grid-template-columns:1fr 1fr}}
+  .g6{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center}
+  .g6 .ico{font-size:22px;display:block;margin-bottom:4px}
+  .g6 b{font-size:12.5px;color:var(--txt);display:block}
+  .g6 small{font-size:10px;color:var(--dim);direction:ltr;display:block;margin-top:2px}
+  .seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+  .s3{border:1px solid rgba(217,168,107,.5);border-radius:12px;padding:10px;text-align:center;
+    background:rgba(196,154,108,.12)}
+  .s3 b{color:var(--gold2);font-size:14px;display:block}
+  .s3 small{color:var(--dim);font-size:10px;letter-spacing:.15em;direction:ltr}
+  footer{text-align:center;font-size:11px;color:#5A6270;margin-top:44px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="brand">MARIB GARMENTS — ROUND 30</span>
+    <h1>🏠 رئيسية المدير — بنفس شكل الجرافيك التركي</h1>
+    <p class="sub">وجه جديد للصفحة الرئيسية زي شيت Grafik في ملف المدير · ومفتاح رؤية ليك وحدك كمطور</p>
+    <span class="badge">9 ملفات للرفع · الرئيسية القديمة مش بتتشال · مش بيلمس أي داتا</span>
+  </header>
+
+  <div class="note">
+    <b>اتجرّبت E2E كاملة قبل التسليم (نظام اللوب):</b> تشغيل الموقع حقيقي + داتا الشهور الثلاثة · تفعيل/إلغاء المفتاح · التبديل يومي/أسبوعي/شهري · الدريل · اللغات التلاتة · <b>الاختبار العكسي (شيلت نفسي من القايمة → الرئيسية رجعت العادية فورًا)</b> · تحقق بصري بالصور · صفر أخطاء كونسول.
+  </div>
+
+  <div class="step">
+    <h2><span class="num">١</span>إيه اللي اتعمل؟ (زي ما طلبت بالحرف)</h2>
+    <p>المدير عامل رؤيته في ملف إكسل تركي — فعملناها <b>وجه جديد للصفحة الرئيسية</b> بنفس الشكل والتقسيمة، والرئيسية العادية <b>فاضلة زي ما هي</b> (مش هنشيلها):</p>
+    <div class="seg3">
+      <div class="s3"><b>يومي</b><small>GÜN</small></div>
+      <div class="s3"><b>أسبوعي</b><small>HAFTA</small></div>
+      <div class="s3"><b>شهري</b><small>AY</small></div>
+    </div>
+    <p><b>التلات مربعات دول هما الفلتر</b> — دوس على أي واحد وكل الرسومات بتتبدّل تجميعها فورًا (ديناميكي). وتحتهم 6 رسومات بنفس مقاييس ملف المدير:</p>
+    <div class="grid6">
+      <div class="g6"><span class="ico">📊</span><b>كفاءة التشغيل</b><small>VERİMLİLİK</small></div>
+      <div class="g6"><span class="ico">🧵</span><b>إنتاج لكل عامل-وردية</b><small>ÜRETİM / ADAM·VARDİYA</small></div>
+      <div class="g6"><span class="ico">👷</span><b>إجمالي العاملين</b><small>TOPLAM ÇALIŞAN K.Ş.</small></div>
+      <div class="g6"><span class="ico">⏱️</span><b>متوسط زمن الموديل</b><small>ORT. MODEL ZAMANI</small></div>
+      <div class="g6"><span class="ico">🟠</span><b>نسبة الأوفر تايم</b><small>FAZLA MESAİ ORANI</small></div>
+      <div class="g6"><span class="ico">🔴</span><b>نسبة الغياب</b><small>DEVAMSIZLIK ORANI</small></div>
+    </div>
+    <ul style="margin-top:12px">
+      <li>رسمة الكفاءة فيها <b>خط الهدف المتقطع الأخضر</b> — زي رسمة المدير اللي فيها VERİMLİLİK + HEDEF VERİMLİLİK بالظبط (والهدف بتاعك 78% أو أي رقم انت مضبظه من الإعدادات)</li>
+      <li>كل الرسومات بتقرأ نفس داتا اللوحة — يعني أرقام مأرب الحقيقية مش أرقام الملف التركي</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">٢</span>الفلاتر — زي ما حددت</h2>
+    <table class="table">
+      <tr><th>الفلتر</th><th>في رئيسية المدير</th><th>في باقي الصفحات</th></tr>
+      <tr><td>تاريخ من / إلى</td><td>✅ ظاهر</td><td>✅ ظاهر</td></tr>
+      <tr><td>الخط</td><td>✅ ظاهر</td><td>✅ ظاهر</td></tr>
+      <tr><td>القسم</td><td>✅ ظاهر</td><td>✅ ظاهر</td></tr>
+      <tr><td>المشرفين</td><td>❌ مخفي (وأي اختيار شغال بيتفرّغ لوحده عند الدخول — مفيش فلترة صامتة)</td><td>✅ ظاهر</td></tr>
+      <tr><td>قايمة الشهر + الاختيارات السريعة (آخر يوم/أسبوع/شهر)</td><td>❌ مخفية — التاريخ من/إلى بيغطيها</td><td>✅ ظاهرة</td></tr>
+      <tr><td>أساسي/إضافي/الاثنين</td><td>❌ مخفي (بيعرض الاثنين)</td><td>✅ ظاهر</td></tr>
+    </table>
+    <p style="margin-top:10px">الإخفاء كله <b>مش حذف</b> — أول ما تخرج من رئيسية المدير لأي تابة تانية، كل الفلاتر بترجع تظهر وتشتغل عادي.</p>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">٣</span>مفتاح "مين يشوف إيه" — ليك انت بس</h2>
+    <ul>
+      <li>افتح <b>الإعدادات</b> → هتلاقي صندوق جديد (ظاهر للمطور بس): <b>"رئيسية المدير"</b></li>
+      <li>جواه قايمة كل المستخدمين بعلامات صح: <b>علّم</b> = يشوف الشكل الجديد · <b>شيل علامة</b> = يرجع للرئيسية العادية فورًا — حتى لو هو فاتح الموقع دلوقتي</li>
+      <li>اضغط <b>حفظ</b> — والتغيير بيتسجل في سجل العمليات (audit) باسمك</li>
+      <li>يعني تقدر تعرضها لمديرك بس، أو لمديرك + ناس تانية، وترجّع أي حد للعادية في أي وقت</li>
+    </ul>
+    <div class="warn"><b>الأمان:</b> المفتاح بيتخزن في مكان جديد خالص في جدول الإعدادات (اسمه <span class="en">mhome</span>) — <b>إضافة خالصة</b>: مفيش أي لمس للداتا ولا اليوزرات ولا أي إعداد موجود. والسماح بالتعديل للمطور (dev) بس — حتى الأدمن مش بيشوف الصندوق.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">٤</span>ارفع الملفات — ٣ دقايق (نفس نظام ZIP)</h2>
+    <p>افتح الريبو: <span class="path">github.com/MoahmedAminSleem/marib-performance</span></p>
+    <ul>
+      <li>فك ضغط الـ ZIP → <b>Add file → Upload files</b> → اسحب فولدر <span class="en">public</span> + فولدر <span class="en">src</span> + الملفات (<span class="en">سير-العمل.html · README.md · next.config.ts</span>)</li>
+      <li>Commit برسالة زي <span class="en">R30 - manager home</span> → استنى دقيقة → Vercel ينشر</li>
+    </ul>
+    <table class="table">
+      <tr><th>الملف</th><th>إيه اللي جواه</th></tr>
+      <tr><td><span class="en">public/app/app_main.js</span></td><td>عرض رئيسية المدير + التوجيه + لوحة الإعدادات (شامل تعديلات R29)</td></tr>
+      <tr><td><span class="en">public/app/app_core.js</span></td><td>السلسلة اليومية بتكشف عمال SAM والعمال النظاميين لكل يوم (حسابات عرض بس)</td></tr>
+      <tr><td><span class="en">public/app/i18n_dict.js</span></td><td>كل النصوص الجديدة بالعربي/الإنجليزي/التركي</td></tr>
+      <tr><td><span class="en">public/app/app.css</span></td><td>ستايل المربعات الثلاثة وقايمة المستخدمين</td></tr>
+      <tr><td><span class="en">src/app/skeleton.ts</span></td><td>قسم الصفحة الجديدة في الهيكل + صندوق الإعدادات</td></tr>
+      <tr><td><span class="en">src/app/api/settings/route.ts</span></td><td>المفتاح الجديد <span class="en">mhome</span> — للمطور بس + تسجيل في السجل</td></tr>
+      <tr><td><span class="en">سير-العمل.html</span></td><td>ذاكرة المشروع — اتحدّثت بسجل الجولة 30</td></tr>
+      <tr><td><span class="en">README.md · next.config.ts</span></td><td>لو رافعهم في R28/R29 اتجاهوا — رفعهم تاني مش هيغير حاجة</td></tr>
+    </table>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">٥</span>اتأكد إنها اشتغلت — دقيقة</h2>
+    <ul>
+      <li>افتح الموقع → سجّل دخول بحسابك (المطور) → <b>الإعدادات → رئيسية المدير</b> → علّم اسمك واسم مديرك → حفظ</li>
+      <li>اضغط تاب <b>الرئيسية</b> → المفروض تشوف: 3 مربعات كبيرة (يومي/أسبوعي/شهري) + 6 رسومات ملونة</li>
+      <li>جرّب: دوس "أسبوعي" → الرسومات بتتجمع أسابيع · دوس "شهري" → بتتجمع شهور · دوس على أي عمود في "كفاءة التشغيل" → بيتفتح تفاصيل اليوم</li>
+      <li>بص للفلاتر فوق: تاريخ + خط + قسم بس — لو راحت لتابة "الخطوط" هتلاقي كل الفلاتر رجعت</li>
+      <li>آخر اختبار: شيل علامتك من الإعدادات واحفظ → الرئيسية هترجع عادية على طول — دي طريقة الرجوع لو حبيت يومًا ما</li>
+    </ul>
+  </div>
+
+  <div class="step faq">
+    <h2><span class="num">؟</span>أسئلة هتجول في دماغك</h2>
+
+    <details>
+      <summary>الداتا واليوزرات هتتأثر؟</summary>
+      <p>لأ — الرسمة بتقرأ من نفس الداتا المحسوبة أصلًا، والمفتاح الجديد إضافة منفصلة في جدول الإعدادات. مفيش أي مسح أو تعديل لأي حاجة موجودة على السيرفر — ولو رجعت الجولة دي بـ History كل حاجة بترجع زي ما كانت.</p>
+    </details>
+
+    <details>
+      <summary>ليه يومي/أسبوعي/شهري مش يوم/شهر/سنة؟</summary>
+      <p>لأن ده بالظبط اللي موجود في ملف مديرك: التلات مربعات فيه اسمهم GÜN (يومي) وHAFTA (أسبوعي) وAY (شهري) — وكل رسمة من الستة بتعمل نفس التقسيمة دي. لو انت شايف إن المدير يحب يبقى فيه "سنة" بدل "أسبوع" قولّي — تبديلها في حاجة بسيطة جدًا.</p>
+    </details>
+
+    <details>
+      <summary>مين يقدر يعدّل قايمة مين يشوف؟</summary>
+      <p>انت بس (حساب المطور dev). الأدمن العادي والمستخدمين مش بيشوفوا الصندوق أصلًا في الإعدادات — وكل تغيير بيتسجل في سجل العمليات باسمك والوقت.</p>
+    </details>
+
+    <details>
+      <summary>لو رافعتش R28 ولا R29 لسه؟</summary>
+      <p>الملفات دي شاملة كل اللي قبلها: app_main وi18n_dict وskeleton فيهم تعديل R29 (رسمة الأوفر للخطوط) + R30، وnext.config فيه أمان R28. يعني ارفع الجولة دي وانت كسبت التلات جولات مرة واحدة.</p>
+    </details>
+
+    <details>
+      <summary>رئيسيتي العادية ضاعت؟</summary>
+      <p>لأ خالص — موجودة زي ما هي بالظبط. حد الناس اللي بيشوفوا الشكل الجديد بيروحوا للعادية لوحدهم، وانت كمان ممكن ترجّع نفسك في أي ثانية. الاتنين عايشين جنب بعض.</p>
+    </details>
+
+    <details>
+      <summary>الأرقام في الرسومات بتطلع منين؟</summary>
+      <p>من نفس داتا مأرب بتاعتك (نفس الحسابات بتاعة اللوحة كلها) — الملف التركي استخدمناه للشكل والتقسيمة والمقاييس بس. يعني الكفاءة = الدقايق المنتجة ÷ المتاحة عندنا، والأوفر = دقايق الأوفر ÷ المتاحة... إلخ — موجودة كلها بالتفصيل في ملف سير-العمل.html.</p>
+    </details>
+  </div>
+
+  <footer>Marib Garments Co. — الجولة ٣٠ — سبتمبر ٢٠٢٦</footer>
+</div>
+</body>
+</html>

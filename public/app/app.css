@@ -1979,3 +1979,51 @@ a.su-tab:focus-visible,a.att-tab:focus-visible,a.nav-btn:focus-visible{
 /* R27 safety: guarantee the [hidden] attribute always wins over any
    display rule (settings home grid vs views) in every browser */
 [hidden]{display:none !important}
+
+/* ===== R30 — manager home (Grafik view: GÜN / HAFTA / AY) ===== */
+/* the 3 granularity boxes — the manager's "slicer" bar from the Turkish Excel */
+.mh-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 2px 0 16px; }
+.mh-box {
+  border: 1px solid rgba(148,163,184,.22); border-radius: 14px; cursor: pointer;
+  background: linear-gradient(180deg, rgba(13,23,38,.92), rgba(10,17,28,.88));
+  color: #C7D2DF; padding: 14px 10px 12px; text-align: center;
+  font-family: var(--ff-body, inherit); transition: .16s;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.mh-box b { font-size: 16px; font-weight: 900; letter-spacing: .3px; }
+.mh-box .en { font-size: 10px; letter-spacing: .18em; color: #7E92A8; font-weight: 800; }
+.mh-box:hover { border-color: rgba(217,168,107,.5); color: #E9C68A; transform: translateY(-2px); }
+.mh-box.on {
+  border-color: #D9A86B; color: #F2EBDD;
+  background: linear-gradient(180deg, rgba(196,154,108,.16), rgba(168,127,78,.10));
+  box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 0 0 1px rgba(217,168,107,.35);
+}
+.mh-box.on .en { color: #D9A86B; }
+@media (max-width: 760px) { .mh-seg { grid-template-columns: 1fr; } }
+
+/* filter bar on the manager home: only date-range + line + section stay */
+body.pg-mhome #qp,
+body.pg-mhome #scopeSeg,
+body.pg-mhome #fMonth,
+body.pg-mhome #fSup { display: none !important; }
+
+/* settings → manager home visibility list (dev only) */
+.mh-users { margin-top: 12px; max-height: 320px; overflow-y: auto; padding-inline-end: 4px; }
+.mh-user {
+  display: flex; align-items: center; gap: 12px; padding: 9px 12px;
+  border: 1px solid rgba(148,163,184,.16); border-radius: 12px;
+  margin-bottom: 8px; cursor: pointer; transition: .15s; background: rgba(13,23,38,.4);
+}
+.mh-user:hover { border-color: rgba(217,168,107,.45); }
+.mh-user input { accent-color: #D9A86B; width: 16px; height: 16px; flex-shrink: 0; }
+.mh-uav {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(180deg, #C49A6C, #A87F4E); color: #141B26;
+  font-weight: 900; font-size: 14px; display: flex; align-items: center; justify-content: center;
+}
+.mh-utx { flex: 1 1 auto; min-width: 0; }
+.mh-utx b { display: block; font-size: 13.5px; color: #F2EBDD; }
+.mh-utx small { display: block; font-size: 10.5px; color: #7E92A8; }
+.mh-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(148,163,184,.25); flex-shrink: 0; transition: .15s; }
+.mh-user:has(input:checked) { border-color: rgba(217,168,107,.55); background: rgba(196,154,108,.10); }
+.mh-user:has(input:checked) .mh-dot { background: #4FD98D; box-shadow: 0 0 8px rgba(79,217,141,.5); }
