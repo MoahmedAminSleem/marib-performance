@@ -2276,6 +2276,9 @@ var App = (function () {
 
   function render() {
     if (!state.model) return;
+    /* R31: a dev-picked manager-home user never lands on the classic
+       overview — any render that finds him there hops to his home. */
+    if (state.page === "overview" && mhomeActive()) { goToPage("mhome"); return; }
     cmpCache = {};   /* round 8: compare windows are re-resolved per render */
     var f = readFilters();
     applyTargetsForRange(f);
@@ -2691,24 +2694,12 @@ var App = (function () {
   }
 
   /* window.MaribMe — MaribAuth calls this on login / logout / boot so
-     the badge, the topbar mini chip and the R27 job-title texts stay
-     in sync with the signed-in user (photo + title included). */
+     the topbar mini chip (photo + name, top-left) stays in sync with
+     the signed-in user. R31: the me-badge that sat beside the page
+     title is gone — it duplicated the topbar chip. */
   window.MaribMe = {
     set: function (u) {
-      var b = $("meBadge");
-      if (!b) return;
-      if (!u) { b.style.display = "none"; return; }
-      b.style.display = "";
-      setAvPhoto($("meAv"), $("meAvImg"), $("meAvTxt"), u.photo, u.username);
-      var nm = $("meName");
-      if (nm) nm.textContent = u.username || "";
-      var tt = $("meTitle");
-      if (tt) {
-        var t = (u.title || "").trim();
-        tt.textContent = t;
-        tt.hidden = !t;
-      }
-      setAvPhoto($("ucAv"), null, null, u.photo, u.username);
+      setAvPhoto($("ucAv"), null, null, u ? u.photo : null, u ? u.username : "");
     }
   };
 

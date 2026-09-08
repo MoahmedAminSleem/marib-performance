@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>شرح حسبة رسومات رئيسية المدير — مأرب للملابس</title>
+<style>
+  :root{
+    --bg:#0A101C; --card:#131E2E; --card2:#0F1826; --line:rgba(217,168,107,.22);
+    --gold:#D9A86B; --gold2:#E9C68A; --txt:#F2EBDD; --dim:#A9B7C7; --red:#F87C7C; --green:#4FD98D;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);
+    font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',Arial,sans-serif;line-height:1.9;
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 6px)}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 16px 60px}
+  header.hero{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+    border-radius:16px;padding:32px 24px;text-align:center;margin-bottom:24px}
+  .brand{color:var(--gold);font-weight:900;letter-spacing:.22em;font-size:11px;display:block;margin-bottom:6px}
+  .hero h1{font-size:24px;font-weight:900;margin-bottom:4px}
+  .sub{color:var(--dim);font-size:14px}
+  .badge{display:inline-block;border:1px dashed var(--gold);color:var(--gold2);border-radius:8px;
+    padding:6px 14px;font-size:12px;font-weight:700;margin-top:14px}
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px;margin-bottom:18px}
+  .sec h2{font-size:17px;font-weight:800;display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .num{flex-shrink:0;width:38px;height:38px;border-radius:50%;background:rgba(217,168,107,.12);
+    border:1px solid rgba(217,168,107,.45);color:var(--gold2);font-weight:900;font-size:16px;
+    display:flex;align-items:center;justify-content:center}
+  .sec p{font-size:14px;color:var(--dim);margin-bottom:8px}
+  .sec p:last-child{margin-bottom:0}
+  .sec ul{margin:6px 18px 6px 0}
+  .sec li{font-size:14px;color:var(--dim);margin-bottom:6px}
+  .sec li b{color:var(--txt)}
+  .table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  .table th{background:var(--card2);color:var(--gold2);font-weight:700;text-align:right;
+    padding:9px 10px;border:1px solid var(--line)}
+  .table td{padding:8px 10px;border:1px solid rgba(169,183,199,.14);color:var(--dim)}
+  .table td b{color:var(--txt)}
+  .chart-card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px;margin-bottom:18px;position:relative}
+  .chart-card h2{font-size:17px;font-weight:900;display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .tr-name{color:var(--dim);font-size:12px;letter-spacing:.08em;margin-inline-start:52px;
+    display:block;margin-bottom:10px;font-weight:700}
+  .q{background:rgba(217,168,107,.07);border-inline-start:3px solid var(--gold);
+    padding:10px 14px;border-radius:0 10px 10px 0;margin:10px 0;font-size:14px;color:var(--txt)}
+  .formula{direction:rtl;background:var(--card2);border:1px dashed rgba(217,168,107,.5);
+    border-radius:12px;padding:14px 18px;margin:12px 0;text-align:center;font-size:16px;
+    font-weight:800;color:var(--gold2)}
+  .formula small{display:block;font-weight:400;color:var(--dim);font-size:12.5px;margin-top:6px}
+  .lbl{color:var(--gold2);font-weight:900;font-size:13.5px;margin:12px 0 4px}
+  .example{background:rgba(79,217,141,.06);border:1px dashed rgba(79,217,141,.4);border-radius:12px;
+    padding:14px 16px;margin-top:12px;font-size:13.5px;color:var(--dim)}
+  .example b{color:var(--green)}
+  .example .res{color:var(--txt);font-weight:900}
+  .colors{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;
+    font-size:12px;font-weight:700;border:1px solid}
+  .chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .c-g{color:var(--green);border-color:rgba(79,217,141,.4)} .c-g i{background:var(--green)}
+  .c-o{color:#E9C68A;border-color:rgba(233,198,138,.4)} .c-o i{background:#E9C68A}
+  .c-r{color:var(--red);border-color:rgba(248,124,124,.4)} .c-r i{background:var(--red)}
+  .goal{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--dim);margin-top:8px}
+  .dash{flex:0 0 46px;height:0;border-top:2px dashed var(--green)}
+  .foot{color:var(--dim);font-size:12.5px;text-align:center;margin-top:8px;line-height:1.8}
+  .arrow{color:var(--gold);font-weight:900}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <span class="brand">MARIB PERFORMANCE</span>
+  <h1>شرح حسبة رسومات رئيسية المدير</h1>
+  <p class="sub">الرسومات الستة اللي في صفحة الرئيسية للمدير — كل معادلة وكل مصدر وكل مثال بالأرقام</p>
+  <span class="badge">الجولة 31 · 8 سبتمبر 2026</span>
+</header>
+
+<section class="sec">
+  <h2><span class="num">٠</span> الفكرة كلها في دقيقة</h2>
+  <p>صفحة <b>الرئيسية للمدير</b> معمولة على نفس شكل شيت «Grafik» من الملف التركي بتاع المدير:
+  تلات مربعات فوق (يومي / أسبوعي / شهري) وتحتها ٦ رسومات أعمدة. كل رسمة بتقيس حاجة واحدة بس،
+  وكل الأرقام اللي فيها بتطلع من نفس بيانات الإكسل المرفوعة على الموقع — مافيش أي رقم بيتكتب بإيد ولا بيتعدل،
+  كل حاجة محسوبة من الصفوف بتاعة الأيام المعروضة.</p>
+  <p>القاعدة الذهبية اللي كل الرسومات ماشية عليها: لما تجمّع أكتر من يوم (أسبوع أو شهر)،
+  النِسب بتحسب من <b>مجاميع الأرقام الخام</b> — مش بياخدوا متوسط النسب اليومية. ده نفس أسلوب
+  SUMIFS في ملف المدير التركي، وده اللي بيمنع أيام المندوبة الصغيرة إنها ترفع النسبة غصب عنها.</p>
+</section>
+
+<section class="sec">
+  <h2><span class="num">١</span> التلات مربعات: يومي / أسبوعي / شهري</h2>
+  <p>دي بتاعة تجميع الأعمدة — مربع واحد بس بيبقى شغال في كل لحظة (اللي عليه إطار دهبي):</p>
+  <ul>
+    <li><b>يومي (GÜN):</b> كل يوم بياخد عمود لوحده — الرسمة بتعرض الأيام واحد واحد بالترتيب.
+        والضغط على أي عمود بيفتح <b>نافذة تفاصيل اليوم</b> (نفس تفاصيل اليوم من صفحة الحضور).</li>
+    <li><b>أسبوعي (HAFTA):</b> أيام الأسبوع بتتلزق في عمود واحد — الأسبوع بيترقم بنظام
+        ISO العالمي (زي W36) عشان كل شركة في الدنيا تتفق على نفس التقسيم.</li>
+    <li><b>شهري (AY):</b> الشهر كله بيبقى عمود واحد بإسمه العربي (زي «سبتمبر 2026»).</li>
+  </ul>
+  <p>مهم: تغيير المربع بيعيد رسم الـ٦ رسومات كلهم فورًا بنفس طريقة التجميع الجديدة.</p>
+</section>
+
+<section class="sec">
+  <h2><span class="num">٢</span> الفلاتر اللي تحت العنوان</h2>
+  <p>في الرئيسية للمدير مافيش فلاتر ميشفهاش غير: <b>من / إلى</b> (نطاق التواريخ) + <b>الخط</b> + <b>القسم</b>.
+  مافيش فلتر مشرفين ولا «آخر أسبوع/الشهر الحالي» — عشان التلات مربعات هي اللي بتتحكم في الفترة،
+  ومافيش حاجة بتفلتر ورا ضهر المدير من غير ما ياخد باله:</p>
+  <ul>
+    <li><b>من / إلى:</b> بيقصّ الأيام المعروضة — كل الرسومات بتحسب على الأيام اللي جوه النطاق بس.</li>
+    <li><b>الخط:</b> لو اخترت «خط 2» مثلًا، الأرقام كلها تبقى بتاعة خط 2 لوحده.</li>
+    <li><b>القسم:</b> نفس الحكاية بس على مستوى القسم (صدر / ظهر / تجميع / تحضير / أكمام / جيوب…).</li>
+  </ul>
+  <p>الفلاتر بتتطبّق <b>قبل</b> أي حساب — يعني القياسات بتشوف الداتا بعد القص، وبعدين تجمّع وتحسب.</p>
+</section>
+<section class="chart-card">
+  <h2><span class="num">١</span> كفاءة التشغيل</h2>
+  <span class="tr-name">VERİMLİLİK · EFFICIENCY — من شيت Grafik التركي</span>
+  <div class="q">بيجاوب على: «الوقت اللي كان متاح، استغلّنا منه قد إيه في إنتاج حقيقي؟»</div>
+  <div class="formula">
+    ( مجموع الدقائق المنتَجة ÷ مجموع الدقائق المتاحة ) × ١٠٠
+    <small>Min Produced ÷ Total Min Available</small>
+  </div>
+  <div class="lbl">الأرقام داخلة منين؟</div>
+  <ul>
+    <li><b>الدقائق المنتَجة (Min Produced):</b> بتتجمّع من تلات شيتات — Daily Data + أوفر تايم + ماكينات الجيوب (كل واحد فيهم فيه عمود Min Produced).</li>
+    <li><b>الدقائق المتاحة (Total Min Available):</b> عمود Min Available من Daily Data + عمود Min Available من شيت الأوفر تايم + (Min Available + OT Min) من شيت ماكينات الجيوب.</li>
+  </ul>
+  <div class="lbl">الألوان وخط الهدف:</div>
+  <div class="colors">
+    <span class="chip c-g"><i></i> أخضر ≥ 78%</span>
+    <span class="chip c-o"><i></i> برتقالي ≥ 60%</span>
+    <span class="chip c-r"><i></i> أحمر أقل من 60%</span>
+  </div>
+  <div class="goal"><span class="dash"></span> خط أخضر متقطع عند 78% — خط الهدف العام</div>
+  <div class="example">
+    مثال على يوم واحد: الدقائق المنتَجة <b>42,000</b> دقيقة، والمتاحة <b>50,000</b> دقيقة<br>
+    42,000 ÷ 50,000 = <span class="res">84%</span> <span class="arrow">←</span> العمود أخضر فوق خط الهدف<br>
+    <small>ولو اخترت «أسبوعي»: بيجمع الدقائق المنتَجة بتاعة 6 أيام كلها فوق بعض، ويقسمهم على مجموع المتاحة بتاعة نفس الـ6 أيام — من المجاميع مش متوسط النسب.</small>
+  </div>
+</section>
+
+<section class="chart-card">
+  <h2><span class="num">٢</span> الإنتاج لكل عامل-وردية</h2>
+  <span class="tr-name">ÜRETİM / ADAM·VARDİYA — من شيت Grafik التركي</span>
+  <div class="q">بيجاوب على: «العامل الواحد بيسلّم كام قطعة في الوردية؟»</div>
+  <div class="formula">
+    مجموع القطع الفعلية ÷ مجموع العاملين الحاضرين
+    <small>Line Output Actual ÷ Att Workers</small>
+  </div>
+  <div class="lbl">الأرقام داخلة منين؟</div>
+  <ul>
+    <li><b>القطع الفعلية (Actual):</b> من شيت Line Output — عمود Actual بيتبعّع على الأيام.</li>
+    <li><b>العاملين الحاضرين (Att Workers):</b> من شيت Daily Data — عدد العمّال اللي حضروا فعلًا في اليوم.</li>
+  </ul>
+  <div class="lbl">الألوان:</div>
+  <p>لون ثابت (أزرق المصنع) — دي قياس كمية مش نسبة، فمافيش عتبات حمرا/خضرا ولا خط هدف.
+  بتقارنها بالشهر اللي فات أو بالأسبوع اللي فات إنت بنفسك.</p>
+  <div class="example">
+    مثال: القطع الفعلية في اليوم <b>12,000</b> قطعة، والحاضرين <b>480</b> عامل<br>
+    12,000 ÷ 480 = <span class="res">25 قطعة للعامل</span><br>
+    <small>ولو في «أسبوعي»: مجموع قطع الأسبوع كله ÷ مجموع الحاضرين في نفس الأيام — عشان كلمة «عامل-وردية» تفضل مظبوطة مهما اجتمعت الأيام.</small>
+  </div>
+</section>
+
+<section class="chart-card">
+  <h2><span class="num">٣</span> إجمالي العاملين</h2>
+  <span class="tr-name">TOPLAM ÇALIŞAN K.Ş. (Kişi Sayısı) — من شيت Grafik التركي</span>
+  <div class="q">بيجاوب على: «قد إيه عامل حاضر فعلًا على الأرض؟»</div>
+  <div class="formula">
+    يومي: عدد الحاضرين في اليوم نفسه<br>
+    أسبوعي / شهري: مجموع الحاضرين ÷ عدد الأيام
+    <small>Att Workers — والمتوسط في التجميع الأطول</small>
+  </div>
+  <div class="lbl">الأرقام داخلة منين؟</div>
+  <ul>
+    <li><b>الحاضرين (Att Workers):</b> من شيت Daily Data — عمود العمالة الحاضرة اليومي.</li>
+  </ul>
+  <div class="lbl">ليه متوسط في الأسبوع والشهر؟</div>
+  <p>عشان لو جمعنا الأعداد على طول، أسبوع 6 أيام هياخد ضعف رقم أسبوع 3 أيام وهيبان إن العمالة
+  «زادت» وهي مازادتش. المتوسط اليومي بيخلي المقارنة عادلة بين أي فترتين.</p>
+  <div class="example">
+    مثال أسبوعي: الحاضرين في 5 أيام = 460 + 470 + 480 + 470 + 470 = <b>2,350</b><br>
+    2,350 ÷ 5 أيام = <span class="res">470 عامل في المتوسط</span><br>
+    <small>وده اللي اتكتب على العمود بتاع الأسبوع — مش الـ2,350.</small>
+  </div>
+</section>
+<section class="chart-card">
+  <h2><span class="num">٤</span> متوسط زمن الموديل</h2>
+  <span class="tr-name">ORT. MODEL ZAMANI (SAM) — من شيت Grafik التركي</span>
+  <div class="q">بيجاوب على: «الموديل الواحد بياخد كام دقيقة للقطعة في المتوسط؟»</div>
+  <div class="formula">
+    مجموع قيم SAM اليومية ÷ عدد الأيام اللي فيها قيمة
+    <small>متوسط بسيط لعمود SAM</small>
+  </div>
+  <div class="lbl">الأرقام داخلة منين؟</div>
+  <ul>
+    <li><b>SAM (Standard Allowed Minutes):</b> الزمن المعياري للموديل — بيجي من شيت Daily Data
+        (ومكمل من شيتات الأوفر تايم والجيوب لو فيه قيم). اليوم اللي مافيش فيه SAM بيتشال من الحسبة كلها —
+        مش بيتحسب صفر.</li>
+  </ul>
+  <div class="lbl">الألوان:</div>
+  <p>لون ثابت (برتقالي) — الرقم نفسه هو المهم. أيام ما القيمة تقل، معناها الخطوط بتقفل الموديل أسرع.</p>
+  <div class="example">
+    مثال: 3 أيام SAM فيهم = 4.2 و 4.6 و 4.4 دقيقة<br>
+    (4.2 + 4.6 + 4.4) ÷ 3 = <span class="res">4.4 دقيقة للقطعة</span><br>
+    <small>دايمًا متوسط الأيام المتاحة بس — مش عدد أيام الشهر كله.</small>
+  </div>
+</section>
+
+<section class="chart-card">
+  <h2><span class="num">٥</span> نسبة الأوفر تايم</h2>
+  <span class="tr-name">FAZLA MESAİ ORANI — من شيت Grafik التركي</span>
+  <div class="q">بيجاوب على: «من الوقت الكلي، قد إيه كان ساعات إضافية؟»</div>
+  <div class="formula">
+    ( مجموع دقائق الأوفر تايم ÷ مجموع الدقائق المتاحة ) × ١٠٠
+    <small>OT Minutes ÷ Total Min Available</small>
+  </div>
+  <div class="lbl">الأرقام داخلة منين؟</div>
+  <ul>
+    <li><b>دقائق الأوفر تايم:</b> عمود OT Min من شيت الأوفر تايم + عمود OT Min من شيت ماكينات الجيوب
+        (شيت الأوفر تايم بيسجل دقايقه في عمود Min Available بتاعه — فبيتقري من هناك، ودقايق الجيوب من OT Min).</li>
+    <li><b>الدقائق المتاحة:</b> نفس مجموع الرسمة الأولى بالظبط — عشان النسبة تفضل من نفس «الوقت الكلي».</li>
+  </ul>
+  <div class="lbl">الألوان وخط الأمان (معكوسة!):</div>
+  <div class="colors">
+    <span class="chip c-g"><i></i> أخضر ≤ 10%</span>
+    <span class="chip c-o"><i></i> برتقالي ≤ 20%</span>
+    <span class="chip c-r"><i></i> أحمر أكتر من 20%</span>
+  </div>
+  <div class="goal"><span class="dash"></span> خط أخضر متقطع عند 10% — حد الأمان</div>
+  <p>عكس باقي الرسومات: هنا <b>الزيادة وحشة</b> — 9% أحسن من 25%. الأحمر معناها المصنع بيعتمد
+  على ساعات إضافية أكتر من اللازم.</p>
+  <div class="example">
+    مثال: دقائق أوفر تايم <b>4,500</b>، والدقائق المتاحة <b>50,000</b><br>
+    4,500 ÷ 50,000 = <span class="res">9%</span> <span class="arrow">←</span> أخضر تحت حد الأمان<br>
+    <small>الأسبوع بيجمع دقايق الأوفر تايم بتاعة كل أيامه ويقسمها على مجموع المتاح — نفس قاعدة المجاميع.</small>
+  </div>
+</section>
+
+<section class="chart-card">
+  <h2><span class="num">٦</span> نسبة الغياب</h2>
+  <span class="tr-name">DEVAMSIZLIK ORANI — من شيت Grafik التركي</span>
+  <div class="q">بيجاوب على: «العمالة الأساسية، قد إيه منهم غاب؟»</div>
+  <div class="formula">
+    ( مجموع الغايبين ÷ ( مجموع العمال الأساسيين + مجموع الغايبين ) ) × ١٠٠
+    <small>Absent ÷ (Regular Workers + Absent)</small>
+  </div>
+  <div class="lbl">الأرقام داخلة منين؟</div>
+  <ul>
+    <li><b>الغايبين (Absent):</b> من شيت Daily Data — عمود الغياب اليومي.</li>
+    <li><b>العمال الأساسيين (Regular Workers):</b> من نفس الشيت — عمود العمالة الأساسية
+        (القائمة الكاملة اللي المفروض تحضر، مش الحاضرين فعليًا).</li>
+  </ul>
+  <div class="lbl">الألوان:</div>
+  <p>أحمر ثابت — الغياب كله خسارة، فالرسمة كلها بلون تحذيري والأرقام هي اللي بتفرق
+  (قارن عمود باللي جنبه ومع الشهر اللي فات).</p>
+  <div class="example">
+    مثال: الغايبين <b>36</b>، والعمالة الأساسية <b>480</b><br>
+    36 ÷ (480 + 36) = <span class="res">7%</span><br>
+    <small>البسط والمقام من القائمة الكاملة مش من الحاضرين — عشان النسبة ماتنزلش غصب عنها لو الغياب نفسه كبر.</small>
+  </div>
+</section>
+
+<section class="sec">
+  <h2><span class="num">✓</span> الجدول الملخص</h2>
+  <table class="table">
+    <tr><th>الرسمة</th><th>المعادلة</th><th>المصدر</th><th>الألوان</th></tr>
+    <tr><td><b>كفاءة التشغيل</b></td><td>دقائق منتَجة ÷ دقائق متاحة</td><td>DD + OT + PM (دقائق)</td><td>78 / 60 + خط هدف</td></tr>
+    <tr><td><b>إنتاج لكل عامل-وردية</b></td><td>قطع فعلية ÷ حاضرين</td><td>Line Output + DD</td><td>لون ثابت</td></tr>
+    <tr><td><b>إجمالي العاملين</b></td><td>الحاضرين (يومي) / متوسطهم (أسبوعي-شهري)</td><td>Daily Data</td><td>لون ثابت</td></tr>
+    <tr><td><b>متوسط زمن الموديل</b></td><td>متوسط SAM اليومي</td><td>DD (+OT/PM لو فيه)</td><td>لون ثابت</td></tr>
+    <tr><td><b>نسبة الأوفر تايم</b></td><td>دقائق OT ÷ دقائق متاحة</td><td>OT + PM (دقايق إضافية)</td><td>10 / 20 معكوسة + خط أمان</td></tr>
+    <tr><td><b>نسبة الغياب</b></td><td>غايبين ÷ (أساسيين + غايبين)</td><td>Daily Data</td><td>أحمر ثابت</td></tr>
+  </table>
+</section>
+
+<section class="sec">
+  <h2><span class="num">★</span> ملاحظات مهمة</h2>
+  <ul>
+    <li><b>الأرقام كلها:</b> من ملفات الإكسل المرفوعة على السيرفر — الرسومات بتيجي من نفس الداتا اللي باقي صفحات الموقع شغالة بيها.</li>
+    <li><b>العتبات (78/60 و 10/20):</b> قابلة للتغيير من الإعدادات ← «الأهداف والحدود» — وتغييرها بيتطبق على كل الرسومات والجداول في الموقع كله فورًا.</li>
+    <li><b>عمود يومي بيفتح تفاصيل:</b> في وضع «يومي»، الضغط على أي عمود بيفتح نافذة تفاصيل اليوم (الإنجاز والكفاءة والأوفر تايم بتوع اليوم ده بالتفصيل).</li>
+    <li><b>الرئيسية العادية:</b> لسه موجودة زي ما هي — اللي مش معلّم في إعدادات رئيسية المدير بيفتحها عادي، ومافيش أي حاجة اتمسحت.</li>
+    <li><b>لو رقم طلع «—»:</b> معناها مافيش بيانات كفاية للمعادلة دي (زي مافيش أيام في النطاق) — مش صفر.</li>
+  </ul>
+</section>
+
+<p class="foot">ملف الشرح بتاع الجولة 31 · بيشرح رسومات رئيسية المدير اللي اتعملت في الجولة 30<br>
+أي تعديل في الحسابات بيتوثق في ملف «سير-العمل.html» المرفوع مع المشروع على GitHub</p>
+</div>
+</body>
+</html>

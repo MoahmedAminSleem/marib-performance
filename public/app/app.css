@@ -1834,12 +1834,9 @@ a.su-tab:focus-visible,a.att-tab:focus-visible,a.nav-btn:focus-visible{
 /* ---------- R26-2 recap: every pointer replaced by the needle-thread
    PNG above — the hand never shows on a clickable element again. ---------- */
 
-/* ---------- R26-4: me-badge — photo circle + name under it, far LEFT
-   of the title row (the الأداء العام / الأقسام… row) ---------- */
-.me-badge{
-  display:flex;flex-direction:column;align-items:center;gap:5px;
-  flex:0 0 auto;min-width:76px;margin-inline-start:10px;
-}
+/* ---------- R26-4: (R31) me-badge next to the page title removed —
+   the topbar user chip (top-left) already shows photo + name.
+   The .me-av circle below stays: the settings profile row uses it. ---------- */
 .me-av{
   width:52px;height:52px;border-radius:50%;position:relative;
   display:flex;align-items:center;justify-content:center;
@@ -1855,11 +1852,6 @@ a.su-tab:focus-visible,a.att-tab:focus-visible,a.nav-btn:focus-visible{
 }
 .me-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .me-av.lg{width:64px;height:64px;font-size:24px}
-.me-nm{
-  font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.2px;
-  max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;
-}
-@media (max-width:1100px){ .me-badge{display:none!important} }
 
 /* photo version of the little topbar / users-modal circles */
 .uc-av.photo,.us-av.photo{
@@ -1970,10 +1962,6 @@ a.su-tab:focus-visible,a.att-tab:focus-visible,a.nav-btn:focus-visible{
   font-style:normal;font-size:10.5px;font-weight:800;color:#E6C690;
   max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.me-tt{
-  font-size:10.5px;font-weight:800;color:#E9C68A;letter-spacing:.2px;
-  max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;
-}
 @media (max-width:1250px){ .uc-title{display:none} }
 
 /* R27 safety: guarantee the [hidden] attribute always wins over any
@@ -2027,3 +2015,45 @@ body.pg-mhome #fSup { display: none !important; }
 .mh-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(148,163,184,.25); flex-shrink: 0; transition: .15s; }
 .mh-user:has(input:checked) { border-color: rgba(217,168,107,.55); background: rgba(196,154,108,.10); }
 .mh-user:has(input:checked) .mh-dot { background: #4FD98D; box-shadow: 0 0 8px rgba(79,217,141,.5); }
+
+/* ===== R31 — manager-home polish =====
+   (1) single-language rule  (2) wide filters on the manager home
+   (3) standard cursors inside the settings popup. ===== */
+
+/* (1) One language at a time: the tiny sub-captions under the page
+   title, chart heads, KPI tiles and the GÜN/HAFTA/AY boxes are BY
+   DESIGN a second language (AR shows EN caps, EN shows Arabic, TR
+   shows EN). Hidden in every mode — the site speaks one language
+   until the user switches it. Brand wordmarks (topbar logo + name,
+   MARIB PERFORMANCE) are identity, not content — they stay. */
+.en, .sub { display: none !important; }
+/* KPI badge chips are hard-coded English words (LINES / MEAN / OUTPUT…) in
+   every dictionary — same-language in EN, a second language in AR/TR. */
+html[lang="ar"] .kpi-badge, html[lang="tr"] .kpi-badge { display: none !important; }
+
+/* (2) Manager home only: the 3-box يومي/أسبوعي/شهري bar IS the period
+   filter, so the classic period pocket is gone here (it used to sit
+   empty) and the remaining filters — من/إلى + الخط + القسم — stretch
+   to own the whole row with taller, roomier controls. */
+body.pg-mhome .fgroup[data-fg="period"] { display: none !important; }
+body.pg-mhome .filters { flex: 1 1 100%; width: 100%; gap: 12px; }
+body.pg-mhome .fgroup[data-fg="dates"],
+body.pg-mhome .fgroup[data-fg="dims"] { flex: 1 1 300px; }
+body.pg-mhome .range-pick { flex: 1 1 auto; }
+body.pg-mhome .range-pick input[type="date"] { flex: 1 1 130px; width: 100%; min-width: 0; }
+body.pg-mhome .fgroup select { flex: 1 1 120px; width: 100%; min-width: 0; max-width: none; }
+body.pg-mhome .filters select,
+body.pg-mhome .range-pick input[type="date"] { height: 38px; font-size: 13px; }
+body.pg-mhome .dp-lab { font-size: 12.5px; }
+
+/* (3) Settings popup: standard OS cursors — the white arrow, the white
+   hand on clickables, the text caret in fields. The denim needle
+   PNGs stay everywhere else; inside settings they made clicks feel
+   off-target and flickered between the needle and the fallback. */
+.set-pop, .set-pop * { cursor: default !important; }
+.set-pop input, .set-pop textarea { cursor: text !important; }
+.set-pop input[type="checkbox"], .set-pop input[type="radio"], .set-pop button,
+.set-pop select, .set-pop label, .set-pop a, .set-pop .set-box, .set-pop .mh-user,
+.set-pop .us-chk, .set-pop .us-sw, .set-pop .seg-btn, .set-pop .seg-mini button,
+.set-pop .icon-btn, .set-pop .au-x-btn, .set-pop .month-btn, .set-pop .set-sec-head,
+.set-pop .qp-btn { cursor: pointer !important; }

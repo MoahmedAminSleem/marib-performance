@@ -133,7 +133,9 @@ window.MARIB_I18N_DICT = {
   t_abs_rate:{ ar: "نسبة الغياب", en: "Absence Rate", tr: "Devamsızlık Oranı" },
   t_pcs_w:   { ar: "قطعة / عامل", en: "Pieces / Worker", tr: "Parça / İşçi" },
   nav_mhome: { ar: "الرئيسية", en: "Overview", tr: "Genel Bakış" },
-  pg_mhome:  { ar: ["رئيسية المدير", "MANAGER HOME"], en: ["Manager Home", "MANAGER HOME"], tr: ["Müdür Ana Sayfası", "MANAGER HOME"] },
+  /* R31: the page itself just says الرئيسية — the manager never feels
+     a switch; "رئيسية المدير" lives only in the settings box (dev). */
+  pg_mhome:  { ar: ["الرئيسية", ""], en: ["Home", ""], tr: ["Ana Sayfa", ""] },
   set_mhome: { ar: "رئيسية المدير", en: "Manager Home", tr: "Müdür Ana Sayfası" },
   sb_d_mhome:{ ar: "تحديد مين يشوف شكل الرئيسية الجديد (زي شيت الجرافيك التركي)", en: "Pick who sees the new Grafik-style home", tr: "Yeni Grafik görünümünü kim görecek" },
   mh_hint:   { ar: "علّم الأشخاص اللي هيشوفوا الشكل الجديد — اللي مش معلّم هيشوف الرئيسية العادية", en: "Check who sees the new home — unchecked users keep the classic one", tr: "Yeni görünümü görecekleri işaretle — diğerleri klasik görünümde kalır" },

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الجولة 31 — صقل رئيسية المدير (6 طلبات) — لوحة أداء مصنع مأرب</title>
+<style>
+  :root{
+    --bg:#0A101C; --card:#131E2E; --card2:#0F1826; --line:rgba(217,168,107,.22);
+    --gold:#D9A86B; --gold2:#E9C68A; --txt:#F2EBDD; --dim:#A9B7C7; --red:#F87C7C; --green:#4FD98D;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);
+    font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',Arial,sans-serif;line-height:1.9;
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 6px)}
+  .wrap{max-width:840px;margin:0 auto;padding:28px 16px 60px}
+  header.hero{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+    border-radius:16px;padding:32px 24px;text-align:center;margin-bottom:24px}
+  .brand{color:var(--gold);font-weight:900;letter-spacing:.22em;font-size:11px;display:block;margin-bottom:6px}
+  .hero h1{font-size:24px;font-weight:900;margin-bottom:4px}
+  .sub{color:var(--dim);font-size:14px}
+  .badge{display:inline-block;border:1px dashed var(--gold);color:var(--gold2);border-radius:8px;
+    padding:6px 14px;font-size:12px;font-weight:700;margin-top:14px}
+  .note{background:rgba(79,217,141,.07);border:1px solid rgba(79,217,141,.3);border-radius:12px;
+    padding:14px 18px;font-size:13.5px;color:#A8D5B5;margin-bottom:24px}
+  .note b{color:var(--green)}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px;margin-bottom:18px}
+  .step h2{font-size:17px;font-weight:800;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .num{flex-shrink:0;width:38px;height:38px;border-radius:50%;background:rgba(217,168,107,.12);
+    border:1px solid rgba(217,168,107,.45);color:var(--gold2);font-weight:900;font-size:16px;
+    display:flex;align-items:center;justify-content:center}
+  .step p{font-size:14px;color:var(--dim);margin-bottom:8px}
+  .step p:last-child{margin-bottom:0}
+  .path{direction:ltr;text-align:left;display:inline-block;background:var(--card2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 10px;margin:4px 0;
+    font-family:Consolas,Monaco,monospace;font-size:13px;color:var(--gold2);word-break:break-all}
+  ul{margin:6px 18px 6px 0}
+  li{font-size:14px;color:var(--dim);margin-bottom:6px}
+  li b{color:var(--txt)}
+  .table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  .table th{background:var(--card2);color:var(--gold2);font-weight:700;text-align:right;
+    padding:10px 12px;border:1px solid var(--line)}
+  .table td{padding:9px 12px;border:1px solid var(--line);color:var(--dim);vertical-align:top}
+  .table td:first-child{color:var(--txt);font-weight:600}
+  .en{direction:ltr;display:inline-block;font-family:Consolas,monospace;font-size:.92em;color:var(--gold2)}
+  .warn{background:rgba(217,168,107,.07);border:1px solid rgba(217,168,107,.35);border-radius:12px;
+    padding:14px 18px;font-size:13.5px;color:#E3C9A0;margin-top:14px}
+  .warn b{color:var(--gold2)}
+  .faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;margin-bottom:12px}
+  .faq summary{font-size:15px;font-weight:700;color:var(--gold2);cursor:pointer}
+  .faq p{font-size:13.5px;color:var(--dim);margin-top:8px}
+  footer{text-align:center;font-size:11px;color:#5A6270;margin-top:44px}
+  .fix{background:var(--card2);border:1px solid rgba(79,217,141,.3);border-radius:12px;
+    padding:14px 18px;margin:10px 0;font-size:13.5px;color:#A8D5B5}
+  .fix b{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="brand">MARIB GARMENTS — ROUND 31</span>
+    <h1>✨ صقل رئيسية المدير — طلباتك الستة بالحرف</h1>
+    <p class="sub">شيلنا المكرر · وسّعنا الفلاتر · «الرئيسية» عادي · ملف شرح الحسبة · كيرسور مظبوط · لغة واحدة</p>
+    <span class="badge">10 ملفات للرفع (7 كود + 3 وثائق) · مش بيلمس أي داتا · بيشتغل لوحده لو R30 مرفعتش</span>
+  </header>
+
+  <div class="note">
+    <b>اتجرّبت E2E كاملة قبل التسليم (نظام اللوب):</b> سيرفر حقيقي + دخول Amin — الهبوط المباشر على رئيسية المدير
+    بالعنوان «الرئيسية» · مفيش صورة/اسم جنب العنوان · الفلاتر بتمّلا الصف (من 112px لـ 310px) ·
+    فحص كل الصفحات: صفر نص أجنبي مرئي في العربي · EN من غير أي عربي · TR كله تركي ·
+    الإعدادات بالكيرسور الأبيض والضغط شغال (شيل/حط أمين + حفظ + الرجوع التلقائي والعكس) ·
+    الدريال شغال · صفر أخطاء كونسول.
+  </div>
+
+  <div class="step">
+    <h2><span class="num">١</span>إيه اللي اتعمل؟ (الستة طلبات + إصلاح إضافي)</h2>
+    <ul>
+      <li><b>الطلب ١ — الصورة والاسم جنب العنوان اتشالوا:</b> دي كانت «me-badge» (صورتك في دايرة + اسمك + المسمى) بيقفوا جنب عنوان كل صفحة — وهي تكرار للشيب اللي فوق شمال. اتشال من الكود كله، والشيب العلوي بقى هو الوحيد.</li>
+      <li><b>الطلب ٢ — فلاتر رئيسية المدير اتوسّعت:</b> جيب التاريخ (من/إلى) وجيب الخط/القسم بيمّلوا الصف كله: الحقول بقت أطول (38px) وخط أكبر، والقايمات طلعت من قيد الـ 210px وبقت ~310px — والجيب الفاضي اللي كان واقف مكان الفلاتر القديمة اتشال.</li>
+      <li><b>الطلب ٣ — «الرئيسية» بس:</b> الصفحة نفسها بتتكتب «الرئيسية» (وHome بالإنجليزي وAna Sayfa بالتركي) زي الرئيسية القديمة بالظبط — المدير مش بيحس بأي حاجة. كلمة «رئيسية المدير» فضلت جوه الإعدادات بس (اللي انت بس بيشوفها).</li>
+      <li><b>الطلب ٤ — ملف شرح الحسبة:</b> ملف جديد <span class="path">شرح-رسومات-رئيسية-المدير.html</span> جوه الـ ZIP — بيشرح بالعربي التلات مربعات والفلاتر وكل رسمة من الستة: المعادلة + البيانات داخلة منين بالأعمدة + الألوان والعتبات وخطوط الهدف + مثال رقمي + جدول ملخص.</li>
+      <li><b>الطلب ٥ — الكيرسور في الإعدادات اتصلح:</b> جوه نافذة الإعدادات الكيرسور بقى الأبيض العادي، والهاند البيضا على الأزرار والسيليكتات والعايمات — وعلامة النص في الحقول. إبرة الخياطة بتفضل في باقي الموقع (هي ثيم الجينز).</li>
+      <li><b>الطلب ٦+٧ — لغة واحدة في كل حتة:</b> كل الشروحات الصغيرة اللي كانت بلغة تانية (التركي تحت العربي في رسومات المدير زي GÜN/HAFTA/AY وVERİMLİLİK، والإنجليزي تحت عناوين الصفحات، والعربي اللي كان بيظهر تحت الإنجليزي) — اتخفت كلها في كل اللغات. وبادجات الـ KPI الإنجليزية (LINES / MEAN…) بتختفي في العربي والتركي. اسم الشركة والماركة (MARIB GARMENTS / MARIB PERFORMANCE) فضلوا — دي هوية مش ترجمة.</li>
+    </ul>
+    <div class="fix">
+      <b>إصلاح إضافي اكتشفناه أثناء الاختبار:</b> لو المدير معلّم في القايمة وكان بيدخل بيفتح الرئيسية القديمة ومايتحولش غير بعد ضغطة — اتعمل جارد بيحوّله تلقائيًا لأول ما يدخل. (دي كانت فجوة من الجولة 30.)
+    </div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">٢</span>ارفع الملفات — ٣ دقايق (نفس نظام ZIP)</h2>
+    <ol style="margin:6px 20px 6px 0">
+      <li>فك ضغط <span class="en">R31.zip</span> — هتلاقي 12 ملف كل واحد في مساره الصح.</li>
+      <li>افتح الريبو على GitHub ← زر <b>Add file ← Upload files</b>.</li>
+      <li>اسحب الملفات <b>مع الفولدرات زي ما هي</b> (public/app و src/app) وحطّها فوق — الملف بنفس الاسم بيكتب فوق القديم.</li>
+      <li>اكتب أي Commit message (زي «R31») واضغط <b>Commit changes</b>.</li>
+      <li>Vercel هينشر لحاله خلال دقيقة — افتح الموقع وجرب خطوة ٣.</li>
+    </ol>
+    <div class="warn">
+      <b>ملحوظة:</b> الجولة دي <b>شاملة</b> — ملفاتها فيها تعديلات R29 و R30 كلها. يعني حتى لو ماكنتش رافع الجولات اللي فاتت، رفع الجولة دي لوحدها كفاية (عدا رؤوس أمان R28 — وموجودة برضه جوه الـ ZIP احتياطي).
+    </div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">٣</span>اتأكد إنها اشتغلت — دقيقة</h2>
+    <ul>
+      <li>سجّل دخول بأي حساب معلّم في قايمة رئيسية المدير ← لازم <b>يفتح على رسومات المدير على طول</b> والعنوان مكتوب «الرئيسية».</li>
+      <li>بص جنب العنوان — <b>مافيش صورة ولا اسم</b> (بقت مرة واحدة فوق شمال).</li>
+      <li>شوف الفلاتر — التاريخ والخط والقسم <b>عريضين بامّلوا الصف</b>.</li>
+      <li>حوّل الإعدادات ← بص على شكل الماوس — <b>السهم الأبيض والهاند</b>، وجرّب تعلّم/تشيل حد وحفظ — الضغط شغال عادي.</li>
+      <li>لف على أي صفحة — <b>مافيش أي لغة تانية تحت العربي</b> (لا تركي في رسومات المدير ولا إنجليزي تحت العناوين).</li>
+      <li>افتح <span class="path">شرح-رسومات-رئيسية-المدير.html</span> من الجهاز (أو من الريبو بعد الرفع) واقراه براحتك.</li>
+    </ul>
+  </div>
+
+  <div class="step faq">
+    <h2><span class="num">؟</span>أسئلة هتجول في دماغك</h2>
+    <details open>
+      <summary>الداتا بتاعتي واليوزرات؟</summary>
+      <p>آمنة تمامًا — التعديل كله واجهة وكود. الجداول والشهور المرفوعة والحسابات والقايمات كلها زي ما هي. مفيش أي حاجة بتتمسح أو تتغير في السيرفر.</p>
+    </details>
+    <details>
+      <summary>ليه فيه ملفات من R30 و R29 متكررة في الـ ZIP؟</summary>
+      <p>عشان الجولة ترفع لوحدها وتشتغل حتى لو الجولات اللي فاتت مرفعتش — الملفات دي بنسخها الأخيرة الشاملة لكل التعديلات. لو رافعها قبل كده، الملف الجديد بيكتب فوق القديم وخلاص.</p>
+    </details>
+    <details>
+      <summary>إزاي أرجّع زي ما كان؟</summary>
+      <p>نفس نظام التراجع من كل جولة: GitHub ← افتح الملف ← زر History (الساعة اللي جنب القلم) ← Rollback — أو افتح <span class="path">سير-العمل.html</span> اللي بيتترفع مع المشروع وفيه بروتوكول التراجع كامل.</p>
+    </details>
+    <details>
+      <summary>اسم الشركة MARIB GARMENTS ليه ماتشالش وانت شايل اللغات؟</summary>
+      <p>لأنه اسم وماركة مش كلام مترجم — زي اللوجو. بيبقى نفس الشكل في أي لغة. لو حابب يتشال برضه من وضع العربي فهي واحدة صغيرة — قولّي بس.</p>
+    </details>
+    <details>
+      <summary>ليه الماوس لسه شكله إبرة في باقي الموقع؟</summary>
+      <p>عشان انت طلبت الكيرسور العادي في خانة الإعدادات بس — فخليتها عادي هناك. باقي الموقع محتفظ بالإبرة لأنها جزء من ثيم الجينز من زمان (R24). لو عايز الإبرة تختفى من الموقع كله، قولّي وحلها في دقيقة.</p>
+    </details>
+    <details>
+      <summary>ملف شرح الحسبة هيترفع على الموقع؟</summary>
+      <p>بيترفع جوه الريبو (عشان يفضل محفوظ مع المشروع) بس مش جزء من واجهة الموقع — ده ملف بتفتحه من الجهاز أو من GitHub وتقراه. لو عايزه زرار جوه الموقع ليك، قولّي ونظبطه.</p>
+    </details>
+  </div>
+
+  <footer>
+    MARIB GARMENTS — PERFORMANCE STUDIO · الجولة 31 · 8 سبتمبر 2026 ·
+    اشتغل بنظام اللوب: تعديل ← اختبار ← مراجعة ← لحد ما كل حاجة تمام
+  </footer>
+</div>
+</body>
+</html>
