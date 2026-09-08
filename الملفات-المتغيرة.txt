@@ -1,12 +1,22 @@
-الملفات المتغيرة فقط — جولة 26 (ارفعها فوق الملفات القديمة في GitHub)
-R26: تابات روابط + تذكرني + كيرسر الإبرة + اللوجو يمين + دايرة صورة اليوزر
+الجولة 29 — الملفات المتغيرة فقط (كلها جوه ZIP واحد — ارفعها فوق القديمة على GitHub)
+R29: تابة الأوفر تايم — استبدال رسمة "مصادر الدقائق المتاحة" (الدائرة)
+برسمة أعمدة أفقية تعرض نسبة الأوفر تايم لكل خط (OT BY LINE)
++ ملف سير-العمل.html (ذاكرة المشروع: الحسابات والمنطق وسجل الجولات) — ملف جديد في أصل الريبو
++ تحديث README.md (إزالة النسخة الأوفلاين — اتقاعدت خلاص من 2026-09-08)
 
-src/app/skeleton.ts  ·  54,119 bytes  ·  md5:5df9011f5a
-src/app/api/auth/route.ts  ·  4,699 bytes  ·  md5:f018a15f47
-src/app/api/users/route.ts  ·  5,946 bytes  ·  md5:9cb2da3357
-src/lib/marib/db.ts  ·  6,517 bytes  ·  md5:e8c0f9fa6f
-public/app/app.css  ·  527,827 bytes  ·  md5:579f566268
-public/app/i18n_dict.js  ·  62,790 bytes  ·  md5:4561f65270
-public/app/marib_cloud.js  ·  3,335 bytes  ·  md5:66fdd20bfa
-public/app/app_main.js  ·  153,993 bytes  ·  md5:e6e978443e
-public/app/app_auth.js  ·  29,165 bytes  ·  md5:f1a2caf8df
+الرفع: Add file ← Upload files ← اسحب فولدر public وفولدر src والملفات ← Commit
+
+public/app/app_main.js      · 153,741 bytes · md5:0e59f97fbcecbb70c066683da55eae44
+public/app/i18n_dict.js     ·  65,821 bytes · md5:d30e0a740995513fd1bafa89983f4be0
+src/app/skeleton.ts         ·  55,505 bytes · md5:3cb4c4505e6cbb56ee4b431ffbe19b7a
+سير-العمل.html              ·  34,420 bytes · md5:3798683382fa436485fca227154ed61d  (ملف جديد)
+README.md                   ·   2,171 bytes · md5:cafefd89098151cccfa0f3153d297a9b
+next.config.ts              ·   3,387 bytes · md5:4e5a36d5ddca6bc56e50349284de7f94  (من R28 — لو رافعه خلاص اتجاهل، ارفعه مش هيضر)
+
+TOTAL: 6 ملفات للرفع (3 كود + سير العمل + README + أمان R28)
++ دليل-الجولة-29.html (ورقة التعليمات — مش بيتشاف على GitHub)
+
+ملاحظات:
+- مافيش أي لمس للداتا أو قاعدة Neon — تعديلات عرض وواجهة ومستندات بس
+- النسخة الأوفلاين public/Marib_Performance_Studio.html مش بتتحدث بعد كدا خلاص
+- بعد الرفع: استنى دقيقة (Vercel) → تابة الأوفر تايم → "أوفر تايم الخطوط / OT BY LINE"

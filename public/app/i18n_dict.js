@@ -117,7 +117,7 @@ window.MARIB_I18N_DICT = {
   c_otDaily: { ar: ["نسبة الأوفر تايم اليومية", "DAILY OVERTIME %"], en: ["Daily Overtime %", "نسبة الأوفر تايم اليومية"], tr: ["Günlük Fazla Mesai Oranı", "DAILY OVERTIME %"] },
   c_otGauge: { ar: ["مؤشر الأوفر تايم", "OVERTIME GAUGE"], en: ["Overtime Gauge", "مؤشر الأوفر تايم"], tr: ["Fazla Mesai Göstergesi", "OVERTIME GAUGE"] },
   c_otSec:   { ar: ["أوفر تايم الأقسام", "OT BY SECTION"], en: ["OT by Section", "أوفر تايم الأقسام"], tr: ["Bölüm Bazında Fazla Mesai", "OT BY SECTION"] },
-  c_otSrc:   { ar: ["مصادر الدقائق المتاحة", "AVAILABLE MINUTES SOURCES"], en: ["Available Minutes Sources", "مصادر الدقائق المتاحة"], tr: ["Kullanılabilir Süre Kaynakları", "AVAILABLE MINUTES SOURCES"] },
+  c_otSrc:   { ar: ["أوفر تايم الخطوط", "OT BY LINE"], en: ["OT by Line", "أوفر تايم الخطوط"], tr: ["Hat Bazında FM", "OT BY LINE"] },
   c_otSup:   { ar: ["أوفر تايم المشرفين", "OT BY SUPERVISOR"], en: ["OT by Supervisor", "أوفر تايم المشرفين"], tr: ["Şef Bazında Fazla Mesai", "OT BY SUPERVISOR"] },
   c_otTable: { ar: ["تفاصيل الأوفر تايم اليومية", "OT DAILY DETAILS"], en: ["OT Daily Details", "تفاصيل الأوفر تايم اليومية"], tr: ["Günlük Fazla Mesai Detayları", "OT DAILY DETAILS"] },
   c_atHeat:  { ar: ["خريطة الانضباط الأسبوعية", "WEEKLY DISCIPLINE HEATMAP"], en: ["Weekly Discipline Heatmap", "خريطة الانضباط الأسبوعية"], tr: ["Haftalık Disiplin Isı Haritası", "WEEKLY DISCIPLINE HEATMAP"] },

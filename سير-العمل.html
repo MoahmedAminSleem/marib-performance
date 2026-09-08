@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سير العمل — ذاكرة مشروع مأرب الكاملة</title>
+<style>
+  :root{
+    --bg:#0A101C; --card:#131E2E; --card2:#0F1826; --line:rgba(217,168,107,.22);
+    --gold:#D9A86B; --gold2:#E9C68A; --txt:#F2EBDD; --dim:#A9B7C7; --red:#F87C7C; --green:#4FD98D;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);
+    font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',Arial,sans-serif;line-height:1.9;
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 6px)}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 16px 60px}
+  header.hero{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+    border-radius:16px;padding:32px 24px;text-align:center;margin-bottom:24px}
+  .brand{color:var(--gold);font-weight:900;letter-spacing:.22em;font-size:11px;display:block;margin-bottom:6px}
+  .hero h1{font-size:24px;font-weight:900;margin-bottom:4px}
+  .sub{color:var(--dim);font-size:14px}
+  .badge{display:inline-block;border:1px dashed var(--gold);color:var(--gold2);border-radius:8px;
+    padding:6px 14px;font-size:12px;font-weight:700;margin-top:14px}
+  .ai{background:rgba(248,124,124,.06);border:1px dashed rgba(248,124,124,.45);border-radius:16px;
+    padding:22px;margin-bottom:24px}
+  .ai h2{font-size:16px;font-weight:900;color:var(--red);margin-bottom:8px}
+  .ai p{font-size:13.5px;color:var(--dim);margin-bottom:6px}
+  .ai ol{margin:6px 20px 6px 0}
+  .ai li{font-size:13.5px;color:var(--dim);margin-bottom:6px}
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px;margin-bottom:18px}
+  .sec h2{font-size:17px;font-weight:800;display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .num{flex-shrink:0;width:38px;height:38px;border-radius:50%;background:rgba(217,168,107,.12);
+    border:1px solid rgba(217,168,107,.45);color:var(--gold2);font-weight:900;font-size:16px;
+    display:flex;align-items:center;justify-content:center}
+  .sec p{font-size:14px;color:var(--dim);margin-bottom:8px}
+  .sec p:last-child{margin-bottom:0}
+  .sec ul{margin:6px 18px 6px 0}
+  .sec li{font-size:14px;color:var(--dim);margin-bottom:6px}
+  .sec li b{color:var(--txt)}
+  .path{direction:ltr;text-align:left;display:inline-block;background:var(--card2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 10px;margin:4px 0;
+    font-family:Consolas,Monaco,monospace;font-size:13px;color:var(--gold2);word-break:break-all}
+  .table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  .table th{background:var(--card2);color:var(--gold2);font-weight:700;text-align:right;
+    padding:10px 12px;border:1px solid var(--line)}
+  .table td{padding:9px 12px;border:1px solid var(--line);color:var(--dim);vertical-align:top}
+  .table td:first-child{color:var(--txt);font-weight:600}
+  .formula{direction:ltr;text-align:center;background:var(--card2);border:1px solid var(--line);
+    border-radius:10px;padding:10px 14px;margin:10px 0;font-family:Consolas,monospace;
+    font-size:13.5px;color:var(--gold2)}
+  .good{color:var(--green);font-weight:700} .bad{color:var(--red);font-weight:700}
+  .warn{background:rgba(217,168,107,.07);border:1px solid rgba(217,168,107,.35);border-radius:12px;
+    padding:14px 18px;font-size:13.5px;color:#E3C9A0;margin-top:14px}
+  .warn b{color:var(--gold2)}
+  .note{background:rgba(79,217,141,.07);border:1px solid rgba(79,217,141,.3);border-radius:12px;
+    padding:14px 18px;font-size:13.5px;color:#A8D5B5;margin:14px 0}
+  .note b{color:var(--green)}
+  .flow{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .fnode{display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--line);
+    border-radius:12px;padding:10px 16px}
+  .fnode .fi{font-size:20px;flex-shrink:0}
+  .fnode .ft{font-size:13.5px;color:var(--dim)}
+  .fnode .ft b{color:var(--txt)}
+  .farrow{text-align:center;color:var(--gold);font-size:16px;line-height:1}
+  .upd{background:var(--card2);border:1px solid var(--line);border-right:4px solid var(--gold);
+    border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  .upd-head{font-size:14.5px;font-weight:800;color:var(--gold2);margin-bottom:6px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .upd-date{font-size:12px;color:var(--dim);font-weight:400}
+  .upd ul{margin:4px 16px 4px 0}
+  .upd li{font-size:13.5px;color:var(--dim);margin-bottom:5px}
+  .protocol{background:rgba(217,168,107,.08);border:2px dashed rgba(217,168,107,.5);border-radius:16px;
+    padding:20px;margin-bottom:18px}
+  .protocol h2{font-size:16px;font-weight:900;color:var(--gold2);margin-bottom:10px}
+  .protocol ol{margin:6px 20px 6px 0}
+  .protocol li{font-size:13.5px;color:var(--dim);margin-bottom:8px}
+  .protocol li b{color:var(--txt)}
+  .toc{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:24px}
+  .toc b{color:var(--gold2);font-size:14px}
+  .toc ol{margin:8px 20px 0 0;columns:2;column-gap:28px}
+  .toc li{font-size:13px;color:var(--dim);margin-bottom:4px;break-inside:avoid}
+  @media (max-width:600px){.toc ol{columns:1}}
+  footer{text-align:center;font-size:11px;color:#5A6270;margin-top:44px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="brand">MARIB GARMENTS — PROJECT WORKFLOW</span>
+    <h1>🧠 سير العمل — ذاكرة المشروع الكاملة</h1>
+    <p class="sub">كل حاجة عن لوحة أداء مصنع مأرب: القصة، المعمارية، طريقة الحساب، الجولات، وآخر اللي اتعمل</p>
+    <span class="badge">الملف ده بيتحدّث في آخر كل جولة · بيعيش جوه الريبو على GitHub</span>
+  </header>
+
+  <!-- ================= AI RECOVERY BOX ================= -->
+  <div class="ai">
+    <h2>⚠️ صندوق الاسترجاع — اقراه الأول لو المساعد نسي السياق</h2>
+    <p>لو المساعد الذكي افتح الجلسة ونسي المشوار، أو المستخدم رفع الريبو من جديد — ده أول حاجة تتقري:
+    <b style="color:var(--txt)">الملف ده هو ذاكرة المشروع.</b> وبعده السجل تحت في آخر الصفحة بيقول آخر حاجة اتعملت.</p>
+    <ol>
+      <li><b>المشروع:</b> لوحة أداء مصنع مأرب للملابس (Marib Performance Studio) — النسخة الأونلاين.</li>
+      <li><b>الريبو:</b> <span class="path">github.com/MoahmedAminSleem/marib-performance</span> — خاص (ليه 404 لغير المصرح لهم، وده طبيعي ومقصود).</li>
+      <li><b>النشر:</b> GitHub → Vercel بينشر أوتوماتيك في دقيقة · قاعدة البيانات PostgreSQL على Neon.</li>
+      <li><b>التكنولوجيا:</b> Next.js (API routes في <span class="path">src/app/api/</span>) + تطبيق اللوحة vanilla JS في <span class="path">public/app/</span> + Prisma.</li>
+      <li><b>الدخول الأول:</b> Amin / 2872002 (حساب الأدمن المزروع تلقائيًا).</li>
+      <li><b>نظام الشغل:</b> "جولات" — R بالرقم — كل جولة ملفات متغيرة بس بتترفع فوق القديمة من GitHub (Upload files / قلم التعديل) وVercel بينشرها.</li>
+      <li><b>آخر جولة:</b> شوف آخر بلوك في "سجل التحديثات" في آخر الصفحة دي.</li>
+    </ol>
+    <div class="warn" style="margin-top:10px">
+      <b>القواعد الذهبية (اتفاق ثابت مع صاحب المشروع):</b><br>
+      ① ممنوع أبدًا لمس أو مسح أو تغيير داتا اليوزر المخزّنة على السيرفر — التعديلات كود وواجهة بس.<br>
+      ② كل تسليم من المساعد لازم يكون <b>ملف مضغوط ZIP</b> جاهز للفك والرفع.<br>
+      ③ <b>مافيش نسخة أوفلاين خلاص</b> — الشغل كله على الموقع المرفوع (Vercel + Neon) من سنة 2026-09-08.<br>
+      ④ بعد كل تعديل، المساعد <b>بيضيف بلوك جديد في سجل التحديثات</b> تحت وبيسلّم نسخة محدثة من الملف ده مع الجولة.<br>
+      ⑤ صاحب المشروع بيتكلم عامية مصرية — الردود والملفات كلها بالعربي.
+    </div>
+  </div>
+
+  <div class="toc">
+    <b>📑 محتويات الملف</b>
+    <ol>
+      <li>قصة المشروع</li>
+      <li>المعمارية — إزاي الموقع شغال</li>
+      <li>تدفق الداتا — من الإكسل للشاشة</li>
+      <li>جداول البيانات الخمسة</li>
+      <li>طريقة الحساب والمنطق (المعادلات)</li>
+      <li>العتبات والألوان</li>
+      <li>صفحات اللوحة</li>
+      <li>نظام الجولات وطريقة التسليم</li>
+      <li>تاريخ الجولات R24 → R29</li>
+      <li>سجل التحديثات (بيتحدّث كل جولة)</li>
+    </ol>
+  </div>
+
+  <!-- ================= 1. STORY ================= -->
+  <div class="sec">
+    <h2><span class="num">١</span>قصة المشروع</h2>
+    <p>المشروع بدأ كلوحة <b>Power BI</b> بتقرأ ملفات الإكسل الشهرية للمصنع (مبيعات وإنتاج وجيوب وحضور) وتطلع مؤشرات الأداء. كان ليها موديل داتا كامل بـ 42 مقياس (measure) وعلاقات فلترة دقيقة بين الجداول. المشكلة كانت إنها محتاجة Power BI Desktop ومفيش غير جهاز واحد بيعرضها، والشركة عايزة الكل يشوفها من أي مكان.</p>
+    <ul>
+      <li><b>المرحلة 1 — نسخة HTML أوفلاين:</b> اتعملت نسخة ملف واحد <span class="path">Marib_Performance_Studio.html</span> (حاليًا 1.8MB) بتشتغل من غير نت وبتقرأ فولدر الإكسل من الجهاز. ثيم الجينز والذهبي، 3 لغات (عربي / تركي / إنجليزي). دي كانت المرحلة اللي اتعمل فيها معظم تطوير الواجهة والرسومات.</li>
+      <li><b>المرحلة 2 — النسخة الأونلاين (الحالية):</b> اتبنت نسخة سيرفر كاملة: تسجيل دخول متعدد المستخدمين + صلاحيات + قاعدة بيانات PostgreSQL على Neon + نشر على Vercel من الريبو الخاص. نفس اللوحة بالظبط بس الداتا على السيرفر والشركة كلها بتشوفها من لينك واحد.</li>
+      <li><b>المرحلة 3 — 2026-09-08:</b> اتقرر إن <b>النسخة الأوفلاين اتقاعدت خلاص</b> — كل الشغل من دلوقتي على النسخة الأونلاين المرفوعة بس.</li>
+    </ul>
+    <div class="note"><b>الزتونة:</b> كل الحسابات والمنطق متطابقة بالبايت مع موديل Power BI الأصلي — نفس الجداول، نفس العلاقات، نفس المعادلات (مكتوبة أصلًا في <span class="path">public/app/app_core.js</span> ومتعليقة "Mirrors the user's Power BI semantic model EXACTLY").</div>
+  </div>
+
+  <!-- ================= 2. ARCHITECTURE ================= -->
+  <div class="sec">
+    <h2><span class="num">٢</span>المعمارية — إزاي الموقع شغال</h2>
+    <div class="flow">
+      <div class="fnode"><span class="fi">💻</span><span class="ft"><b>GitHub (خاص)</b> — MoahmedAminSleem/marib-performance — الكود كله بيتعمل فيه Commit</span></div>
+      <div class="farrow">⬇️ تلقائي</div>
+      <div class="fnode"><span class="fi">▲</span><span class="ft"><b>Vercel</b> — بيأخذ أي commit جديد وينشر الموقع في ~دقيقة من غير أي خطوة إضافية</span></div>
+      <div class="farrow">⬇️ بيتصل</div>
+      <div class="fnode"><span class="fi">🐘</span><span class="ft"><b>Neon PostgreSQL</b> — قاعدة البيانات السحابية (المستخدمين + الشهور + الداتا + الإعدادات + اللوج)</span></div>
+      <div class="farrow">⬇️ بيتقرا</div>
+      <div class="fnode"><span class="fi">🏭</span><span class="ft"><b>الشركة كلها</b> — بتفتح اللينك من أي جهاز / موبايل وتشوف نفس الداتا لحظيًا</span></div>
+    </div>
+    <table class="table">
+      <tr><th>الجزء</th><th>المكان في الريبو</th><th>بيعمل إيه</th></tr>
+      <tr><td>واجهة اللوحة</td><td><span class="path">public/app/</span></td><td>التطبيق نفسه: app_main.js (الصفحات والرسومات) · app_core.js (التحليل والحسابات) · app_auth.js (تسجيل الدخول) · marib_cloud.js (التخاطب مع الـ API) · i18n_dict.js (3 لغات) · app.css (ثيم الجينز والذهبي) · xlsx.full.min.js (قارئ الإكسل)</td></tr>
+      <tr><td>هيكل الصفحة</td><td><span class="path">src/app/skeleton.ts</span></td><td>بيبني الـ HTML (الكروت والتابات) اللي بتترسم فيه الواجهة</td></tr>
+      <tr><td>الباك اند (API)</td><td><span class="path">src/app/api/</span></td><td>auth (دخول/خروج/جلسة) · users (المستخدمين والصلاحيات) · data (جلب ومزامنة الشهور) · months · settings · audit (سجل العمليات) · storage · health</td></tr>
+      <tr><td>قاعدة البيانات</td><td><span class="path">prisma/schema.postgres.prisma</span></td><td>شكل الجداول على Neon — أول تشغيل بيبني الجداول + أدمن + شهور يوليو/أغسطس/سبتمبر 2026 تلقائيًا</td></tr>
+      <tr><td>الإعدادات</td><td><span class="path">next.config.ts</span></td><td>إعدادات السيرفر + رؤوس الأمان الثمانية (R28)</td></tr>
+      <tr><td>دليل النشر</td><td><span class="path">دليل-النشر.html</span></td><td>خطوات رفع الموقع من الصفر (GitHub → Neon → Vercel)</td></tr>
+      <tr><td>ذاكرة المشروع</td><td><span class="path">سير-العمل.html</span></td><td><b>الملف ده</b> — بيتحدّث كل جولة</td></tr>
+    </table>
+  </div>
+
+  <!-- ================= 3. DATA FLOW ================= -->
+  <div class="sec">
+    <h2><span class="num">٣</span>تدفق الداتا — من الإكسل للشاشة</h2>
+    <ul>
+      <li><b>1) الرفع:</b> من تابة "البيانات" جوه الموقع، بيتحدد الشهر وبيترفع ملف (أو ملفات) الإكسل بتاعة الشهر ده.</li>
+      <li><b>2) التحليل في المتصفح:</b> نفس محرك التحليل بتاع النسخة الأوفلاين (<span class="path">app_core.js</span>) بيقرأ الشيتات الخمسة ويحوّلها لـ pack جاهز.</li>
+      <li><b>3) المزامنة للسيرفر:</b> <span class="path">marib_cloud.js</span> يبعت الـ pack لـ <span class="path">POST /api/data</span> ويتخزن على Neon.</li>
+      <li><b>4) العرض للكل:</b> أي حد بيفتح الموقع بيلاقي الشهر الجديد ظهر مع الباقي — وفيه سجل عمليات (audit) بيكتب مين عمل إيه وإمتى.</li>
+    </ul>
+    <div class="note"><b>قاعدة مهمة:</b> التعديلات بتاعة الجولات (كود/رسومات/ترجمات) <b>ماتلمسش الداتا المخزنة أبدًا</b> — الداتا بتعيش لوحدها في قاعدة Neon والكود بيتحمل فوق القديم من غير ما يمسها.</div>
+  </div>
+
+  <!-- ================= 4. TABLES ================= -->
+  <div class="sec">
+    <h2><span class="num">٤</span>جداول البيانات الخمسة (شيتات الإكسل)</h2>
+    <table class="table">
+      <tr><th>الشيت</th><th>أهم الأعمدة</th><th>بيتفلتر بـ</th></tr>
+      <tr><td>Daily Data</td><td>التاريخ · العميل · الخط · القسم · المدير · الليدر · المشرف · الهدف · العمال النظاميين/الفعليين · الغياب · الإنتاج الفعلي · نسبة التحقيق · عمال الحضور · الدقائق المتاحة · SAM · الدقائق المنتَجة · العيوب</td><td>التاريخ + الخط + القسم + المشرف</td></tr>
+      <tr><td>OT (الأوفر تايم)</td><td>نفس أعمدة Daily Data تقريبًا — بس الدقائق المتاحة هنا هي دقايق الأوفر</td><td>التاريخ + الخط + القسم + المشرف</td></tr>
+      <tr><td>Pocket Machines (الجيوب)</td><td>المشرف · العامل · العميل · PO · الموديل · الماكينة · الهدف · الإنتاج الفعلي · إنتاج الأوفر · الدقايق المخططة · الدقائق المتاحة · دقايق OT · SAM · الدقائق المنتَجة</td><td>التاريخ + المشرف (بس)</td></tr>
+      <tr><td>Attendance (الحضور)</td><td>التاريخ · اسم الموظف · درجة الانضباط</td><td>التاريخ (بس)</td></tr>
+      <tr><td>Line Output</td><td>التاريخ + عمود هدف وعمود فعلي لكل خط — بيفك تمدده (unpivot) زي استعلام Power Query بالظبط</td><td>التاريخ + الخط</td></tr>
+    </table>
+    <p style="margin-top:10px">الأبعاد (الخطوط / الأقسام / المشرفين / المديرين / الليدرز) بتتولد تلقائيًا من الداتا نفسها: الخطوط من Line Output، والمشرفين من Daily Data ∪ Pocket Machines (اتحاد بدون تكرار) — زي DAX بالظبط.</p>
+  </div>
+
+  <!-- ================= 5. CALCULATIONS ================= -->
+  <div class="sec">
+    <h2><span class="num">٥</span>طريقة الحساب والمنطق (المعادلات الأساسية)</h2>
+    <p>دي زتونة الـ 42 مقياس — كل النسب محسوبة بالطريقة دي بالظبط في <span class="path">app_core.js</span> داخل <span class="path">compute()</span>، والفلترة بتنساب زي Power BI (كل حد بيفلتر الجداول المرتبطة بيه بس):</p>
+
+    <table class="table">
+      <tr><th>المقياس</th><th>المعادلة</th><th>بيطلع منين</th></tr>
+      <tr>
+        <td>الإنجاز العام<br><span style="color:var(--dim);font-weight:400">Factory Achievement %</span></td>
+        <td><div class="formula">Actual ÷ Target</div>مجموع الفعلي ÷ مجموع الهدف</td>
+        <td>شيت Line Output (unpivot لكل خط)</td>
+      </tr>
+      <tr>
+        <td>الكفاءة<br><span style="color:var(--dim);font-weight:400">Efficiency %</span></td>
+        <td><div class="formula">Min Produced ÷ Total Min Available</div>الدقايق المنتَجة ÷ كل الدقايق المتاحة</td>
+        <td>الدقايق المنتجة = Daily Data + Pocket Machines · المتاحة = تحتها ⬇️</td>
+      </tr>
+      <tr>
+        <td>الدقائق المتاحة الإجمالية<br><span style="color:var(--dim);font-weight:400">Total Min Available</span></td>
+        <td><div class="formula">DD[MinAvail] + OT[MinAvail] + PM[MinAvail] + PM[OT Min]</div>يومي + أوفر تايم + جيوب (منتظم + أوفر)</td>
+        <td>المجموع من الشيتات التلاتة</td>
+      </tr>
+      <tr>
+        <td>الأوفر تايم<br><span style="color:var(--dim);font-weight:400">Overtime %</span></td>
+        <td><div class="formula">OT Minutes ÷ Total Min Available</div>دقايق الأوفر ÷ كل الدقايق المتاحة</td>
+        <td>دقايق الأوفر = OT[MinAvail] + PM[OT Min]</td>
+      </tr>
+      <tr>
+        <td>الحضور والانضباط<br><span style="color:var(--dim);font-weight:400">Attendance %</span></td>
+        <td><div class="formula">متوسط درجات الانضباط</div>متوسط بسيط لدرجات شيت Attendance</td>
+        <td>شيت الحضور</td>
+      </tr>
+      <tr>
+        <td>الغياب<br><span style="color:var(--dim);font-weight:400">Absenteeism %</span></td>
+        <td><div class="formula">Absent ÷ (Regular Workers + Absent)</div>الغياب ÷ كل القوى العاملة المفروضة</td>
+        <td>Daily Data</td>
+      </tr>
+      <tr>
+        <td>هدف/فعلي المشرفين<br><span style="color:var(--dim);font-weight:400">Supervisor Target / Actual</span></td>
+        <td><div class="formula">DD[Target] + PM[Target] · DD[Actual] + PM[Actual] + PM[OT Prod]</div>هدف المشرف = يومي + جيوب · فعليه = يومي + جيوب + إنتاج أوفر الجيوب</td>
+        <td>Daily Data + Pocket Machines</td>
+      </tr>
+      <tr>
+        <td>أوفر تايم الخط<br><span style="color:var(--dim);font-weight:400">Line OT %</span> <span class="good">← الجديد في R29</span></td>
+        <td><div class="formula">Line OT Min ÷ (Line MinAvail + Line OT Min)</div>دقايق أوفر الخط ÷ دقايق الخط المتاحة كلها</td>
+        <td>شيت OT مجمّع لكل خط — دي اللي بترسم رسمة R29 الجديدة</td>
+      </tr>
+    </table>
+
+    <ul style="margin-top:12px">
+      <li><b>المتوسطات:</b> SAM المتوسط = متوسط SAM في Daily Data · الحد الأقصى للحضور = أكبر مجموع عمال حضور في يوم واحد.</li>
+      <li><b>السلاسل اليومية:</b> كل يوم بيتجمع لوحده (إنجاز / أوفر / كفاءة / حضور / غياب) عشان الرسومات الزمنية والتقويم.</li>
+      <li><b>مقارنة الفترات:</b> كل رسمة بتقارن بالفترة السابقة المكافئة (زي الشهر اللي فات) وتطلع أسهم الأخضر والأحمر.</li>
+      <li><b>الحساب كله في المتصفح:</b> السيرفر بيخزن الداتا الخام (packs) — الحسابات بتشتغل عند العميل بنفس محرك الأوفلاين، فالمطابقة مع Power BI مضمونة بالبايت.</li>
+    </ul>
+  </div>
+
+  <!-- ================= 6. THRESHOLDS ================= -->
+  <div class="sec">
+    <h2><span class="num">٦</span>العتبات والألوان (متى أخضر / برتقالي / أحمر)</h2>
+    <table class="table">
+      <tr><th>المؤشر</th><th>أخضر (آمن)</th><th>برتقالي (تحذير)</th><th>أحمر (خطر)</th></tr>
+      <tr><td>الإنجاز Achievement</td><td class="good">≥ 85%</td><td>70% – 85%</td><td class="bad">&lt; 70%</td></tr>
+      <tr><td>الكفاءة Efficiency</td><td class="good">≥ 78%</td><td>60% – 78%</td><td class="bad">&lt; 60%</td></tr>
+      <tr><td>الأوفر تايم OT</td><td class="good">≤ 10%</td><td>10% – 20%</td><td class="bad">&gt; 20%</td></tr>
+      <tr><td>الحضور Attendance</td><td class="good">≥ 95%</td><td>90% – 95%</td><td class="bad">&lt; 90%</td></tr>
+    </table>
+    <p style="margin-top:10px"><b>لاحظ:</b> الأوفر تايم متركوس عن قصد — الأقل هو الأحسن (الأخضر لحد 10%)، لأنه بيزيد التكلفة. العتبات دي معرّفة في <span class="path">app_core.js</span> في <span class="path">thresholds</span> وبتتلم منها ألوان الكروت والرسومات كلها. رسمة R29 الجديدة بتستخدم نفس عتبات الأوفر (خط الهدف الأخضر واقف عند 10%).</p>
+  </div>
+
+  <!-- ================= 7. PAGES ================= -->
+  <div class="sec">
+    <h2><span class="num">٧</span>صفحات اللوحة (التابات)</h2>
+    <table class="table">
+      <tr><th>التاب</th><th>بيعرض إيه</th></tr>
+      <tr><td>🏠 الرئيسية</td><td>الكبار بتوع اليوم: إنجاز المصنع · كفاءة · أوفر تايم · حضور · غياب + الرسومات اليومية والمقارنة بالفترة السابقة</td></tr>
+      <tr><td>🏭 الخطوط</td><td>أداء كل خط إنتاج: إنجاز / فعلي / هدف / SAM / أوفر — رسومات وترتيب وتفاصيل بالضغط</td></tr>
+      <tr><td>🗂️ الأقسام</td><td>نفس التحليل بس مجمّع على الأقسام</td></tr>
+      <tr><td>👷 المشرفين</td><td>أداء كل مشرف: هدف / فعلي / جزء الجيوب وأوفره / أعلى حضور</td></tr>
+      <tr><td>🪡 الجيوب (PM)</td><td>تحليل ماكينات الجيوب: بالماكينة / بالموديل / بالعامل — إنتاج منتظم + إنتاج أوفر</td></tr>
+      <tr><td>⏱️ الأوفر تايم</td><td>تحليل الأوفر: العداد اليومي + <b>رسمة أوفر تايم الخطوط (جديدة R29)</b> + أوفر المشرفين + الجدول التفصيلي</td></tr>
+      <tr><td>✅ الحضور</td><td>الانضباط والغياب اليومي + سجل الموظفين</td></tr>
+      <tr><td>📂 البيانات</td><td>رفع ومزامنة ملفات الإكسل الشهرية + إدارة الشهور</td></tr>
+      <tr><td>👤 المستخدمين (أدمن بس)</td><td>إضافة مستخدمين وصلاحيات وصور وألقاب + تغيير الباسوردات</td></tr>
+    </table>
+  </div>
+
+  <!-- ================= 8. ROUNDS SYSTEM ================= -->
+  <div class="sec">
+    <h2><span class="num">٨</span>نظام الجولات — طريقة الشغل والتسليم</h2>
+    <ul>
+      <li><b>الجولة (R + رقم):</b> حزمة تعديل واحدة. بتتسلم كـ <b>ملف ZIP</b> فيه الملفات المتغيرة بس (بنفس مساراتها في الريبو) + ملف <span class="path">الملفات-المتغيرة.txt</span> (المانيفست بالـ md5) + ورقة دليل HTML بالخطوات.</li>
+      <li><b>الرفع:</b> فك الضغط → افتح الريبو على GitHub → <b>Add file → Upload files</b> → اسحب الفولدرات والملفات → Commit → Vercel بينشر لوحده في دقيقة. (الملفات اللي ليها نفس الاسم والمسار بتتحول تلقائيًا فوق القديمة).</li>
+      <li><b>التراجع لو حصلت مشكلة:</b> GitHub بيحتفظ بكل نسخة قديمة — من صفحة الملف → History → رجّع أي نسخة سابقة بنقرة.</li>
+      <li><b>التحقق بعد النشر:</b> افتح الموقع → اعمل Refresh قوي (Ctrl+F5) → اتأكد إن التعديل ظهر.</li>
+    </ul>
+    <div class="warn"><b>اتفقنا من 2026-09-08:</b> كل تسليم من دلوقتي ZIP مضغوط — مافيش ملفات سايبة، ومافيش نسخة أوفلاين تتحدث خلاص. ملف الأوفلاين <span class="path">public/Marib_Performance_Studio.html</span> موجود في الريبو كأرشيف وخلاص، مش بيتشاف في الشغل بعد كدا.</div>
+  </div>
+
+  <!-- ================= 9. ROUNDS HISTORY ================= -->
+  <div class="sec">
+    <h2><span class="num">٩</span>تاريخ الجولات (المشوار)</h2>
+    <table class="table">
+      <tr><th>الجولة</th><th>إيه اللي اتعمل</th><th>الملفات</th></tr>
+      <tr><td>R24</td><td>أول بناء للنسخة الأونلاين: تحويل اللوحة لسيرفر Next.js + قاعدة بيانات + نشر Vercel/Neon + المستخدمين والصلاحيات + بذر شهور يوليو/أغسطس/سبتمبر 2026</td><td>29 ملف (البناء الكامل)</td></tr>
+      <tr><td>R26</td><td>التابات بقت روابط + خيار "تذكرني" + كيرسر الإبرة + اللوجو يمين + صورة اليوزر بقت دايرة</td><td>8 ملفات</td></tr>
+      <tr><td>R27</td><td>تحسينات على الدخول والواجهة والسحابة (استكمال لـ R26)</td><td>9 ملفات</td></tr>
+      <tr><td>R28</td><td><b>رؤوس الأمان الثمانية:</b> CSP + HSTS + حظر التأطير + منع التخمين + سياسات الإحالات والصلاحيات + إخفاء التقنيات + COOP — الحماية بتشتغل على كل الصفحات والـ API، من غير أي تأثير على الداتا</td><td>1 ملف: <span class="path">next.config.ts</span></td></tr>
+      <tr><td>R29</td><td><b>رسمة الأوفر تايم الجديدة:</b> تبديل رسمة "مصادر الدقائق المتاحة" الدائرية في تابة الأوفر تايم بأعمدة أفقية تعرض <b>نسبة الأوفر تايم لكل خط</b> — ترتيب تنازلي، ألوان حسب العتبة، تولتيب فيه دقايق الأوفر والهدف والإنجاز، خط الهدف 10%، والضغط يفتح تفاصيل الخط. + <b>ملف سير العمل ده</b> اتعمل واتضاف للريبو + تحديث README (شيلنا الأوفلاين)</td><td>3 ملفات كود + سير-العمل.html + README.md</td></tr>
+    </table>
+    <p style="margin-top:10px"><b>ملاحظة:</b> الجولات القديمة (R25 وR23 وقبلها) كانت مراحل صغيرة في بناء النسخة الأونلاين — المهم الموجود فوق.</p>
+  </div>
+
+  <!-- ================= 10. APPEND PROTOCOL ================= -->
+  <div class="protocol">
+    <h2>📜 بروتوكول التحديث — الملف ده عايش وبيكبر مع المشروع</h2>
+    <ol>
+      <li><b>بعد كل جولة جديدة</b>، المساعد بيضيف <b>بلوك جديد تحت آخر بلوك في السجل</b> — نفس الشكل: رقم الجولة + التاريخ + إيه اللي اتعمل بالظبط + الملفات اللي اتغيرت.</li>
+      <li>بيحدّث <b>آخر سطر في جدول تاريخ الجولات</b> (القسم ٩) عشان يفضل شغال كملخص سريع.</li>
+      <li>بيسلّم نسخة <span class="path">سير-العمل.html</span> المحدّة <b>جوه ZIP الجولة نفسها</b> — بتترفع مع باقي الملفات على GitHub عشان النسخة اللي على السيرفر تفضل هي الأحدث دايمًا.</li>
+      <li>لو المساعد نسي السياق في جلسة جديدة: المستخدم بيفتح الريبو (أو يرفعه) → المساعد يقرا الملف ده من أوله → يرجع يفتكر كل حاجة علطول وكمّل من آخر بلوك.</li>
+    </ol>
+  </div>
+
+  <!-- ================= 10. UPDATE LOG ================= -->
+  <div class="sec">
+    <h2><span class="num">١٠</span>سجل التحديثات — بنضيف هنا بعد كل تعديل</h2>
+
+    <div class="upd">
+      <div class="upd-head">🟢 الجولة 29 — أوفر تايم الخطوط + ملف سير العمل<span class="upd-date">8 سبتمبر 2026</span></div>
+      <ul>
+        <li><b>الرسمة الجديدة:</b> في تابة "الأوفر تايم" اتبدلت رسمة الدائرة (مصادر الدقائق المتاحة) بأعمدة أفقية بتعرض <b>نسبة الأوفر تايم لكل خط</b> — عنوانها "أوفر تايم الخطوط / OT BY LINE".</li>
+        <li><b>مواصفات الرسمة:</b> ترتيب تنازلي حسب النسبة · ألوان حسب العتبات (أخضر ≤10% · برتقالي ≤20% · أحمر فوق كده) · تولتيب فيه: الخط ونسبة الأوفر ودقايق الأوفر والهدف ونسبة الإنجاز · خط الهدف الأخضر واقف عند 10% · الضغط على أي عمود يفتح صفحة تفاصيل الخط · مقارنة بالفترة السابقة شغالة.</li>
+        <li><b>اتجربت على داتا أغسطس 2026 الحقيقية قبل التسليم:</b> خط 1 (3.4%) · خط 3 (3.3%) · خط 2 (3.0%) · خط 5 (2.6%) · خط 4 (2.2%) — من غير أي أخطاء في الكونسول.</li>
+        <li><b>الملفات المتغيرة:</b> <span class="path">public/app/app_main.js</span> (بلوك الرسمة) · <span class="path">public/app/i18n_dict.js</span> (العنوان بالتلات لغات) · <span class="path">src/app/skeleton.ts</span> (عنوان الكارت).</li>
+        <li><b>ملف سير العمل ده اتعمل واتضاف لأول مرة</b> في الريبو + <span class="path">README.md</span> اتحدّث (شيلنا سطر النسخة الأوفلاين وضفنا سطر سير العمل).</li>
+        <li><b>قواعد جديدة اتفقنا عليها النهارده:</b> كل تسليم من دلوقتي ZIP مضغوط · النسخة الأوفلاين اتقاعدت خلاص · الشغل كله على الموقع المرفوع.</li>
+        <li><b>الأمان:</b> مافيش أي لمس للداتا — تعديل كود وواجهة وترجمات بس. (next.config.ts بتاع R28 موجود في نفس الـ ZIP لو لسه مرفعتوش).</li>
+      </ul>
+    </div>
+
+    <!-- ⬇️ المساعد: ضيف بلوك الجولة الجديدة هنا (نفس الشكل) ⬇️ -->
+
+    <div class="note" style="margin-top:8px">
+      <b>الملف ده هو نقطة البداية لأي جلسة جديدة.</b> أقدم بلوك فوق = أول حاجة اتعملت · آخر بلوك = آخر حاجة اتعملت.
+    </div>
+  </div>
+
+  <footer>
+    MARIB GARMENTS — PERFORMANCE STUDIO · سير العمل والحسابات والمنطق — آخر تحديث: الجولة 29 (2026-09-08)
+  </footer>
+</div>
+</body>
+</html>
+

@@ -1218,19 +1218,26 @@ var App = (function () {
       cmp: cmpOtSec
     });
 
-    /* sources of available minutes — a % composition donut */
+    /* OT by line — OT % bars, minutes ride in the tooltip (R29) */
+    var otLn = (k.byLine || []).filter(function (L) { return L.otPct != null && (L.otMin || 0) > 0; });
     var cmpSrc = cmpCard("otSrc", function (cmp, k2) {
+      var m2 = {};
+      (k2.byLine || []).forEach(function (L) { m2[I18N.lineN(L.line)] = L.otPct == null ? null : L.otPct * 100; });
+      cmp.cmpMap = m2;
+      cmp.fmt = pctF(1);
       cmp.cells = [{ name: TV("k_ot_pct"), cur: k.otPct == null ? null : k.otPct * 100, cmp: k2.otPct == null ? null : k2.otPct * 100, fmt: pctF(2), goodUp: false }];
     });
-    C.donut($("otSrc"), {
-      height: 245,
-      items: [
-        { label: T("os_daily"), value: k.ddMinAvail, color: C_ACCENT, tip: [[T("t_src"), T("os_daily_src")], [T("t_share"), k.totalMinAvail ? I18N.pctV(k.ddMinAvail / k.totalMinAvail * 100, 1) : "—"]] },
-        { label: T("os_ot"), value: k.otMinAvail, color: C_WARN, tip: [[T("t_src"), T("os_ot_src")], [T("t_share"), k.totalMinAvail ? I18N.pctV(k.otMinAvail / k.totalMinAvail * 100, 1) : "—"]] },
-        { label: T("os_pm"), value: k.pmMinAvail, color: C_ACCENT2, tip: [[T("t_src"), T("os_pm_src")], [T("t_share"), k.totalMinAvail ? I18N.pctV(k.pmMinAvail / k.totalMinAvail * 100, 1) : "—"]] }
-      ].filter(function (x) { return x.value > 0; }),
-      center: { big: fmtPct(k.otPct, 2), small: T("dk_ot") },
-      valueName: T("t_share"),
+    C.hbar($("otSrc"), {
+      items: otLn.slice().sort(function (a, b) { return (b.otPct || 0) - (a.otPct || 0); }).map(function (L) {
+        var st = stOf(L.otPct, TH.overtime, true);
+        return {
+          label: I18N.lineN(L.line), value: Math.round((L.otPct || 0) * 1000) / 10, color: stColor(st),
+          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_ot_min2"), fmtInt(L.otMin)], [T("t_target"), fmtInt(L.target)], [T("t_achv"), fmtPct(L.achv)]],
+          drill: { type: "line", value: String(L.line), domain: "ot" }
+        };
+      }),
+      fmt: pctF(1), valueName: TV("k_ot_pct"), rowH: 34,
+      goal: { value: TH.overtime.good * 100, color: C_GOOD, tipTitle: "t_goal_safe" },
       cmp: cmpSrc
     });
 
