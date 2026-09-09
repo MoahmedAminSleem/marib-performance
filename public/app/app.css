@@ -2018,7 +2018,8 @@ body.pg-mhome #fSup { display: none !important; }
 
 /* ===== R31 — manager-home polish =====
    (1) single-language rule  (2) wide filters on the manager home
-   (3) standard cursors inside the settings popup. ===== */
+   (3) settings cursors — RETIRED in R32: the needle-thread PNG now
+   owns the whole site, settings included (see the R32 block at the end). ===== */
 
 /* (1) One language at a time: the tiny sub-captions under the page
    title, chart heads, KPI tiles and the GÜN/HAFTA/AY boxes are BY
@@ -2046,14 +2047,11 @@ body.pg-mhome .filters select,
 body.pg-mhome .range-pick input[type="date"] { height: 38px; font-size: 13px; }
 body.pg-mhome .dp-lab { font-size: 12.5px; }
 
-/* (3) Settings popup: standard OS cursors — the white arrow, the white
-   hand on clickables, the text caret in fields. The denim needle
-   PNGs stay everywhere else; inside settings they made clicks feel
-   off-target and flickered between the needle and the fallback. */
-.set-pop, .set-pop * { cursor: default !important; }
-.set-pop input, .set-pop textarea { cursor: text !important; }
-.set-pop input[type="checkbox"], .set-pop input[type="radio"], .set-pop button,
-.set-pop select, .set-pop label, .set-pop a, .set-pop .set-box, .set-pop .mh-user,
-.set-pop .us-chk, .set-pop .us-sw, .set-pop .seg-btn, .set-pop .seg-mini button,
-.set-pop .icon-btn, .set-pop .au-x-btn, .set-pop .month-btn, .set-pop .set-sec-head,
-.set-pop .qp-btn { cursor: pointer !important; }
+/* (3→R32) ONE cursor everywhere: the denim needle-with-thread PNG owns
+   every pixel of the site — body, buttons, links, selects, text fields,
+   charts, modals and the settings popup included (كل شبر). The R31
+   white-arrow/hand experiment is retired — the owner asked for the needle
+   in every corner. One rule on * with !important wins over every older
+   cursor rule in every state — hover, press, drag. A cursor image is
+   looks-only: clicks, typing and hit-testing are untouched. */
+*, *::before, *::after { cursor: var(--cur-thread) !important; }

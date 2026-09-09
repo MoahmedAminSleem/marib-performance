@@ -2025,7 +2025,7 @@ var App = (function () {
     });
     a.eff = a.avail ? a.minProd / a.avail : null;
     a.otPct = a.avail ? a.otMin / a.avail : null;
-    a.absPct = (a.reg + a.absent) ? a.absent / (a.reg + a.absent) : null;
+    a.absPct = a.reg ? a.absent / a.reg : null; /* R32: absent / regular workers ONLY — the base list is not the present workers, so it never absorbs the absent */
     a.pcsW = a.wrk ? a.loA / a.wrk : null;
     a.avgWrk = a.days ? a.wrk / a.days : null;
     a.sam = a.samCnt ? a.samSum / a.samCnt : null;
@@ -2092,12 +2092,12 @@ var App = (function () {
       goal: { value: TH.overtime.good * 100, color: C_GOOD, tipTitle: "t_goal_safe" },
       height: 260
     });
-    /* 6 — DEVAMSIZLIK ORANI: absenteeism % */
+    /* 6 — DEVAMSIZLIK ORANI: absenteeism % — R32: absent / regular workers (was / (reg + absent)) */
     C.vbar($("mhAbs"), {
       items: bk.map(function (b, i) {
         var a = agg[i];
         return { label: b.label, value: a.absPct == null ? 0 : Math.round(a.absPct * 1000) / 10, color: C_BAD,
-          tip: [[T("t_abs_rate"), fmtPct(a.absPct, 1)], [T("t_absent"), fmtInt(a.absent)], [T("t_wrk"), fmtInt(a.reg + a.absent)], [T("t_days"), String(a.days)]],
+          tip: [[T("t_abs_rate"), fmtPct(a.absPct, 1)], [T("t_absent"), fmtInt(a.absent)], [T("t_reg"), fmtInt(a.reg)], [T("t_days"), String(a.days)]],
           drill: drill(b, "att") };
       }),
       fmt: pctF(1), valueName: T("t_abs_rate"), height: 260

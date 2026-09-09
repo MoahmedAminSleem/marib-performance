@@ -408,7 +408,7 @@ var MaribCore = (function () {
       ddMinAvail: ddMinAvail, otMinAvail: otMinAvail, pmMinAvail: pmMinAvail,
       attendance: att.length ? sum(att, "score") / att.length : null,      // Attendance %
       absent: sum(dd, "absent"),                                           // Total Absent Workers
-      absenteeism: (sum(dd, "regWorkers") + sum(dd, "absent")) ? sum(dd, "absent") / (sum(dd, "regWorkers") + sum(dd, "absent")) : null,
+      absenteeism: sum(dd, "regWorkers") ? sum(dd, "absent") / sum(dd, "regWorkers") : null, /* R32: / regular workers only — consistent with the manager-home absence chart */
       avgSAM: mean(dd, "sam"),                                             // Avg SAM
       supTarget: sum(dd, "target") + sum(pm, "target"),                    // Supervisor Target
       supActual: sum(dd, "actualProd") + sum(pm, "actualProd") + sum(pm, "otProd"), // Supervisor Actual

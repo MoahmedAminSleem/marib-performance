@@ -130,6 +130,7 @@ window.MARIB_I18N_DICT = {
   c_mhOt:    { ar: ["نسبة الأوفر تايم", "FAZLA MESAİ ORANI"], en: ["Overtime Rate", "FAZLA MESAİ ORANI"], tr: ["Fazla Mesai Oranı", "FAZLA MESAİ ORANI"] },
   c_mhAbs:   { ar: ["نسبة الغياب", "DEVAMSIZLIK ORANI"], en: ["Absenteeism Rate", "DEVAMSIZLIK ORANI"], tr: ["Devamsızlık Oranı", "DEVAMSIZLIK ORANI"] },
   t_wrk:     { ar: "العاملين", en: "Workers", tr: "Çalışan" },
+  t_reg:     { ar: "العمال الأساسيين", en: "Regular Workers", tr: "Kadrolu İşçi" }, /* R32: absence-rate denominator label */
   t_abs_rate:{ ar: "نسبة الغياب", en: "Absence Rate", tr: "Devamsızlık Oranı" },
   t_pcs_w:   { ar: "قطعة / عامل", en: "Pieces / Worker", tr: "Parça / İşçi" },
   nav_mhome: { ar: "الرئيسية", en: "Overview", tr: "Genel Bakış" },

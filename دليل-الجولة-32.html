@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الجولة 32 — إبرة الخيط في كل الموقع + تصحيح حسبة الغياب — لوحة أداء مصنع مأرب</title>
+<style>
+  :root{
+    --bg:#0A101C; --card:#131E2E; --card2:#0F1826; --line:rgba(217,168,107,.22);
+    --gold:#D9A86B; --gold2:#E9C68A; --txt:#F2EBDD; --dim:#A9B7C7; --red:#F87C7C; --green:#4FD98D;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);
+    font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',Arial,sans-serif;line-height:1.9;
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 6px)}
+  .wrap{max-width:840px;margin:0 auto;padding:28px 16px 60px}
+  header.hero{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+    border-radius:16px;padding:32px 24px;text-align:center;margin-bottom:24px}
+  .brand{color:var(--gold);font-weight:900;letter-spacing:.22em;font-size:11px;display:block;margin-bottom:6px}
+  .hero h1{font-size:24px;font-weight:900;margin-bottom:4px}
+  .sub{color:var(--dim);font-size:14px}
+  .badge{display:inline-block;border:1px dashed var(--gold);color:var(--gold2);border-radius:8px;
+    padding:6px 14px;font-size:12px;font-weight:700;margin-top:14px}
+  .note{background:rgba(79,217,141,.07);border:1px solid rgba(79,217,141,.3);border-radius:12px;
+    padding:14px 18px;font-size:13.5px;color:#A8D5B5;margin-bottom:24px}
+  .note b{color:var(--green)}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px;margin-bottom:18px}
+  .step h2{font-size:17px;font-weight:800;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .num{flex-shrink:0;width:38px;height:38px;border-radius:50%;background:rgba(217,168,107,.12);
+    border:1px solid rgba(217,168,107,.45);color:var(--gold2);font-weight:900;font-size:16px;
+    display:flex;align-items:center;justify-content:center}
+  .step p{font-size:14px;color:var(--dim);margin-bottom:8px}
+  .step p:last-child{margin-bottom:0}
+  .path{direction:ltr;text-align:left;display:inline-block;background:var(--card2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 10px;margin:4px 0;
+    font-family:Consolas,Monaco,monospace;font-size:13px;color:var(--gold2);word-break:break-all}
+  ul{margin:6px 18px 6px 0}
+  li{font-size:14px;color:var(--dim);margin-bottom:6px}
+  li b{color:var(--txt)}
+  .table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  .table th{background:var(--card2);color:var(--gold2);font-weight:700;text-align:right;
+    padding:10px 12px;border:1px solid var(--line)}
+  .table td{padding:9px 12px;border:1px solid var(--line);color:var(--dim);vertical-align:top}
+  .table td:first-child{color:var(--txt);font-weight:600}
+  .en{direction:ltr;display:inline-block;font-family:Consolas,monospace;font-size:.92em;color:var(--gold2)}
+  .warn{background:rgba(217,168,107,.07);border:1px solid rgba(217,168,107,.35);border-radius:12px;
+    padding:14px 18px;font-size:13.5px;color:#E3C9A0;margin-top:14px}
+  .warn b{color:var(--gold2)}
+  .faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;margin-bottom:12px}
+  .faq summary{font-size:15px;font-weight:700;color:var(--gold2);cursor:pointer}
+  .faq p{font-size:13.5px;color:var(--dim);margin-top:8px}
+  footer{text-align:center;font-size:11px;color:#5A6270;margin-top:44px}
+  .fix{background:var(--card2);border:1px solid rgba(79,217,141,.3);border-radius:12px;
+    padding:14px 18px;margin:10px 0;font-size:13.5px;color:#A8D5B5}
+  .fix b{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <span class="brand">MARIB GARMENTS — ROUND 32</span>
+    <h1>🪡 إبرة الخيط في كل شبر + تصحيح معادلة الغياب</h1>
+    <p class="sub">ماوس واحد في الموقع كله حتى الإعدادات · الغايبين ÷ الأساسيين من غير جمع</p>
+    <span class="badge">4 ملفات كود اتغيرت + 4 وثائق · الـ ZIP شامل كل الجولات · مش بيلمس أي داتا</span>
+  </header>
+  <div class="note">
+    <b>اتجرّبت E2E كاملة قبل التسليم (نظام اللوب):</b> سيرفر حقيقي + دخول Amin — الكيرسور
+    اتفحص بالـ computed style على الصفحة كلها: البادي والأزرار والفلاتر والرسومات ونافذة
+    الإعدادات وجدول الحضور وصفحة البيانات — كله إبرة بخيط · الضغط شغال في الإعدادات
+    (شيل/حط أمين + حفظ + الرجوع التلقائي للرئيسية القديمة والعكس) · رسمة الغياب اتقارنت
+    بالحسبة اليدوية من نفس الداتا: يومي 7.8% / 8.8% / 12.0% وأسبوعي وشهري 9.5% — مطابقة
+    للمعادلة الجديدة بالظبط · التولتيب بيعرض «العمال الأساسيين» كمقام واضح · صفر أخطاء كونسول.
+  </div>
+  <div class="step">
+    <h2><span class="num">١</span>إيه اللي اتعمل؟ (طلبين بالحرف)</h2>
+    <ul>
+      <li><b>الطلب ١ — إبرة الخيط في كل الموقع وكل شبر حتى الإعدادات:</b> كيرسور الماوس بقى
+        <b>إبرة بخيط واحد في كل حتة</b>: الخلفية والأزرار واللينكات والفلاتر وحقول التاريخ والقايمات
+        وحقول الكتابة والرسومات والنوافذ المنبثقة ونافذة الإعدادات نفسها — في كل الحالات (عادي /
+        hover / وأنت ضاغط). شيلنا قاعدة الجولة اللي فاتت اللي كانت مخلية الإعدادات بالسهم الأبيض
+        والهاند، وحطينا بدالها قاعدة واحدة على كل العناصر.
+        <b>والضغط مبيتأثرش خالص</b> — صورة الكيرسور شكل بس، مفيش أي علاقة ليها بالكليك
+        (واتأكدنا بالتجربة: تعليم/شيل/حفظ في الإعدادات كله شغال).</li>
+      <li><b>الطلب ٢ — تصحيح معادلة نسبة الغياب (رسمة الـ 6 في رئيسية المدير):</b>
+        كانت: <span class="en">( Absent ÷ ( Regular + Absent ) ) × 100</span> — وانت صححت المفهوم:
+        العمال الأساسيين دول <b>القائمة الكاملة المفروض تحضر، مش الحاضرين فعليًا</b>، فمينفعش
+        نجمع الغايبين عليهم في المقام. بقيت:
+        <span class="en">( Absent ÷ Regular ) × 100</span> — غايبين ÷ أساسيين بس.
+        <div class="table">
+          <tr><th>نفس المثال (غايبين 36 · أساسيين 480)</th><th>النتيجة</th></tr>
+          <tr><td>القديمة: 36 ÷ (480 + 36)</td><td>7.0% — أقل من الحقيقة (المقام منفوخ)</td></tr>
+          <tr><td><b>الجديدة: 36 ÷ 480</b></td><td><b>7.5% — النسبة الصح</b></td></tr>
+        </div>
+      </li>
+      <li><b>التصحيح دخل في 5 أماكن عشان كله يقول نفس الكلام:</b> (١) رسمة الغياب في رئيسية
+        المدير (يومي/أسبوعي/شهري) · (٢) التولتيب بقى يكتب سطر «العمال الأساسيين» بالرقم
+        الصحيح بدل ما كان يجمعهم مع الغايبين · (٣) حسبة الغياب في ملف الحسابات الأساسي
+        (app_core) عشان أي حتة تانية بتستخدمها تقول نفس الكلام · (٤) ملف شرح الرسومات
+        اتحدثت بالمعادلة والمثال الجداد · (٥) كارت المعادلة في ملف سير-العمل.</li>
+    </ul>
+    <div class="fix">
+      <b>ملحوظة تتوقعها:</b> أرقام رسمة الغياب <b>هتبان أعلى شوية من قبل</b> — ودي مش مشكلة،
+      دي النسبة الصح. القديمة كانت بتصغّر النسبة لأنها بتقسم على مقام أكبر من اللازم (الأساسيين
+      + الغايبين). القواعد والألوان زي ما هي (الرسمة كلها حمرا).
+    </div>
+  </div>
+  <div class="step">
+    <h2><span class="num">٢</span>ارفع الملفات — ٣ دقايق (نفس نظام ZIP)</h2>
+    <ol style="margin:6px 20px 6px 0">
+      <li>فك ضغط <span class="en">R32.zip</span> — هتلاقي 12 ملف كل واحد في مساره الصح.</li>
+      <li>افتح الريبو على GitHub ← زر <b>Add file ← Upload files</b>.</li>
+      <li>اسحب الملفات <b>مع الفولدرات زي ما هي</b> (public/app و src/app) وحطّها فوق — الملف بنفس الاسم بيكتب فوق القديم.</li>
+      <li>اكتب أي Commit message (زي «R32») واضغط <b>Commit changes</b>.</li>
+      <li>Vercel هينشر لحاله خلال دقيقة — افتح الموقع وجرب خطوة ٣.</li>
+    </ol>
+    <div class="warn">
+      <b>ملحوظة:</b> الجولة دي <b>شاملة</b> — ملفاتها فيها تعديلات R29 و R30 و R31 كلها.
+      يعني حتى لو ماكنتش رافع الجولات اللي فاتت، رفع الجولة دي لوحدها كفاية (عدا رؤوس أمان
+      R28 — وموجودة برضه جوه الـ ZIP احتياطي).
+    </div>
+  </div>
+  <div class="step">
+    <h2><span class="num">٣</span>اتأكد إنها اشتغلت — دقيقة</h2>
+    <ul>
+      <li>حرّك الماوس في أي حتة في الموقع — <b>إبرة بخيط في كل مكان</b>، ولو دخلت الإعدادات
+        برضه إبرة — ومافيش سهم أبيض ولا هاند في أي مكان (حتى وانت ضاغط).</li>
+      <li>افتح الإعدادات ← رئيسية المدير ← <b>علّم وشيل وحفظ</b> — لازم الضغط يشتغل عادي
+        زي الأول.</li>
+      <li>روح رئيسية المدير ← رسمة نسبة الغياب (اللي تحت خالص) ← حط الماوس على أي عمود —
+        التولتيب بيعرض: نسبة الغياب · غياب · <b>العمال الأساسيين</b> · أيام.</li>
+      <li>قارن بأيدك: رقم الغياب ÷ رقم العمال الأساسيين = النسبة اللي فوقهم (زي 38 ÷ 490 = 7.8%).</li>
+      <li>افتح <span class="path">شرح-رسومات-رئيسية-المدير.html</span> — الجزء بتاع رسمة الغياب
+        اتحدث بالمعادلة الجديدة (36 ÷ 480 = 7.5%).</li>
+    </ul>
+  </div>
+  <div class="step faq">
+    <h2><span class="num">؟</span>أسئلة هتجول في دماغك</h2>
+    <details open>
+      <summary>الداتا بتاعتي واليوزرات؟</summary>
+      <p>آمنة تمامًا — التعديل كله واجهة وكود. الجداول والشهور المرفوعة والقايمات كلها زي ما هي.
+        مفيش أي حاجة بتتمسح أو تتغير في السيرفر. التعديل في المعادلة بيغيّر <b>طريقة عرض</b>
+        النسبة بس — نفس الداتا القديمة بتتفسر صح.</p>
+    </details>
+    <details>
+      <summary>ليه نسبة الغياب طلعت أعلى من يوم أمس؟</summary>
+      <p>عشان المعادلة القديمة كانت بتقسم على (الأساسيين + الغايبين) فالمقام كان أكبر والنسبة
+        كانت بتطلع أقل من حقيقتها. دلوقتي بتتقسم على الأساسيين بس — دي النسبة اللي انت
+        طلبتها بالظبط. الرسمة والتولتيب والملفات كلها اتظبطت على نفس المعادلة.</p>
+    </details>
+    <details>
+      <summary>الكيرسور هيأثر على الكليك؟</summary>
+      <p>لأ خالص — صورة الكيرسور (PNG) شكل بصري بس: الكليك بيوصل لنفس النقطة اللي إبرة
+        الخياطة رأسها عندها بالظبط. واتأكدنا بالتجربة الكاملة قبل التسليم (كل أزرار الإعدادات
+        والفلاتر واللينكات شغالين زي ما هما).</p>
+    </details>
+    <details>
+      <summary>لو حبيت أرجّع السهم الأبيض تاني؟</summary>
+      <p>واحدة صغيرة: قولّي «رجّع الكيرسور العادي» — بنشيل قاعدة الـ R32 من آخر ملف الستايل
+        ويرجع زي ما كان. والتراجع الكامل زي كل جولة: GitHub ← الملف ← History ← Rollback.</p>
+    </details>
+    <details>
+      <summary>ليه فيه ملفات من الجولات اللي فاتت متكررة في الـ ZIP؟</summary>
+      <p>عشان الجولة ترفع لوحدها وتشتغل حتى لو الجولات اللي فاتت مرفعتش — الملفات دي بنسخها
+        الأخيرة الشاملة لكل التعديلات. لو رافعها قبل كده، الملف الجديد بيكتب فوق القديم وخلاص.</p>
+    </details>
+    <details>
+      <summary>لو عايز إبرة من غير خيط؟</summary>
+      <p>عندنا الصورتين جاهزين (إبرة سادة + إبرة بخيط) — اخترنا بخيط عشانها أوضح وأجمل على
+        الثيم. لو تحب السادة، كلمة واحدة منك والتغيير دقيقة واحدة في الجولة الجاية.</p>
+    </details>
+  </div>
+
+  <footer>
+    MARIB GARMENTS — PERFORMANCE STUDIO · الجولة 32 · 8 سبتمبر 2026 ·
+    اشتغل بنظام اللوب: تعديل ← اختبار ← مراجعة ← لحد ما كل حاجة تمام
+  </footer>
+</div>
+</body>
+</html>
