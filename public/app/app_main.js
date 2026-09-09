@@ -297,7 +297,7 @@ var App = (function () {
     wrap.appendChild(kpiTile({
       id: "kpO", title: TV("k_ov_ot"), en: TS("k_ov_ot"), badge: TB("k_ov_ot"),
       fmt: pctF(2),
-      sub: I18N.subOtOf(k.otMinutes, k.totalMinAvail),
+      sub: I18N.subOtWrk(k.otWorkers || 0, (k.otWorkers || 0) + (k.ddWorkers || 0)),
       delta: dOt, deltaFmt: function (v) { return I18N.pts(v, 2); }, goodUp: false
     }));
     /* tile 4 — attendance */
@@ -331,7 +331,7 @@ var App = (function () {
       points: ser.map(function (s) {
         return {
           label: s.label, y: s.loA, tipTitle: wd(s.date) + " " + s.label,
-          tip: [[T("t_actual"), fmtInt(s.loA)], [T("t_target"), fmtInt(s.loT)], [T("t_achv"), fmtPct(s.achv)], [T("t_ot_pct"), fmtPct(s.otPct, 2)]],
+          tip: [[T("t_actual"), fmtInt(s.loA)], [T("t_target"), fmtInt(s.loT)], [T("t_achv"), fmtPct(s.achv)], [T("t_ot_pct"), fmtPct(s.otPct, 2)], [T("t_ot_wrk"), fmtInt(s.otAttW)]],
           drill: { type: "date", value: s.date }
         };
       }),
@@ -359,7 +359,7 @@ var App = (function () {
         var st = stOf(L.achv, TH.achievement);
         return {
           label: I18N.lineN(L.line), value: Math.round((L.achv || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_achv"), fmtPct(L.achv)], [T("t_actual"), fmtInt(L.actual)], [T("t_target"), fmtInt(L.target)], [T("t_ot_pct"), fmtPct(L.otPct, 2)]],
+          tip: [[T("t_achv"), fmtPct(L.achv)], [T("t_actual"), fmtInt(L.actual)], [T("t_target"), fmtInt(L.target)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_ot_wrk"), fmtInt(L.otW)]],
           drill: { type: "line", value: String(L.line) }
         };
       }),
@@ -377,7 +377,7 @@ var App = (function () {
       items: (k.bySection || []).map(function (S, i) {
         return {
           label: I18N.sectionName(S.section), value: S.actual, color: C.SERIES[i % C.SERIES.length],
-          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_out"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_real"), fmtPct(S.achv)], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
+          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_out"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_real"), fmtPct(S.achv)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_wrk"), fmtInt(S.otW)]],
           drill: { type: "section", value: S.section }
         };
       }),
@@ -403,7 +403,7 @@ var App = (function () {
       dataLabels: "ends",
       series: [
         { name: T("lg_eff"), color: C_ACCENT2, points: ser.map(function (s) { return { label: s.label, y: effOK(s) ? s.eff * 100 : null, tipTitle: wd(s.date) + " " + s.label, tip: [[T("t_eff"), effOK(s) ? fmtPct(s.eff) : "—"]], drill: { type: "date", value: s.date, domain: "eff" } }; }) },
-        { name: T("lg_att"), color: C_GOOD, points: ser.map(function (s) { return { label: s.label, y: s.attPct == null ? null : s.attPct * 100, tipTitle: wd(s.date) + " " + s.label, tip: [[T("t_att"), fmtPct(s.attPct)], [T("t_absent"), fmtInt(s.absent)], [T("t_ot_pct"), fmtPct(s.otPct, 2)]], drill: { type: "date", value: s.date, domain: "att" } }; }) }
+        { name: T("lg_att"), color: C_GOOD, points: ser.map(function (s) { return { label: s.label, y: s.attPct == null ? null : s.attPct * 100, tipTitle: wd(s.date) + " " + s.label, tip: [[T("t_att"), fmtPct(s.attPct)], [T("t_absent"), fmtInt(s.absent)], [T("t_ot_pct"), fmtPct(s.otPct, 2)], [T("t_ot_wrk"), fmtInt(s.otAttW)]], drill: { type: "date", value: s.date, domain: "att" } }; }) }
       ],
       yFmt: pctF(0), pctScale: true,
       refCur: k.eff == null ? null : k.eff * 100,
@@ -660,7 +660,7 @@ var App = (function () {
         var st = stOf(L.achv, TH.achievement);
         return {
           label: I18N.lineN(L.line), value: Math.round((L.achv || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_achv"), fmtPct(L.achv)], [T("t_actual"), fmtInt(L.actual)], [T("t_target"), fmtInt(L.target)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_sam"), L.avgSAM == null ? "—" : I18N.dec(L.avgSAM.toFixed(2))]],
+          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_achv"), fmtPct(L.achv)], [T("t_actual"), fmtInt(L.actual)], [T("t_target"), fmtInt(L.target)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_ot_wrk"), fmtInt(L.otW)], [T("t_sam"), L.avgSAM == null ? "—" : I18N.dec(L.avgSAM.toFixed(2))]],
           drill: { type: "line", value: String(L.line) }
         };
       }),
@@ -679,7 +679,7 @@ var App = (function () {
       items: byL.slice().sort(function (a, b) { return b.actual - a.actual; }).map(function (L) {
         return {
           label: I18N.lineN(L.line), value: L.actual || 0, color: C_ACCENT,
-          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_actual"), fmtInt(L.actual)], [T("t_target"), fmtInt(L.target)], [T("t_achv"), fmtPct(L.achv)], [T("t_ot_pct"), fmtPct(L.otPct, 2)]],
+          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_actual"), fmtInt(L.actual)], [T("t_target"), fmtInt(L.target)], [T("t_achv"), fmtPct(L.achv)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_ot_wrk"), fmtInt(L.otW)]],
           drill: { type: "line", value: String(L.line) }
         };
       }),
@@ -802,7 +802,7 @@ var App = (function () {
         var st = stOf(S.achv, TH.achievement);
         return {
           label: shortName(S.supervisor), value: Math.round((S.achv || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_sup"), S.supervisor], [T("t_achv"), fmtPct(S.achv)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
+          tip: [[T("t_sup"), S.supervisor], [T("t_achv"), fmtPct(S.achv)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_wrk"), fmtInt(S.otW)]],
           drill: { type: "sup", value: S.supervisor }
         };
       }),
@@ -827,7 +827,7 @@ var App = (function () {
         items: bottom.map(function (S) {
           return {
             label: shortName(S.supervisor), value: Math.round((S.achv || 0) * 1000) / 10, color: C_BAD,
-            tip: [[T("t_sup"), S.supervisor], [T("t_achv"), fmtPct(S.achv)], [T("t_target"), fmtInt(S.target)], [T("t_gap"), fmtInt(Math.max(0, S.target - S.actual))], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
+            tip: [[T("t_sup"), S.supervisor], [T("t_achv"), fmtPct(S.achv)], [T("t_target"), fmtInt(S.target)], [T("t_gap"), fmtInt(Math.max(0, S.target - S.actual))], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_wrk"), fmtInt(S.otW)]],
             drill: { type: "sup", value: S.supervisor }
           };
         }),
@@ -872,16 +872,17 @@ var App = (function () {
       sub: best ? "<b>" + esc(I18N.sectionName(best.section)) + "</b>" : ""
     }));
     wrap.appendChild(kpiTile({ id: "sc3", title: TV("k_sc_avg"), en: TS("k_sc_avg"), badge: TB("k_sc_avg"), fmt: pctF(1) }));
+    var totOTW = secs.reduce(function (s, x) { return s + (x.otW || 0); }, 0);
     wrap.appendChild(kpiTile({
       id: "sc4", title: TV("k_sc_ot"), en: TS("k_sc_ot"), badge: TB("k_sc_ot"),
-      fmt: fmtInt, unit: T("u_min"),
-      sub: I18N.subSecOutput(totActual)
+      fmt: fmtInt, unit: T("u_worker"),
+      sub: totOT ? I18N.subOtMin(totOT) : ""
     }));
 
     setKpi("sc1", secs.length, fmtInt);
     setKpi("sc2", best ? best.achv * 100 : null, pctF(1));
     setKpi("sc3", avgA * 100, pctF(1));
-    setKpi("sc4", totOT, fmtInt);
+    setKpi("sc4", totOTW, fmtInt);
 
     var cmpScAchv = cmpCard("scAchv", function (cmp, k2) {
       var m2 = {};
@@ -896,7 +897,7 @@ var App = (function () {
         var st = stOf(S.achv, TH.achievement);
         return {
           label: I18N.sectionName(S.section), value: Math.round((S.achv || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_real"), fmtPct(S.achv)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_maxatt"), fmtInt(S.maxAtt)]],
+          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_real"), fmtPct(S.achv)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_wrk"), fmtInt(S.otW)], [T("t_maxatt"), fmtInt(S.maxAtt)]],
           drill: { type: "section", value: S.section }
         };
       }),
@@ -915,7 +916,7 @@ var App = (function () {
       items: secs.slice().sort(function (a, b) { return b.actual - a.actual; }).map(function (S, i) {
         return {
           label: I18N.sectionName(S.section), value: S.actual || 0, color: C.SERIES[i % C.SERIES.length],
-          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_real"), fmtPct(S.achv)], [T("t_ot_pct"), fmtPct(S.otPct, 2)]],
+          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_actual"), fmtInt(S.actual)], [T("t_target"), fmtInt(S.target)], [T("t_real"), fmtPct(S.achv)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_wrk"), fmtInt(S.otW)]],
           drill: { type: "section", value: S.section }
         };
       }),
@@ -1139,7 +1140,7 @@ var App = (function () {
     wrap.appendChild(kpiTile({
       id: "ot1", title: TV("k_ot_pct"), en: TS("k_ot_pct"), badge: TB("k_ot_pct"),
       fmt: pctF(2),
-      sub: T("ot_sub_of_avail"),
+      sub: T("ot_sub_of_wrk"),
       drill: { type: "period", value: null, domain: "ot" }
     }));
     wrap.appendChild(kpiTile({
@@ -1154,27 +1155,38 @@ var App = (function () {
       sub: peak ? I18N.subPeakDay(wd(peak.date), peak.label) : "",
       drill: peak ? { type: "date", value: peak.date, domain: "ot" } : null
     }));
+    /* R34: overtime told in WORKER COUNTS — the two numbers the owner
+       actually records: basic-time workers (Daily Data) + OT workers (OT
+       sheet). Minutes efficiency stays as the 6th card. */
+    var sumDdW = ser.reduce(function (s2, x) { return s2 + (x.ddAttW || 0); }, 0);
+    var sumOtW = ser.reduce(function (s2, x) { return s2 + (x.otAttW || 0); }, 0);
+    var avgDdW = ser.length ? sumDdW / ser.length : null;
+    var avgOtW = ser.length ? sumOtW / ser.length : null;
     wrap.appendChild(kpiTile({
-      id: "ot4", title: TV("k_ot_eff"), en: TS("k_ot_eff"), badge: TB("k_ot_eff"),
+      id: "ot4", title: TV("k_ot_ddw"), en: TS("k_ot_ddw"), badge: TB("k_ot_ddw"),
+      fmt: fmtInt, unit: T("u_worker"),
+      sub: I18N.subWrkTot(sumDdW, ser.length),
+      drill: { type: "period", value: null, domain: "att" }
+    }));
+    wrap.appendChild(kpiTile({
+      id: "ot5", title: TV("k_ot_otw"), en: TS("k_ot_otw"), badge: TB("k_ot_otw"),
+      fmt: fmtInt, unit: T("u_worker"),
+      sub: I18N.subWrkTot(sumOtW, ser.length),
+      drill: { type: "period", value: null, domain: "ot" }
+    }));
+    wrap.appendChild(kpiTile({
+      id: "ot6", title: TV("k_ot_eff"), en: TS("k_ot_eff"), badge: TB("k_ot_eff"),
       fmt: pctF(1),
       sub: I18N.subEffOf(k.eff),
       drill: { type: "period", value: null, domain: "ot" }
-    }));
-    /* R33: the OT page carried minutes and percentages only — the owner
-       asked for worker COUNTS; 5th KPI = average present workers */
-    var avgW = ser.length ? ser.reduce(function (s2, x) { return s2 + (x.ddAttW || 0); }, 0) / ser.length : null;
-    wrap.appendChild(kpiTile({
-      id: "ot5", title: TV("k_ot_wrk"), en: TS("k_ot_wrk"), badge: TB("k_ot_wrk"),
-      fmt: fmtInt, unit: T("u_worker"),
-      sub: T("ot_sub_wrk"),
-      drill: { type: "period", value: null, domain: "att" }
     }));
 
     setKpi("ot1", k.otPct == null ? null : k.otPct * 100, pctF(2));
     setKpi("ot2", avgOt == null ? null : avgOt * 100, pctF(2));
     setKpi("ot3", peak ? peak.otPct * 100 : null, pctF(2));
-    setKpi("ot4", k.eff == null ? null : k.eff * 100, pctF(1));
-    setKpi("ot5", avgW == null ? null : Math.round(avgW), fmtInt);
+    setKpi("ot4", avgDdW == null ? null : Math.round(avgDdW), fmtInt);
+    setKpi("ot5", avgOtW == null ? null : Math.round(avgOtW), fmtInt);
+    setKpi("ot6", k.eff == null ? null : k.eff * 100, pctF(1));
 
     /* daily OT % — clicking a day opens the OT details of that day */
     var cmpOtD = cmpCard("otDaily", function (cmp, k2) {
@@ -1187,7 +1199,7 @@ var App = (function () {
       points: ser.map(function (s) {
         return {
           label: s.label, y: s.otPct == null ? null : s.otPct * 100, tipTitle: wd(s.date) + " " + s.label,
-          tip: [[T("t_ot_pct"), fmtPct(s.otPct, 2)], [T("t_ot_min"), fmtInt(s.otMin)], [T("t_avail"), fmtInt(s.totalMinAvail)], [T("t_wrk"), fmtInt(s.ddAttW)]],
+          tip: [[T("t_ot_pct"), fmtPct(s.otPct, 2)], [T("t_ot_wrk"), fmtInt(s.otAttW)], [T("t_dd_wrk"), fmtInt(s.ddAttW)], [T("t_tot_wrk"), fmtInt((s.ddAttW || 0) + (s.otAttW || 0))], [T("t_ot_min"), fmtInt(s.otMin)], [T("t_avail"), fmtInt(s.totalMinAvail)]],
           drill: { type: "date", value: s.date, domain: "ot" }
         };
       }),
@@ -1220,7 +1232,7 @@ var App = (function () {
         var st = stOf(S.otPct, TH.overtime, true);
         return {
           label: I18N.sectionName(S.section), value: Math.round((S.otPct || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_min2"), fmtInt(S.otMin)], [T("t_secout"), fmtInt(S.actual)], [T("t_real"), fmtPct(S.achv)], [T("t_wrk_max"), fmtInt(S.maxAtt)]],
+          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_wrk"), fmtInt(S.otW)], [T("t_dd_wrk"), fmtInt(S.ddW)], [T("t_tot_wrk"), fmtInt((S.ddW || 0) + (S.otW || 0))], [T("t_wrk_max"), fmtInt(S.maxAtt)], [T("t_ot_min2"), fmtInt(S.otMin)]],
           drill: { type: "section", value: S.section, domain: "ot" }
         };
       }),
@@ -1243,7 +1255,7 @@ var App = (function () {
         var st = stOf(L.otPct, TH.overtime, true);
         return {
           label: I18N.lineN(L.line), value: Math.round((L.otPct || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_ot_min2"), fmtInt(L.otMin)], [T("t_target"), fmtInt(L.target)], [T("t_achv"), fmtPct(L.achv)], [T("t_wrk_max"), fmtInt(L.maxAtt)]],
+          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_ot_wrk"), fmtInt(L.otW)], [T("t_dd_wrk"), fmtInt(L.ddW)], [T("t_tot_wrk"), fmtInt((L.ddW || 0) + (L.otW || 0))], [T("t_wrk_max"), fmtInt(L.maxAtt)], [T("t_ot_min2"), fmtInt(L.otMin)]],
           drill: { type: "line", value: String(L.line), domain: "ot" }
         };
       }),
@@ -1266,7 +1278,7 @@ var App = (function () {
         var st = b.otPct == null ? null : stOf(b.otPct, TH.overtime, true);
         return {
           label: shortName(b.supervisor), value: b.otPct == null ? 0 : Math.round(b.otPct * 1000) / 10, color: st ? stColor(st) : C_WARN,
-          tip: [[T("t_sup"), b.supervisor], [T("t_ot_pct"), fmtPct(b.otPct, 2)], [T("t_ot_min"), fmtInt(b.otMin)], [T("t_minprod"), fmtInt(b.minProd)]],
+          tip: [[T("t_sup"), b.supervisor], [T("t_ot_pct"), fmtPct(b.otPct, 2)], [T("t_ot_wrk"), fmtInt(b.otW)], [T("t_dd_wrk"), fmtInt(b.ddW)], [T("t_ot_min"), fmtInt(b.otMin)]],
           drill: { type: "sup", value: b.supervisor, domain: "ot" }
         };
       }),
@@ -1275,17 +1287,18 @@ var App = (function () {
       cmp: cmpOtSup
     });
 
-    /* OT daily details table — minutes stay plain numbers here;
-       efficiency shows — on days with impossible/unrecorded minutes */
+    /* OT daily details table — R34: worker counts first (basic-time from
+       Daily Data, overtime from the OT sheet), then the ratio; minutes and
+       efficiency follow. A Friday with OT-only rows now reads 0 + 4 = 100%. */
     var rows = ser.map(function (s) {
       var st = s.otPct == null ? null : stOf(s.otPct, TH.overtime, true);
       var effOKd = s.eff != null && isFinite(s.eff) && s.eff <= 1.5 && (s.minProd || 0) > 0;
       return "<tr class='drill-row' data-dt='date' data-domain='ot' data-dv='" + s.date + "'><td class='t-name'><b>" + wd(s.date) + " " + s.label + "</b></td>" +
-        "<td class='num'>" + fmtInt(s.totalMinAvail) + "</td>" +
-        "<td class='num'>" + fmtInt(s.otMin) + "</td>" +
-        "<td class='num' style='color:" + (st ? stColor(st) : C_MUTED) + ";font-weight:800'>" + fmtPct(s.otPct, 2) + "</td>" +
         "<td class='num'>" + fmtInt(s.ddAttW) + "</td>" +
-        "<td class='num'>" + fmtInt(s.minProd) + "</td>" +
+        "<td class='num'>" + fmtInt(s.otAttW) + "</td>" +
+        "<td class='num'><b>" + fmtInt((s.ddAttW || 0) + (s.otAttW || 0)) + "</b></td>" +
+        "<td class='num' style='color:" + (st ? stColor(st) : C_MUTED) + ";font-weight:800'>" + fmtPct(s.otPct, 2) + "</td>" +
+        "<td class='num'>" + fmtInt(s.otMin) + "</td>" +
         "<td class='num'>" + (effOKd ? fmtPct(s.eff) : "—") + "</td></tr>";
     }).join("");
     $("otTable").innerHTML = "<thead><tr>" + T("th_ot").map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr></thead><tbody>" + rows + "</tbody>";
@@ -1564,9 +1577,9 @@ var App = (function () {
     });
 
     /* ---- KPI cards ---- */
-    var agg = { target: 0, actual: 0, minProd: 0, cap: 0, otMin: 0 };
-    dd.forEach(function (r) { agg.target += r.target || 0; agg.actual += r.actualProd || 0; agg.minProd += r.minProd || 0; agg.cap += r.minAvail || 0; });
-    ot.forEach(function (r) { agg.otMin += r.minAvail || 0; agg.cap += r.minAvail || 0; agg.minProd += r.minProd || 0; agg.actual += r.actualProd || 0; agg.target += r.target || 0; });
+    var agg = { target: 0, actual: 0, minProd: 0, cap: 0, otMin: 0, ddW: 0, otW: 0 };
+    dd.forEach(function (r) { agg.target += r.target || 0; agg.actual += r.actualProd || 0; agg.minProd += r.minProd || 0; agg.cap += r.minAvail || 0; agg.ddW += r.attWorkers || 0; });
+    ot.forEach(function (r) { agg.otMin += r.minAvail || 0; agg.cap += r.minAvail || 0; agg.minProd += r.minProd || 0; agg.actual += r.actualProd || 0; agg.target += r.target || 0; agg.otW += r.attWorkers || 0; });
     pm.forEach(function (r) {
       agg.cap += (r.minAvail || 0) + (r.otMin || 0); agg.otMin += r.otMin || 0; agg.minProd += r.minProd || 0;
       agg.actual += (r.actualProd || 0) + (r.otProd || 0); agg.target += r.target || 0;
@@ -1577,13 +1590,13 @@ var App = (function () {
     var attPct = att.length ? att.reduce(function (s, r) { return s + (r.score || 0); }, 0) / att.length : null;
 
     var kpiDefs;
-    var otPct = agg.cap ? agg.otMin / agg.cap : null;
+    var otPct = (agg.ddW + agg.otW) ? agg.otW / (agg.ddW + agg.otW) : null; /* R34: worker-based */
     if (domain === "ot") {
       kpiDefs = [
-        [T("dk_ot"), fmtPct(otPct, 2), agg.otMin ? I18N.subOtMin(agg.otMin) : ""],
-        [T("t_availmin"), fmtInt(agg.cap), ""],
-        [T("t_ot_min2"), fmtInt(agg.otMin), ""],
-        [T("dk_min_eff"), fmtPct(eff), ""]
+        [T("dk_ot"), fmtPct(otPct, 2), (agg.ddW + agg.otW) ? I18N.subOtWrk(agg.otW, agg.ddW + agg.otW) : ""],
+        [T("t_dd_wrk"), fmtInt(agg.ddW), ""],
+        [T("t_ot_wrk"), fmtInt(agg.otW), ""],
+        [T("t_ot_min2"), fmtInt(agg.otMin), ""]
       ];
     } else if (domain === "att") {
       kpiDefs = [
@@ -1649,17 +1662,17 @@ var App = (function () {
         m.att.forEach(function (r) { if (inRange(r.date, f)) ra.push(r); });
       }
       var dayAgg = {};
-      function dslot(d) { if (!dayAgg[d]) dayAgg[d] = { cap: 0, ot: 0, mp: 0, sc: 0, n: 0 }; return dayAgg[d]; }
-      rd.forEach(function (r) { var s = dslot(r.date); s.cap += r.minAvail || 0; s.mp += r.minProd || 0; });
-      ro.forEach(function (r) { var s = dslot(r.date); s.cap += r.minAvail || 0; s.ot += r.minAvail || 0; s.mp += r.minProd || 0; });
+      function dslot(d) { if (!dayAgg[d]) dayAgg[d] = { cap: 0, ot: 0, mp: 0, sc: 0, n: 0, ddW: 0, otW: 0 }; return dayAgg[d]; }
+      rd.forEach(function (r) { var s = dslot(r.date); s.cap += r.minAvail || 0; s.mp += r.minProd || 0; s.ddW += r.attWorkers || 0; });
+      ro.forEach(function (r) { var s = dslot(r.date); s.cap += r.minAvail || 0; s.ot += r.minAvail || 0; s.mp += r.minProd || 0; s.otW += r.attWorkers || 0; });
       rp.forEach(function (r) { var s = dslot(r.date); s.cap += (r.minAvail || 0) + (r.otMin || 0); s.ot += r.otMin || 0; s.mp += r.minProd || 0; });
       ra.forEach(function (r) { var s = dslot(r.date); s.sc += r.score || 0; s.n++; });
       var ddK = Object.keys(dayAgg).sort();
       var pts = ddK.map(function (d) {
         var s = dayAgg[d], y = null, tip;
         if (domain === "ot") {
-          y = s.cap ? s.ot / s.cap * 100 : null;
-          tip = [[T("t_ot_pct"), fmtPct(s.cap ? s.ot / s.cap : null, 2)], [T("t_ot_min"), fmtInt(s.ot)], [T("t_availmin"), fmtInt(s.cap)]];
+          y = (s.ddW + s.otW) ? s.otW / (s.ddW + s.otW) * 100 : null;
+          tip = [[T("t_ot_pct"), fmtPct((s.ddW + s.otW) ? s.otW / (s.ddW + s.otW) : null, 2)], [T("t_ot_wrk"), fmtInt(s.otW)], [T("t_dd_wrk"), fmtInt(s.ddW)], [T("t_tot_wrk"), fmtInt(s.ddW + s.otW)], [T("t_ot_min"), fmtInt(s.ot)], [T("t_availmin"), fmtInt(s.cap)]];
         } else if (domain === "eff") {
           y = s.cap ? s.mp / s.cap * 100 : null;
           tip = [[T("t_eff"), fmtPct(s.cap ? s.mp / s.cap : null)], [T("t_prodmin"), fmtInt(s.mp)], [T("t_availmin"), fmtInt(s.cap)]];
@@ -1729,20 +1742,20 @@ var App = (function () {
         rows = [];
         function wday(r) { return r.date ? wd(r.date) + " " + U.isoShort(r.date) : ""; }
         ot.forEach(function (r) {
-          rows.push([wday(r), r.supervisor || "—", r.line != null ? I18N.lineN(r.line) : "—", fmtInt(r.minAvail)]);
+          rows.push([wday(r), r.supervisor || "—", r.line != null ? I18N.lineN(r.line) : "—", fmtInt(r.attWorkers), fmtInt(r.minAvail)]);
         });
         pm.forEach(function (r) {
-          if ((r.otMin || 0) > 0) rows.push([wday(r), r.supervisor || "—", machShort(r.machine || "—") + (r.line != null ? " · " + I18N.lineN(r.line) : ""), fmtInt(r.otMin)]);
+          if ((r.otMin || 0) > 0) rows.push([wday(r), r.supervisor || "—", machShort(r.machine || "—") + (r.line != null ? " · " + I18N.lineN(r.line) : ""), "1", fmtInt(r.otMin)]);
         });
       } else {
         cols = T("th_dr_otp");
         var byDayOT = {};
-        ot.forEach(function (r) { var s = byDayOT[r.date] = byDayOT[r.date] || { cap: 0, ot: 0, mp: 0 }; s.cap += r.minAvail || 0; s.ot += r.minAvail || 0; s.mp += r.minProd || 0; });
-        pm.forEach(function (r) { var s = byDayOT[r.date] = byDayOT[r.date] || { cap: 0, ot: 0, mp: 0 }; s.cap += (r.minAvail || 0) + (r.otMin || 0); s.ot += r.otMin || 0; s.mp += r.minProd || 0; });
-        dd.forEach(function (r) { var s = byDayOT[r.date] = byDayOT[r.date] || { cap: 0, ot: 0, mp: 0 }; s.cap += r.minAvail || 0; s.mp += r.minProd || 0; });
+        ot.forEach(function (r) { var s = byDayOT[r.date] = byDayOT[r.date] || { cap: 0, ot: 0, mp: 0, ddW: 0, otW: 0 }; s.cap += r.minAvail || 0; s.ot += r.minAvail || 0; s.mp += r.minProd || 0; s.otW += r.attWorkers || 0; });
+        pm.forEach(function (r) { var s = byDayOT[r.date] = byDayOT[r.date] || { cap: 0, ot: 0, mp: 0, ddW: 0, otW: 0 }; s.cap += (r.minAvail || 0) + (r.otMin || 0); s.ot += r.otMin || 0; s.mp += r.minProd || 0; });
+        dd.forEach(function (r) { var s = byDayOT[r.date] = byDayOT[r.date] || { cap: 0, ot: 0, mp: 0, ddW: 0, otW: 0 }; s.cap += r.minAvail || 0; s.mp += r.minProd || 0; s.ddW += r.attWorkers || 0; });
         rows = Object.keys(byDayOT).sort().map(function (d) {
           var s = byDayOT[d];
-          return [dayTitle(d), fmtInt(s.cap), fmtInt(s.ot), fmtPct(s.cap ? s.ot / s.cap : null, 2), fmtPct(s.cap ? s.mp / s.cap : null)];
+          return [dayTitle(d), fmtInt(s.ddW), fmtInt(s.otW), fmtInt(s.ddW + s.otW), fmtPct((s.ddW + s.otW) ? s.otW / (s.ddW + s.otW) : null, 2), fmtInt(s.ot)];
         });
       }
     } else if (domain === "att") {
@@ -2027,15 +2040,15 @@ var App = (function () {
 
   function mhAgg(rows) {
     var a = { days: rows.length, loA: 0, loT: 0, minProd: 0, avail: 0, otMin: 0,
-              absent: 0, reg: 0, wrk: 0, samSum: 0, samCnt: 0, first: rows[0] && rows[0].date };
+              absent: 0, reg: 0, wrk: 0, otW: 0, samSum: 0, samCnt: 0, first: rows[0] && rows[0].date };
     rows.forEach(function (s) {
       a.loA += s.loA || 0; a.loT += s.loT || 0; a.minProd += s.minProd || 0;
       a.avail += s.totalMinAvail || 0; a.otMin += s.otMin || 0; a.absent += s.absent || 0;
-      a.reg += s.regWorkers || 0; a.wrk += s.ddAttW || 0;
+      a.reg += s.regWorkers || 0; a.wrk += s.ddAttW || 0; a.otW += s.otAttW || 0;
       if (s.sam != null) { a.samSum += s.sam; a.samCnt += 1; }
     });
     a.eff = a.avail ? a.minProd / a.avail : null;
-    a.otPct = a.avail ? a.otMin / a.avail : null;
+    a.otPct = (a.wrk + a.otW) ? a.otW / (a.wrk + a.otW) : null; /* R34: OT workers / total workers */
     a.absPct = a.reg ? a.absent / a.reg : null; /* R32: absent / regular workers ONLY — the base list is not the present workers, so it never absorbs the absent */
     a.pcsW = a.wrk ? a.loA / a.wrk : null;
     a.avgWrk = a.days ? a.wrk / a.days : null;
@@ -2100,7 +2113,7 @@ var App = (function () {
       items: bk.map(function (b, i) {
         var a = agg[i], st = stOf(a.otPct, TH.overtime, true);
         return { label: b.label, value: a.otPct == null ? 0 : Math.round(a.otPct * 1000) / 10, color: stColor(st),
-          tip: [[T("t_ot_pct"), fmtPct(a.otPct, 2)], [T("t_ot_min2"), fmtInt(a.otMin)], [T("t_availmin"), fmtInt(a.avail)]],
+          tip: [[T("t_ot_pct"), fmtPct(a.otPct, 2)], [T("t_ot_wrk"), fmtInt(a.otW)], [T("t_dd_wrk"), fmtInt(a.wrk)], [T("t_tot_wrk"), fmtInt(a.wrk + a.otW)], [T("t_ot_min2"), fmtInt(a.otMin)]],
           drill: drill(b, "ot") };
       }),
       fmt: pctF(1), valueName: T("t_ot_pct"),

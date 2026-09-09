@@ -2071,7 +2071,7 @@ input:disabled, select:disabled { cursor: var(--cur-needle) !important; }
 
 /* R33: OT page KPI row — 5 cards now (avg present workers joined the
    strip), so it widens to 5 columns on desktop and steps down 3/2/1 */
-#otKpis { grid-template-columns: repeat(5, 1fr); }
+#otKpis { grid-template-columns: repeat(6, 1fr); } /* R34: 6th tile — both worker counts + minutes efficiency */
 @media (max-width: 1350px) { #otKpis { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 1180px) { #otKpis { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 720px)  { #otKpis { grid-template-columns: 1fr; } }

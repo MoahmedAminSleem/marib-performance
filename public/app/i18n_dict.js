@@ -133,6 +133,12 @@ window.MARIB_I18N_DICT = {
   t_reg:     { ar: "العمال الأساسيين", en: "Regular Workers", tr: "Kadrolu İşçi" }, /* R32: absence-rate denominator label */
   t_drill:   { ar: "اضغط لعرض التفاصيل", en: "Click for details", tr: "Ayrıntılar için tıkla" }, /* R33: hover hint on drillable bars */
   t_wrk_max: { ar: "ذروة العاملين", en: "Peak workers", tr: "Zirve çalışan" }, /* R33: peak workers in a line/section tooltip */
+  t_ot_wrk:  { ar: "عمال الأوفر تايم", en: "OT Workers", tr: "FM İşçisi" }, /* R34: workers recorded in the OT sheet */
+  t_dd_wrk:  { ar: "عمال الوقت الأساسي", en: "Basic-time Workers", tr: "Normal Süre İşçisi" }, /* R34: workers recorded in Daily Data */
+  t_tot_wrk: { ar: "إجمالي العمال", en: "Total Workers", tr: "Toplam İşçi" }, /* R34: basic-time + OT workers */
+  t_ot_wrk:  { ar: "عمال الأوفر تايم", en: "OT Workers", tr: "FM İşçisi" }, /* R34: workers recorded in the OT sheet */
+  t_dd_wrk:  { ar: "عمال الوقت الأساسي", en: "Basic-time Workers", tr: "Normal Süre İşçisi" }, /* R34: workers recorded in Daily Data */
+  t_tot_wrk: { ar: "إجمالي العمال", en: "Total Workers", tr: "Toplam İşçi" }, /* R34: basic-time + OT workers */
   t_abs_rate:{ ar: "نسبة الغياب", en: "Absence Rate", tr: "Devamsızlık Oranı" },
   t_pcs_w:   { ar: "قطعة / عامل", en: "Pieces / Worker", tr: "Parça / İşçi" },
   nav_mhome: { ar: "الرئيسية", en: "Overview", tr: "Genel Bakış" },
@@ -172,8 +178,8 @@ window.MARIB_I18N_DICT = {
   dr_ct_ot:      { ar: "نسبة الأوفر تايم اليومية", en: "DAILY OVERTIME %", tr: "GÜNLÜK FM ORANI" },
   dr_ct_att:     { ar: "الحضور اليومي", en: "DAILY ATTENDANCE", tr: "GÜNLÜK DEVAMLILIK" },
   dr_ct_eff:     { ar: "الكفاءة اليومية", en: "DAILY EFFICIENCY", tr: "GÜNLÜK VERİM" },
-  th_dr_otd:   { ar: ["اليوم", "المشرف", "الخط", "دقائق الأوفر"], en: ["Day", "Supervisor", "Line", "OT Minutes"], tr: ["Gün", "Vardiya Şefi", "Hat", "FM (dk)"] },
-  th_dr_otp:   { ar: ["اليوم", "الدقائق المتاحة", "دقائق الأوفر", "نسبة OT", "الكفاءة"], en: ["Day", "Available Minutes", "OT Minutes", "OT %", "Efficiency"], tr: ["Gün", "Kullanılabilir (dk)", "FM (dk)", "FM Oranı", "Verim"] },
+  th_dr_otd:   { ar: ["اليوم", "المشرف", "الخط", "العمال", "دقائق الأوفر"], en: ["Day", "Supervisor", "Line", "Workers", "OT Minutes"], tr: ["Gün", "Vardiya Şefi", "Hat", "İşçi", "FM (dk)"] }, /* R34: workers column */
+  th_dr_otp:   { ar: ["اليوم", "عمال الأساسي", "عمال الإضافي", "إجمالي العمال", "نسبة OT", "دقائق الأوفر"], en: ["Day", "Basic Workers", "OT Workers", "Total Workers", "OT %", "OT Minutes"], tr: ["Gün", "Normal İşçi", "FM İşçisi", "Toplam İşçi", "FM Oranı", "FM (dk)"] }, /* R34: counts lead */
   th_dr_attd:  { ar: ["المشرف", "الحالة"], en: ["Supervisor", "Status"], tr: ["Vardiya Şefi", "Durum"] },
   st_present:  { ar: "حاضر", en: "Present", tr: "Geldi" },
   st_absent:   { ar: "غائب", en: "Absent", tr: "Gelmedi" },
@@ -202,7 +208,7 @@ window.MARIB_I18N_DICT = {
   k_sc_count:  { ar: ["أقسام الإنتاج", "SECTIONS", "DEPTS"], en: ["Production Sections", "أقسام الإنتاج", "DEPTS"], tr: ["Üretim Bölümleri", "SECTIONS", "BÖLÜMLER"] },
   k_sc_best:   { ar: ["أعلى قسم إنجازًا", "BEST SECTION", "TOP"], en: ["Best Section", "أعلى قسم إنجازًا", "TOP"], tr: ["En İyi Bölüm", "BEST SECTION", "EN İYİ"] },
   k_sc_avg:    { ar: ["متوسط الإنجاز", "AVG ACHIEVEMENT", "MEAN"], en: ["Average Achievement", "متوسط الإنجاز", "MEAN"], tr: ["Ortalama Gerçekleşme", "AVG ACHIEVEMENT", "ORT"] },
-  k_sc_ot:     { ar: ["دقائق أوفر الأقسام", "SECTION OT MIN", "OT"], en: ["Section OT Minutes", "دقائق أوفر الأقسام", "OT"], tr: ["Bölüm FM Dakikaları", "SECTION OT MIN", "FM"] },
+  k_sc_ot:     { ar: ["عمال أوفر الأقسام", "SECTION OT WORKERS", "OT"], en: ["Section OT Workers", "عمال أوفر الأقسام", "OT"], tr: ["Bölüm FM İşçileri", "SECTION OT WORKERS", "FM"] }, /* R34: workers, minutes ride in the sub */
   k_pm_rows:   { ar: ["سجلات الماكينات", "PM RECORDS", "ROWS"], en: ["Machine Records", "سجلات الماكينات", "ROWS"], tr: ["Makine Kayıtları", "PM RECORDS", "KAYIT"] },
   /* round 12: the first PM card is now the best machine by efficiency
      (replaces the plain records-count card) */
@@ -218,7 +224,10 @@ window.MARIB_I18N_DICT = {
   k_ot_peak:   { ar: ["أعلى يوم أوفر", "PEAK OT DAY", "MAX"], en: ["Peak OT Day", "أعلى يوم أوفر", "MAX"], tr: ["Zirve FM Günü", "PEAK OT DAY", "MAKS"] },
   k_ot_eff:    { ar: ["كفاءة الدقائق", "MINUTES EFFICIENCY", "EFF"], en: ["Minutes Efficiency", "كفاءة الدقائق", "EFF"], tr: ["Süre Verimi", "MINUTES EFFICIENCY", "VERİM"] },
   k_ot_wrk:    { ar: ["متوسط العاملين الحاضرين", "AVG PRESENT WORKERS", "AVG"], en: ["Avg Present Workers", "متوسط العاملين الحاضرين", "AVG"], tr: ["Ortalama Hazır Çalışan", "AVG PRESENT WORKERS", "ORT"] }, /* R33 */
+  k_ot_ddw:    { ar: ["عمال الوقت الأساسي", "BASIC-TIME WORKERS", "AVG/DAY"], en: ["Basic-time Workers", "عمال الوقت الأساسي", "AVG/DAY"], tr: ["Normal Süre İşçisi", "BASIC-TIME WORKERS", "ORT/GÜN"] }, /* R34: from Daily Data */
+  k_ot_otw:    { ar: ["عمال الأوفر تايم", "OT WORKERS", "AVG/DAY"], en: ["OT Workers", "عمال الأوفر تايم", "AVG/DAY"], tr: ["FM İşçisi", "OT WORKERS", "ORT/GÜN"] }, /* R34: from the OT sheet */
   ot_sub_of_avail: { ar: "من إجمالي الدقائق المتاحة", en: "of total available minutes", tr: "toplam kullanılabilir süreden" },
+  ot_sub_of_wrk:   { ar: "من إجمالي العمال الحاضرين", en: "of all present workers", tr: "tüm hazır işçilerden" }, /* R34 */
   ot_sub_wrk: { ar: "متوسط الحاضرين يوميًا في الفترة", en: "avg daily present workers in range", tr: "dönemde günlük ortalama hazır çalışan" }, /* R33 */
   k_at_rate:   { ar: ["نسبة الحضور", "ATTENDANCE RATE", "MEAN"], en: ["Attendance Rate", "نسبة الحضور", "MEAN"], tr: ["Devamlılık Oranı", "ATTENDANCE RATE", "ORT"] },
   k_at_abs:    { ar: ["إجمالي الغياب", "TOTAL ABSENCES", "DAYS"], en: ["Total Absences", "إجمالي الغياب", "DAYS"], tr: ["Toplam Devamsızlık", "TOTAL ABSENCES", "GÜN"] },
@@ -316,7 +325,7 @@ window.MARIB_I18N_DICT = {
   os_daily_src:    { ar: "شيتات الدليلي داتا", en: "Daily Data sheets", tr: "Günlük Veri Çizelgeleri" },
   os_ot_src:       { ar: "شيتات الأوفر تايم", en: "Overtime sheets", tr: "FM Çizelgeleri" },
   os_pm_src:       { ar: "شيت ماكينات الجيوب", en: "Pocket machines sheet", tr: "Cep Makinesi Çizelgesi" },
-  g_ot_label:      { ar: "نسبة الأوفر تايم من الدقائق المتاحة", en: "Overtime share of available minutes", tr: "Kullanılabilir süredeki fazla mesai payı" },
+  g_ot_label:      { ar: "نسبة الأوفر تايم من إجمالي العمال", en: "Overtime share of all workers", tr: "Tüm işçilerdeki fazla mesai payı" }, /* R34: workers, not minutes */
 
   /* ---------- deltas ---------- */
   d_label: { ar: "عن الفترة السابقة", en: "vs previous period", tr: "önceki döneme göre" },
@@ -331,7 +340,7 @@ window.MARIB_I18N_DICT = {
   th_sups:    { ar: ["#", "المشرف", "الهدف", "الفعلي", "التحقيق", "نسبة OT", "التقييم"], en: ["#", "Supervisor", "Target", "Actual", "Achievement", "OT %", "Status"], tr: ["#", "Vardiya Şefi", "Hedef", "Gerçek", "Gerçekleşme", "FM %", "Durum"] },
   th_secs:    { ar: ["#", "القسم", "الهدف", "الفعلي", "التحقيق", "نسبة OT", "التقييم", "أقصى حضور", "دقائق أوفر"], en: ["#", "Section", "Target", "Actual", "Achievement", "OT %", "Status", "Max Attendance", "OT Minutes"], tr: ["#", "Bölüm", "Hedef", "Gerçek", "Gerçekleşme", "FM %", "Durum", "Maks. Devam", "FM (dk)"] },
   th_pm:      { ar: ["#", "الماكينة", "الخطوط", "السجلات", "الهدف", "الفعلي", "التحقيق", "الدقائق المتاحة", "المنتجة", "الكفاءة"], en: ["#", "Machine", "Lines", "Records", "Target", "Actual", "Achievement", "Available Min", "Produced Min", "Efficiency"], tr: ["#", "Makine", "Hatlar", "Kayıtlar", "Hedef", "Gerçek", "Gerçekleşme", "Kullanılabilir (dk)", "Üretilen (dk)", "Verim"] },
-  th_ot:      { ar: ["اليوم", "الدقائق المتاحة", "دقائق الأوفر", "نسبة OT", "العاملين", "الدقائق المنتجة", "الكفاءة"], en: ["Day", "Available Minutes", "OT Minutes", "OT %", "Workers", "Produced Minutes", "Efficiency"], tr: ["Gün", "Kullanılabilir (dk)", "FM (dk)", "FM Oranı", "Çalışan", "Üretilen (dk)", "Verim"] }, /* R33: workers column */
+  th_ot:      { ar: ["اليوم", "عمال الوقت الأساسي", "عمال الأوفر تايم", "إجمالي العمال", "نسبة OT", "دقائق الأوفر", "الكفاءة"], en: ["Day", "Basic-time Workers", "OT Workers", "Total Workers", "OT %", "OT Minutes", "Efficiency"], tr: ["Gün", "Normal Süre İşçisi", "FM İşçisi", "Toplam İşçi", "FM Oranı", "FM (dk)", "Verim"] }, /* R34: counts lead, minutes follow */
   th_att:     { ar: ["اليوم", "الحضور", "الحاضرين", "الغياب"], en: ["Day", "Attendance", "Present", "Absent"], tr: ["Gün", "Devam", "Gelen", "Devamsız"] },
   at_tab_workers: { ar: "حضور وغياب العمال", en: "Workers Attendance", tr: "İşçi Devamlılığı" },
   at_tab_sups:    { ar: "حضور وغياب المشرفين", en: "Supervisors Attendance", tr: "Şef Devamlılığı" },

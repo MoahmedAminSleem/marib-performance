@@ -1,21 +1,21 @@
-الجولة 33 — التفاصيل للستة + أعداد العمال في الأوفر + الإبرة الذكية (2026-09-09)
+الجولة 34 — الأوفر تايم بالأعداد في الموقع كله (2026-09-09)
 الملفات دي هي كل اللي محتاج ترفعه على GitHub (Add file → Upload files → اسحبها).
-الـ ZIP تراكمي: شامل R29 + R30 + R31 + R32 + R33 — يشتغل حتى لو مرفعتش الجولات اللي فاتت.
+الـ ZIP تراكمي: شامل R28 + R29 + R30 + R31 + R32 + R33 + R34 — يشتغل حتى لو مرفعتش الجولات اللي فاتت.
 
-عدد الملفات: 15
+عدد الملفات: 16
 
-e7584281d2ecab594b8ad5733dc5c95e  public/app/app.css
-48fd2a989c3fcd8e630e5e96e7026326  public/app/app_main.js
+dbd5c76e83f0db6ee65820760c4f8824  public/app/app.css
+78d8017c13f2ea8e3e0c9f6a5157efa2  public/app/app_main.js
 8e4b5973de19ac58a5a27d61ae9da905  public/app/app_charts.js
-ceede135d3d8b086f43bf97204090159  public/app/app_core.js
-1fa27a7e3ec6e6078f4ffd428043517b  public/app/i18n_dict.js
+3da2ddbd3fd8a4dd39f5399b7523fc9b  public/app/app_core.js
+38ebed57672dc537660746a48361927d  public/app/i18n_dict.js
+8a58dc5a1c55021307db117c972ad709  public/app/i18n_core.js
 b3933a11b77d5047b4da5bb814771f4a  public/app/cursor_needle.png
 5f855c24771eed101fabb010aafd1672  public/app/cursor_needle_thread.png
 abcd31ea610a6b7a1d46c15babf5c967  src/app/skeleton.ts
 3c13d6e8569f06d541507ff011e78a67  src/app/api/settings/route.ts
-c5129a3ecdbc948515916746e55b4594  شرح-رسومات-رئيسية-المدير.html
-6e38de96602eca6229691b00fa36ae3a  سير-العمل.html
-256eb4f8ee61fa7a3f0abbf1338c3431  README.md
+b61c5070695f2997e73c0952a382cb9e  شرح-رسومات-رئيسية-المدير.html
+e3eec8e917a52f6ac1913abbfb06eed2  سير-العمل.html
+3e784ac945fb9c4902b06c5db02191b5  README.md
 4e5a36d5ddca6bc56e50349284de7f94  next.config.ts
-3f6219f02dc4377f022f70642b26f85c  الملفات-المتغيرة.txt
-fa2b46f0e5bb75e9b618d3bb94ae8768  دليل-الجولة-33.html
+3039d01e1bae0e15697eb8eee0a1f132  دليل-الجولة-34.html

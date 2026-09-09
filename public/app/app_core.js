@@ -337,6 +337,15 @@ var MaribCore = (function () {
     model.dates.sort();
     model.dateMin = model.dates[0] || null;
     model.dateMax = model.dates[model.dates.length - 1] || null;
+    /* R34: the data range spans ALL sheets — overtime can run past the last
+       Daily-Data day (Friday shifts) and the OT page must still see it;
+       model.dates / months stay Daily-Data-driven (dropdown unchanged) */
+    ["dd", "ot", "pm", "att", "lo"].forEach(function (k) {
+      model[k].forEach(function (r) {
+        if (r.date && (model.dateMin == null || r.date < model.dateMin)) model.dateMin = r.date;
+        if (r.date && (model.dateMax == null || r.date > model.dateMax)) model.dateMax = r.date;
+      });
+    });
 
     var mSeen = {};
     model.dates.forEach(function (d) { var k = d.slice(0, 7); if (!mSeen[k]) { mSeen[k] = 1; model.months.push({ key: k, label: isoMonthLabel(d) }); } });
@@ -396,12 +405,17 @@ var MaribCore = (function () {
     var totalMinAvail = ddMinAvail + otMinAvail + pmMinAvail; // Total Min Available
     var totalOT = otMinAvail + sum(pm, "otMin");      // Total OT Minutes
     var minProduced = sum(dd, "minProd") + sum(pm, "minProd"); // Min Produced
+    /* R34: overtime told in WORKER COUNTS — basic-time workers come from the
+       Daily Data sheet, overtime workers from the OT sheet; the ratio follows
+       those two numbers so every card reconciles with what the owner records */
+    var ddWorkers = sum(dd, "attWorkers"), otWorkers = sum(ot, "attWorkers");
     var k = {
       factoryActual: factoryActual,
       factoryTarget: factoryTarget,
       factoryAchv: factoryTarget ? factoryActual / factoryTarget : null,   // Factory Achievement %
       eff: totalMinAvail ? minProduced / totalMinAvail : null,             // Efficiency %
-      otPct: totalMinAvail ? totalOT / totalMinAvail : null,               // Factory Overtime %
+      otPct: (ddWorkers + otWorkers) ? otWorkers / (ddWorkers + otWorkers) : null,  // Factory Overtime % — R34: workers
+      otWorkers: otWorkers, ddWorkers: ddWorkers,
       otMinutes: totalOT,
       totalMinAvail: totalMinAvail,
       minProduced: minProduced,
@@ -429,10 +443,10 @@ var MaribCore = (function () {
 
     /* ---- daily series ---- */
     var daily = {};
-    function slot(d) { if (!daily[d]) daily[d] = { date: d, loA: 0, loT: 0, ddAttW: 0, ddMinAvail: 0, otAvail: 0, pmOT: 0, pmMinAvail: 0, pmReg: 0, minProd: 0, attScore: 0, attCount: 0, absent: 0, regWorkers: 0, samSum: 0, samCnt: 0 }; return daily[d]; }
+    function slot(d) { if (!daily[d]) daily[d] = { date: d, loA: 0, loT: 0, ddAttW: 0, otAttW: 0, ddMinAvail: 0, otAvail: 0, pmOT: 0, pmMinAvail: 0, pmReg: 0, minProd: 0, attScore: 0, attCount: 0, absent: 0, regWorkers: 0, samSum: 0, samCnt: 0 }; return daily[d]; }
     lo.forEach(function (x) { var s = slot(x.date); s.loA += x.actual || 0; s.loT += x.target || 0; });
     dd.forEach(function (x) { var s = slot(x.date); s.ddAttW += x.attWorkers || 0; s.ddMinAvail += x.minAvail || 0; s.minProd += x.minProd || 0; s.absent += x.absent || 0; s.regWorkers += x.regWorkers || 0; if (x.sam != null) { s.samSum += x.sam; s.samCnt += 1; } });
-    ot.forEach(function (x) { var s = slot(x.date); s.otAvail += x.minAvail || 0; s.minProd += x.minProd || 0; });
+    ot.forEach(function (x) { var s = slot(x.date); s.otAvail += x.minAvail || 0; s.otAttW += x.attWorkers || 0; s.minProd += x.minProd || 0; });
     pm.forEach(function (x) { var s = slot(x.date); s.pmOT += x.otMin || 0; var ma = (x.minAvail || 0) + (x.otMin || 0); s.pmMinAvail += ma; s.pmReg += (x.minAvail || 0); s.minProd += x.minProd || 0; });
     att.forEach(function (x) { var s = slot(x.date); s.attScore += x.score || 0; s.attCount += 1; });
     var dates = Object.keys(daily).sort();
@@ -443,7 +457,8 @@ var MaribCore = (function () {
         date: d, label: isoShort(d), weekday: AR_DAYS[isoDayOfWeek(d)],
         achv: s.loT ? s.loA / s.loT : null,
         loA: s.loA, loT: s.loT,
-        otPct: tot ? (s.otAvail + s.pmOT) / tot : null,
+        otPct: (s.ddAttW + s.otAttW) ? s.otAttW / (s.ddAttW + s.otAttW) : null, /* R34: OT workers / total workers */
+        otAttW: s.otAttW,
         otMin: s.otAvail + s.pmOT,
         totalMinAvail: tot,
         eff: tot ? s.minProd / tot : null,
@@ -474,17 +489,17 @@ var MaribCore = (function () {
         var key = x.date;
         byLine[x.line].attByDate[key] = (byLine[x.line].attByDate[key] || 0) + x.attWorkers;
       }
-      if (!lineMin[x.line]) lineMin[x.line] = { avail: 0, ot: 0 };
-      lineMin[x.line].avail += x.minAvail || 0;
+      if (!lineMin[x.line]) lineMin[x.line] = { avail: 0, ot: 0, ddW: 0, otW: 0 };
+      lineMin[x.line].avail += x.minAvail || 0; lineMin[x.line].ddW += x.attWorkers || 0;
     });
     ot.forEach(function (x) {
       if (x.line == null) return;
-      if (!lineMin[x.line]) lineMin[x.line] = { avail: 0, ot: 0 };
-      lineMin[x.line].avail += x.minAvail || 0; lineMin[x.line].ot += x.minAvail || 0;
+      if (!lineMin[x.line]) lineMin[x.line] = { avail: 0, ot: 0, ddW: 0, otW: 0 };
+      lineMin[x.line].avail += x.minAvail || 0; lineMin[x.line].ot += x.minAvail || 0; lineMin[x.line].otW += x.attWorkers || 0;
     });
     pm.forEach(function (x) {
       if (x.line == null) return;
-      if (!lineMin[x.line]) lineMin[x.line] = { avail: 0, ot: 0 };
+      if (!lineMin[x.line]) lineMin[x.line] = { avail: 0, ot: 0, ddW: 0, otW: 0 };
       lineMin[x.line].avail += (x.minAvail || 0) + (x.otMin || 0); lineMin[x.line].ot += x.otMin || 0;
     });
     k.byLine = Object.keys(byLine).map(function (L) {
@@ -492,37 +507,42 @@ var MaribCore = (function () {
       var maxAtt = 0; Object.keys(b.attByDate).forEach(function (d) { if (b.attByDate[d] > maxAtt) maxAtt = b.attByDate[d]; });
       var samArr = b.sam; var samMean = null;
       if (samArr.length) { var s2 = 0; for (var q = 0; q < samArr.length; q++) s2 += samArr[q]; samMean = s2 / samArr.length; }
-      var lm = lineMin[L] || { avail: 0, ot: 0 };
-      return { line: L, target: b.target, actual: b.actual, achv: b.target ? b.actual / b.target : null, avgSAM: samMean, maxAtt: maxAtt, otMin: lm.ot, otPct: lm.avail ? lm.ot / lm.avail : null };
+      var lm = lineMin[L] || { avail: 0, ot: 0, ddW: 0, otW: 0 };
+      return { line: L, target: b.target, actual: b.actual, achv: b.target ? b.actual / b.target : null, avgSAM: samMean, maxAtt: maxAtt, otMin: lm.ot, otW: lm.otW, ddW: lm.ddW, otPct: (lm.ddW + lm.otW) ? lm.otW / (lm.ddW + lm.otW) : null };
     }).sort(function (a, b) { return (parseInt(a.line, 10) || 999) - (parseInt(b.line, 10) || 999); });
 
     /* ---- by section ---- */
     var bySec = {};
     var secAvail = {};
+    var secW = {};   /* R34: per-section worker counts (Daily Data + OT sheet) */
     dd.forEach(function (x) {
       if (x.section == null) return;
       if (!bySec[x.section]) bySec[x.section] = { section: x.section, target: 0, actual: 0, attByDate: {}, otMin: 0 };
       bySec[x.section].target += x.target || 0; bySec[x.section].actual += x.actualProd || 0;
       if (x.attWorkers != null) bySec[x.section].attByDate[x.date] = (bySec[x.section].attByDate[x.date] || 0) + x.attWorkers;
       secAvail[x.section] = (secAvail[x.section] || 0) + (x.minAvail || 0);
+      secW[x.section] = secW[x.section] || { ddW: 0, otW: 0 }; secW[x.section].ddW += x.attWorkers || 0;
     });
-    ot.forEach(function (x) { if (x.section != null) { if (!bySec[x.section]) bySec[x.section] = { section: x.section, target: 0, actual: 0, attByDate: {}, otMin: 0 }; bySec[x.section].otMin += x.minAvail || 0; secAvail[x.section] = (secAvail[x.section] || 0) + (x.minAvail || 0); } });
+    ot.forEach(function (x) { if (x.section != null) { if (!bySec[x.section]) bySec[x.section] = { section: x.section, target: 0, actual: 0, attByDate: {}, otMin: 0 }; bySec[x.section].otMin += x.minAvail || 0; secAvail[x.section] = (secAvail[x.section] || 0) + (x.minAvail || 0); secW[x.section] = secW[x.section] || { ddW: 0, otW: 0 }; secW[x.section].otW += x.attWorkers || 0; } });
     k.bySection = Object.keys(bySec).map(function (S) {
       var b = bySec[S];
       var maxAtt = 0; Object.keys(b.attByDate).forEach(function (d) { if (b.attByDate[d] > maxAtt) maxAtt = b.attByDate[d]; });
       var av = secAvail[S] || 0;
-      return { section: S, target: b.target, actual: b.actual, achv: b.target ? b.actual / b.target : null, maxAtt: maxAtt, otMin: b.otMin, otPct: av ? b.otMin / av : null };
+      var sw = secW[S] || { ddW: 0, otW: 0 };
+      return { section: S, target: b.target, actual: b.actual, achv: b.target ? b.actual / b.target : null, maxAtt: maxAtt, otMin: b.otMin, otW: sw.otW, ddW: sw.ddW, otPct: (sw.ddW + sw.otW) ? sw.otW / (sw.ddW + sw.otW) : null };
     }).sort(function (a, b) { return b.actual - a.actual; });
 
     /* ---- by supervisor (DD + PM like the model) ---- */
     var bySup = {};
     var supMin = {};
+    var supW = {};   /* R34: per-supervisor worker counts (Daily Data + OT sheet) */
     dd.forEach(function (x) {
       if (x.supervisor == null) return;
       if (!bySup[x.supervisor]) bySup[x.supervisor] = { supervisor: x.supervisor, target: 0, actual: 0, pmTarget: 0, pmActual: 0, otProd: 0, minProd: 0, rows: 0 };
       bySup[x.supervisor].target += x.target || 0; bySup[x.supervisor].actual += x.actualProd || 0;
       if (!supMin[x.supervisor]) supMin[x.supervisor] = { avail: 0, ot: 0 };
       supMin[x.supervisor].avail += x.minAvail || 0;
+      supW[x.supervisor] = supW[x.supervisor] || { ddW: 0, otW: 0 }; supW[x.supervisor].ddW += x.attWorkers || 0;
       bySup[x.supervisor].minProd += x.minProd || 0; bySup[x.supervisor].rows++;
     });
     pm.forEach(function (x) {
@@ -540,12 +560,14 @@ var MaribCore = (function () {
       if (!supMin[x.supervisor]) supMin[x.supervisor] = { avail: 0, ot: 0 };
       supMin[x.supervisor].avail += x.minAvail || 0;
       supMin[x.supervisor].ot += x.minAvail || 0;
+      supW[x.supervisor] = supW[x.supervisor] || { ddW: 0, otW: 0 }; supW[x.supervisor].otW += x.attWorkers || 0;
     });
     k.bySupervisor = Object.keys(bySup).map(function (S) {
       var b = bySup[S];
       var t = b.target + b.pmTarget, a = b.actual + b.pmActual + b.otProd;
       var sm = supMin[S] || { avail: 0, ot: 0 };
-      return { supervisor: S, target: t, actual: a, achv: t ? a / t : null, pmPart: b.pmActual + b.otProd, minProd: b.minProd, rows: b.rows, otMin: sm.ot, otPct: sm.avail ? sm.ot / sm.avail : null };
+      var sw = supW[S] || { ddW: 0, otW: 0 };
+      return { supervisor: S, target: t, actual: a, achv: t ? a / t : null, pmPart: b.pmActual + b.otProd, minProd: b.minProd, rows: b.rows, otMin: sm.ot, otW: sw.otW, otPct: (sw.ddW + sw.otW) ? sw.otW / (sw.ddW + sw.otW) : null };
     }).sort(function (a, b) { return b.achv - a.achv; });
 
     /* ---- sections: daily trend per section (for sections page + drill) ---- */
@@ -658,12 +680,14 @@ var MaribCore = (function () {
     /* ---- OT by supervisor (OT minutes from OT sheet + PM OT minutes) ---- */
     var otByS = {};
     var otSupAvail = {};
+    var otSupW = {};   /* R34: OT-sheet worker counts per supervisor */
     ot.forEach(function (x) {
       if (x.supervisor == null) return;
       if (!otByS[x.supervisor]) otByS[x.supervisor] = { supervisor: x.supervisor, otMin: 0, minAvail: 0, minProd: 0, rows: 0, avail: 0 };
       otByS[x.supervisor].otMin += x.minAvail || 0; otByS[x.supervisor].minAvail += x.minAvail || 0;
       otByS[x.supervisor].minProd += x.minProd || 0; otByS[x.supervisor].rows++;
       otSupAvail[x.supervisor] = (otSupAvail[x.supervisor] || 0) + (x.minAvail || 0);
+      otSupW[x.supervisor] = (otSupW[x.supervisor] || 0) + (x.attWorkers || 0);
     });
     pm.forEach(function (x) {
       if (x.supervisor == null) return;
@@ -671,14 +695,17 @@ var MaribCore = (function () {
       otByS[x.supervisor].otMin += x.otMin || 0; otByS[x.supervisor].minProd += x.minProd || 0;
       otSupAvail[x.supervisor] = (otSupAvail[x.supervisor] || 0) + (x.minAvail || 0) + (x.otMin || 0);
     });
+    var otSupDdW = {};   /* R34: Daily-Data worker counts per supervisor (denominator) */
     dd.forEach(function (x) {
       if (x.supervisor == null) return;
       otSupAvail[x.supervisor] = (otSupAvail[x.supervisor] || 0) + (x.minAvail || 0);
+      otSupDdW[x.supervisor] = (otSupDdW[x.supervisor] || 0) + (x.attWorkers || 0);
     });
     k.otBySup = Object.keys(otByS).map(function (S) {
       var b = otByS[S];
       var av = otSupAvail[S] || 0;
-      b.avail = av; b.otPct = av ? b.otMin / av : null;
+      b.avail = av; b.otW = otSupW[S] || 0; b.ddW = otSupDdW[S] || 0;
+      b.otPct = (b.ddW + b.otW) ? b.otW / (b.ddW + b.otW) : null; /* R34: worker-based */
       return b;
     })
       .filter(function (b) { return b.otMin > 0; })

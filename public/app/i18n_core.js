@@ -146,6 +146,30 @@ var I18N = (function () {
          : cur === "en" ? num(fmtInt(n)) + " OT min of " + num(fmtInt(m)) + " available"
          : num(fmtInt(n)) + " دقيقة أوفر من " + num(fmtInt(m)) + " متاحة";
   }
+  /* R34: overtime told in worker counts — the owner records basic-time
+     workers in Daily Data and overtime workers in the OT sheet */
+  function subOtWrk(n, m) {
+    return cur === "tr" ? num(fmtInt(n)) + " FM işçisi / " + num(fmtInt(m)) + " işçi"
+         : cur === "en" ? num(fmtInt(n)) + " OT workers of " + num(fmtInt(m))
+         : num(fmtInt(n)) + " عامل أوفر من " + num(fmtInt(m)) + " عامل";
+  }
+  function subWrkTot(n, days) {
+    return cur === "tr" ? "toplam " + num(fmtInt(n)) + " — " + num(fmtInt(days)) + " gün"
+         : cur === "en" ? "total " + num(fmtInt(n)) + " over " + num(fmtInt(days)) + " days"
+         : "إجمالي " + num(fmtInt(n)) + " على " + num(fmtInt(days)) + " أيام";
+  }
+  /* R34: overtime told in worker counts — the owner records basic-time
+     workers in Daily Data and overtime workers in the OT sheet */
+  function subOtWrk(n, m) {
+    return cur === "tr" ? num(fmtInt(n)) + " FM işçisi / " + num(fmtInt(m)) + " işçi"
+         : cur === "en" ? num(fmtInt(n)) + " OT workers of " + num(fmtInt(m))
+         : num(fmtInt(n)) + " عامل أوفر من " + num(fmtInt(m)) + " عامل";
+  }
+  function subWrkTot(n, days) {
+    return cur === "tr" ? "toplam " + num(fmtInt(n)) + " — " + num(fmtInt(days)) + " gün"
+         : cur === "en" ? "total " + num(fmtInt(n)) + " over " + num(fmtInt(days)) + " days"
+         : "إجمالي " + num(fmtInt(n)) + " على " + num(fmtInt(days)) + " أيام";
+  }
   function subAbsentWorkers(n) {
     return cur === "tr" ? num(fmtInt(n)) + " işçi devamsız"
          : cur === "en" ? num(fmtInt(n)) + " workers absent"
@@ -294,7 +318,7 @@ var I18N = (function () {
     dayFull: dayFull, dayShort: dayShort, heatDays: heatDays,
     count: count, lineN: lineN, sectionN: sectionN, sectionName: sectionName, machN: machN, dayTitle: dayTitle,
     drTitleSec: drTitleSec, drTitleLine: drTitleLine, drTitlePm: drTitlePm, drTitlePmLine: drTitlePmLine,
-    subTargetPcs: subTargetPcs, subActualOf: subActualOf, subOtOf: subOtOf, subAbsentWorkers: subAbsentWorkers,
+    subTargetPcs: subTargetPcs, subActualOf: subActualOf, subOtOf: subOtOf, subOtWrk: subOtWrk, subWrkTot: subWrkTot, subAbsentWorkers: subAbsentWorkers,
     subBestLine: subBestLine, subBestMachine: subBestMachine, subOfAvail: subOfAvail, subSecOutput: subSecOutput, subInclOtPcs: subInclOtPcs,
     subProducedOf: subProducedOf, subOtSplit: subOtSplit, subMinOf: subMinOf, subEffOf: subEffOf, subPeakDay: subPeakDay,
     subOtMin: subOtMin, subMinRec: subMinRec, heroChip: heroChip, dateChip: dateChip,
