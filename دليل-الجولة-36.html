@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل الجولة 36 — صلي علي النبي + دخول الموقع + شيل العنوان + فلاتر الشهر والسنة</title>
+<style>
+:root{--bg:#0A101C;--bg2:#101a2b;--card:#131f33;--line:#26364f;--txt:#DCE5EF;--dim:#A9B7C7;--gold:#C49A6C;--gold2:#E9C68A;--blue:#7FB3E8;--green:#4FD98D}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.9;padding:26px 16px}
+.wrap{max-width:860px;margin:0 auto}
+h1{color:var(--gold2);font-size:23px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+h2{color:var(--gold2);font-size:17px;margin:26px 0 10px;border-inline-start:4px solid var(--gold);padding-inline-start:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0}
+.step{display:flex;gap:12px;margin:12px 0;align-items:flex-start}
+.n{background:var(--gold);color:#141B26;font-weight:800;min-width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+.path{background:rgba(196,154,108,.14);color:var(--gold2);padding:2px 8px;border-radius:7px;font-size:12.5px;font-family:Consolas,monospace;direction:ltr;display:inline-block}
+code{background:rgba(127,179,232,.1);color:var(--blue);padding:2px 7px;border-radius:6px;font-size:12.5px;direction:ltr;display:inline-block;font-family:Consolas,monospace}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{padding:8px 10px;border:1px solid var(--line);text-align:start}
+th{color:var(--gold2);background:rgba(196,154,108,.07);font-size:12px}
+td{color:var(--txt)}
+.small{font-size:12px;color:var(--dim)}
+.g{color:var(--green);font-weight:700}
+ul{margin:8px 22px 8px 0}
+li{margin-bottom:7px}
+.warn{background:rgba(217,168,107,.08);border:1px dashed var(--gold);border-radius:10px;padding:10px 14px;color:var(--gold2);font-size:13px;margin:12px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🟢 الجولة 36 — «صلي علي النبي» + دخول الموقع + شيل العنوان + فلاتر الشهر والسنة</h1>
+<div class="sub">جولة تعديل عرض فقط — مفيش أي بيانات أو مستخدمين اتلمسوا · مبنية فوق R28 → R36 (الـ ZIP تراكمي: بيشتغل حتى لو الجولات اللي فاتت ما اترفعتوش)</div>
+
+<h2>إيه اللي اتطلب؟ (4 حاجات)</h2>
+<div class="card">
+<ul>
+<li><b>🕊️ رسالة الانتظار:</b> المربع اللي بيظهر قبل ما البيانات توصل من السيرفر كان بيقول «اللوحة فاضية» — المطلوب يقول <b>«صلي علي النبي»</b> (متترجم حسب اللغة).</li>
+<li><b>🔑 اسم عملية الدخول:</b> لما تسجل دخول، السجل كان بيكتب العملية <b>«الاعدادات»</b> — المطلوب يكتب <b>«دخول الموقع»</b> (متترجم).</li>
+<li><b>🧹 شيل العنوان:</b> عنوان <b>«لوحة اداء المصنع»</b> في الشريط العلوي ملوش لازمة وواخد مكان — يتشال.</li>
+<li><b>📅 فلاتر المدير:</b> في رئيسية المدير بس — فلتر <b>الشهر</b> + فلتر <b>السنة</b>، عشان أزرار يومي/أسبوعي/شهري تبقى مظبوطة على الشهر والسنة المختارين.</li>
+</ul>
+</div>
+
+<h2>اللي اتعمل</h2>
+<div class="card">
+<div class="step"><div class="n">1</div><div><b>وش الانتظار:</b> المربع بقى ليه وشين — <b>وش التحميل</b>: سبينر دهبي + «صلي علي النبي» (EN: Pray upon the Prophet · TR: Peygamber'e salavat getir) — يظهر من فتح الموقع لحد ما الداتا توصل. و<b>وش الرفع</b> (اللوحة فاضية + زرار الرفع) ماعادش يظهر غير لو السيرفر فعلاً فاضي أو المزامنة فشلت — يعني مفيش «إنذار كاذب» وانت مستني.</div></div>
+<div class="step"><div class="n">2</div><div><b>دخول الموقع في السجل:</b> السبب كان تعريب كيان <code>site</code> بيرجع عنوان الإعدادات بالغلط. الدخول بقى <b>«دخول الموقع»</b> والخروج <b>«خروج من الموقع»</b> والموضوع «الموقع» — بالتلات لغات، على الموقع وفي إكسل السجل. وكمان «رئيسية المدير» في جدول الكيانات كانت ساربة مفتاحها الخام — اتصلحت معاها.</div></div>
+<div class="step"><div class="n">3</div><div><b>العنوان اتشال:</b> بلوك «لوحة أداء المصنع / MARIB PERFORMANCE» اتشال من الهيكل + كل قواعد الـ CSS بتاعته — الشريط العلوي بقى الماركة + أزرار التحكم بس.</div></div>
+<div class="step"><div class="n">4</div><div><b>الشهر + السنة للمدير:</b> في رئيسية المدير بس: قايمة <b>الشهر</b> (بس الشهور اللي عندها داتا في السنة المختارة — بأسمائها بالتلات لغات) + قايمة <b>السنة</b> (من الداتا نفسها). اختيار شهر بيقرّص المدى عليه — <b>يومي</b> = أيام الشهر ده · <b>أسبوعي</b> = أسابيعه (W31…) · <b>شهري</b> = عمود واحد باسم الشهر. جيب من/الى اتخفوا هنا بس — باقي الصفحات بكل فلاترها زي ما هي.</div></div>
+</div>
+
+<h2>خطوات الرفع (زي كل جولة)</h2>
+<div class="card">
+<ol>
+<li>فك ضغط <code>R36-loading-login-mhome.zip</code>.</li>
+<li>افتح رابط الـ repo على GitHub → <b>Add file → Upload files</b>.</li>
+<li>اسحب <b>محتويات مجلد ZIP</b> (مش مجلد الـ ZIP نفسه) — 16 ملف.</li>
+<li>اكتب Commit message زي <code>R36: loading message + login label + title removal + mhome month/year</code> → <b>Commit changes</b>.</li>
+<li>استنى دقيقة — Vercel بينشر لوحده.</li>
+</ol>
+</div>
+
+<h2>الملفات المتغيرة (16 — الـ ZIP تراكمي)</h2>
+<table>
+<tr><th>الملف</th><th>اللي اتغير فيه</th></tr>
+<tr><td><span class="path">public/app/app_main.js</span></td><td>وش الانتظار (ndSet) + تعريب كيانات السجل + دوال الشهر/السنة وقرص المدى</td></tr>
+<tr><td><span class="path">public/app/i18n_dict.js</span></td><td>دخول الموقع/خروج من الموقع + صلي علي النبي + au_site + f_year + أسماء الشهور بالتلات لغات</td></tr>
+<tr><td><span class="path">public/app/app.css</span></td><td>ستايل وش الانتظار + جيب الشهر/السنة + شيل قواعد العنوان</td></tr>
+<tr><td><span class="path">src/app/skeleton.ts</span></td><td>بلوك nd-load + جيب mhmy − بلوك العنوان</td></tr>
+<tr><td><span class="path">شرح-رسومات-رئيسية-المدير.html</span></td><td>قسم الفلاتر: الشهر + السنة بدل من/الى</td></tr>
+<tr><td><span class="path">سير-العمل.html</span></td><td>بلوك الجولة 36 + صف جدول الجولات + الفوتر</td></tr>
+<tr><td><span class="path">README.md</span></td><td>تحديث رقم الجولة</td></tr>
+<tr><td><span class="path">دليل-الجولة-36.html</span></td><td>الملف ده</td></tr>
+<tr><td colspan="2" class="small">+ 8 ملفات من الجولات اللي فاتت (R28 → R35) عشان الـ ZIP يشتغل حتى لو مرفعتش قبل كده — نفس محتواها بالظبط.</td></tr>
+</table>
+
+<h2>اتأكد بعد الرفع (6 فحوصات)</h2>
+<div class="card">
+<ol>
+<li>افتح الموقع (وسيشن جديد أو امسح الكوكيز) → اول ما تدخل بعد تسجيل الدخول لازم تشوف المربع فيه <b>السبينر + «صلي علي النبي»</b> وبعد ثواني يختفي وتيجي اللوحة — من غير كلمة «اللوحة فاضية».</li>
+<li>الإعدادات → سجل العمليات → حدد تاريخ → عرض → صف دخولك لازم يكون مكتوب أمامه <b>«دخول الموقع»</b> (مش «الاعدادات»).</li>
+<li>بص للشريط العلوي — <b>مفيش عنوان «لوحة أداء المصنع»</b> في النص خالص؛ الماركة يمين والتحكم شمال.</li>
+<li>الرئيسية (بتاعة المدير) → هتلاقي قايمتين جداد: <b>الشهر</b> و<b>السنة</b> — اختار «أغسطس» مثلًا → دوس <b>يومي</b>: الأعمدة كلها أيام أغسطس بس (2/8 لـ 30/8) · <b>أسبوعي</b>: W31… · <b>شهري</b>: عمود واحد «أغسطس 2026».</li>
+<li>بدّل اللغة EN/TR → أسماء الشهور بتتترجم (July/August… · Temmuz/Ağustos…) و«Pray upon the Prophet» / «Peygamber'e salavat getir» في رسالة الانتظار.</li>
+<li>افتح أي صفحة تانية (زي السطور) → فلاتر من/الى والخط والقسم <b>ظاهرين زي ما هم</b> — التغيير في رئيسية المدير بس.</li>
+</ol>
+</div>
+
+<div class="warn"><b>لو حاجة من دول مش مظبوطة بعد الرفع:</b> اصبر دقيقة (Vercel cache) وعمل Hard Refresh (Ctrl+Shift+R). لو استمرت — ارجع لملفات الجولة اللي قبلها (كل ملف مستقل) وابعت للمساعد سكرين شوت.</div>
+
+<h2>أسئلة متكررة</h2>
+<div class="card">
+<ul>
+<li><b>ليه «صلي علي النبي»؟</b> ده طلبك انت — رسالة انتظار لطيفة بدل الإنذار الكاذب. وبتتترجم حسب لغة الموقع: العربي «صلي علي النبي» والإنجليزي Pray upon the Prophet والتركي Peygamber'e salavat getir.</li>
+<li><b>طب لما السيرفر يكون فاضي فعلًا؟</b> ساعتها بس بيظهر وش الرفع القديم («اللوحة فاضية» + زرار رفع ملف الشهر) — لأن فيه فرق بين «لسه بجهّز» و«مفيش داتا خالص».</li>
+<li><b>العمليات القديمة في السجل هتتسمى «دخول الموقع»؟</b> أيوه — التسمية بتتعرض وقت القراءة، فكل صفوف الدخول القديمة والجديدة هتظهر بنفس الاسم الجديد (الخزن نفسه ملمسش).</li>
+<li><b>فين من/الى في رئيسية المدير؟</b> اتعوضت بالشهر + السنة — اختيار الشهر هو اللي بيحدد المدى دلوقتي (الشهر كله). باقي الصفحات لسه فيها من/الى عادي.</li>
+<li><b>لو عايز أشوف شهرين مع بعض؟</b> رئيسية المدير بتشتغل شهر واحد في المرة (ده المقصود «اللي جواها الشهر بس») — استخدم صفحة الأداء العام بفلتر من/الى للمدى الحر.</li>
+<li><b>الجولة دي بتلغي اللي قبلها؟</b> لأ — الـ ZIP تراكمي وفيه كل ملفات R28 → R36 كاملة، ارفعه فوق القديم عادي.</li>
+</ul>
+</div>
+</div>
+</body>
+</html>

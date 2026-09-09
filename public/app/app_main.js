@@ -1879,6 +1879,9 @@ var App = (function () {
     var fF = $("fFrom"), fT = $("fTo");
     if (m.dateMin) { fF.min = m.dateMin; fT.min = m.dateMin; }
     if (m.dateMax) { fF.max = m.dateMax; fT.max = m.dateMax; }
+    /* R36: manager-home month + year selects — refilled on every model
+       rebuild / language switch (selection kept while still valid) */
+    fillMhomeMY(keep);
   }
 
   function clearQP() {
@@ -2014,6 +2017,64 @@ var App = (function () {
     return key;
   }
 
+  /* R36 — manager-home month + year selects. They WRITE the range
+     (fFrom/fTo via snapToMonth), so the يومي/أسبوعي/شهري buttons
+     always bucket inside the chosen month; the hidden من/إلى inputs
+     stay the single source of truth, which keeps URLs and the other
+     pages in sync with the same range. Options list only the months
+     that actually carry data (per the picked year). */
+  function mhYears() {
+    var ys = {};
+    ((state.model && state.model.months) || []).forEach(function (mo) { ys[mo.key.slice(0, 4)] = 1; });
+    return Object.keys(ys).sort().reverse();   /* newest year first */
+  }
+  function mhMonthsOfYear(y) {
+    return ((state.model && state.model.months) || [])
+      .filter(function (mo) { return mo.key.slice(0, 4) === String(y); })
+      .map(function (mo) { return mo.key; }).sort();
+  }
+  function mhMonthName(key) { return T("m_" + key.slice(5, 7)); }
+  function fillMhomeMY(keep) {
+    var ySel = $("mhYear"), mSel = $("mhMonth");
+    if (!ySel || !mSel || !state.model) return;
+    var yv = keep ? ySel.value : "", mv = keep ? mSel.value : "";
+    var years = mhYears();
+    ySel.innerHTML = "";
+    years.forEach(function (y) { ySel.add(new Option(y, y)); });
+    if (!yv || years.indexOf(yv) < 0) yv = years[0] || "";
+    ySel.value = yv;
+    var keys = mhMonthsOfYear(yv);
+    mSel.innerHTML = "";
+    keys.forEach(function (k) { mSel.add(new Option(mhMonthName(k), k.slice(5, 7))); });
+    if (!mv || keys.indexOf(yv + "-" + mv) < 0) {
+      /* keep the month NUMBER when that month exists in the new year;
+         otherwise slide to the closest month that carries data */
+      var want = mv || (($("fFrom") || {}).value || "").slice(5, 7);
+      var nums = keys.map(function (k) { return +k.slice(5, 7); });
+      var best = null;
+      if (want && nums.length) {
+        var w = +want;
+        best = nums.reduce(function (a, b) { return Math.abs(b - w) < Math.abs(a - w) ? b : a; });
+      } else if (nums.length) best = nums[nums.length - 1];
+      mv = best != null ? (best < 10 ? "0" + best : String(best)) : "";
+    }
+    mSel.value = mv;
+  }
+  function syncMhomeMY() {
+    /* mirror the live range into the two selects (after uploads, URL
+       restores, quick-filters) — display only, never re-renders */
+    var ySel = $("mhYear"), mSel = $("mhMonth");
+    if (!ySel || !mSel || !state.model) return;
+    var a = $("fFrom").value, b = $("fTo").value;
+    var key = (a && b && a.slice(0, 7) === b.slice(0, 7)) ? a.slice(0, 7)
+      : String(b || a || state.model.dateMax || "").slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(key)) return;
+    var yv = key.slice(0, 4), mv = key.slice(5, 7);
+    if (mhYears().indexOf(yv) < 0) return;
+    if (ySel.value !== yv) { ySel.value = yv; fillMhomeMY(true); }
+    if (mhMonthsOfYear(yv).indexOf(yv + "-" + mv) >= 0) mSel.value = mv;
+  }
+
   function mhBuckets() {
     var ser = (state.k && state.k.series) || [];
     var gran = state.mhGran || "day";
@@ -2057,6 +2118,7 @@ var App = (function () {
   }
 
   function renderMhome() {
+    syncMhomeMY();   /* R36: the month/year selects stay glued to the live range */
     var bk = mhBuckets();
     var agg = bk.map(function (b) { return mhAgg(b.rows); });
     var gran = state.mhGran || "day";
@@ -2376,6 +2438,20 @@ var App = (function () {
           x.classList.toggle("on", x.getAttribute("data-scope") === "both");
         });
       }
+      /* R36: the يومي/أسبوعي/شهري buttons bucket the CHOSEN month —
+         arriving here with a wider range (الكل / URL restore / quick
+         filter) snaps back to a single month, then the selects show it */
+      var mF = $("fFrom"), mT = $("fTo");
+      var ka = mF && mF.value, kb = mT && mT.value;
+      var single = (ka && kb && ka.slice(0, 7) === kb.slice(0, 7)) ? ka.slice(0, 7) : "";
+      var hasM = function (k) {
+        return ((state.model && state.model.months) || []).some(function (mo) { return mo.key === k; });
+      };
+      if (single && hasM(single)) syncMhomeMY();
+      else if (state.model && state.model.dateMax && hasM(state.model.dateMax.slice(0, 7))) {
+        snapToMonth(state.model.dateMax.slice(0, 7), true);
+        syncMhomeMY();
+      }
     }
     document.querySelectorAll(".page").forEach(function (p) {
       p.className = "page" + (p.id === "page-" + page ? " on" : "");
@@ -2550,10 +2626,23 @@ var App = (function () {
     state.mhome = (s && s.mhome) || null;   /* R30: { users: [id, ...] } — dev-picked viewers of the manager home */
   }
 
+  /* R36: the no-data box has two faces — LOADING (صلي علي النبي) while
+     the server data is on its way, EMPTY (upload prompt) only when the
+     server truly has no months or the sync failed. The old code showed
+     the empty face during the load too, which read as a false alarm. */
+  function ndSet(loading) {
+    var nd = $("noData"), box = nd ? nd.querySelector(".nd-box") : null;
+    if (!nd || !box) return;
+    if (loading) { nd.classList.add("on"); box.classList.add("loading"); }
+    else box.classList.remove("loading");
+  }
+
   /* fetch server data + settings — called after login/session and after
      every upload; the boot veil is owned by MaribAuth (R23 #5: no flash) */
   function cloudLoad() {
     setSync("busy");
+    /* R36: nothing in hand yet → the loading face while the fetch runs */
+    if (!state.model || !state.model.dates || !state.model.dates.length) ndSet(true);
     return Promise.all([
       MaribCloud.dataGet(),
       MaribCloud.settingsGet().catch(function () { return {}; })
@@ -2580,6 +2669,7 @@ var App = (function () {
            (or refreshing it) rebuilds exactly the view it was shared from */
         applyQueryState();
         var nd = $("noData"); if (nd) nd.classList.remove("on");
+        ndSet(false);
         /* R25: React hydration can restore the SSR <title> once, AFTER
            the app already set the tab title (dev-mode race). Re-assert
            the correct title a few times — by the last tap hydration has
@@ -2592,12 +2682,14 @@ var App = (function () {
         state.monthsMeta = [];
         state.source = "none";
         var nd2 = $("noData"); if (nd2) nd2.classList.add("on");
+        ndSet(false);
         boot("cloud", []);
       }
       setSync("ok");
     }).catch(function () {
       setSync("err");
       toast(T("toast_offline"), "err");
+      ndSet(false);   /* R36: sync failed → the upload face + error toast */
     });
   }
 
@@ -2920,8 +3012,9 @@ var App = (function () {
     if (e === "settings:targets") return T("set_targets");
     if (e === "settings:groups") return T("set_groups");
     if (e === "settings:storage_quota") return T("set_storage");
+    if (e === "settings:mhome") return T("set_mhome");   /* R36: the raw key leaked into the table */
     if (e.indexOf("users:") === 0) return T("nav_users") + " · " + e.slice(6);
-    if (e === "site") return T("set_title");
+    if (e === "site") return T("au_site");   /* R36: was set_title (الإعدادات) — wrong face for login/logout rows */
     return e;
   }
   /* R35: date-first flow — the log never auto-loads on open. Step 1: the
@@ -3212,6 +3305,7 @@ var App = (function () {
     state.model = model;
     var nd = $("noData");
     if (nd) nd.classList.toggle("on", !(model.dates && model.dates.length));
+    ndSet(false);
     fillFilters();
     render();
   }
@@ -3276,6 +3370,18 @@ var App = (function () {
     $("fMonth").addEventListener("change", function () {
       if (this.value) snapToMonth(this.value, true);
       else { $("fFrom").value = ""; $("fTo").value = ""; state.qp = "all"; render(); }
+    });
+
+    /* R36 — manager-home month + year: picking a month pins the range to
+       it, so the يومي/أسبوعي/شهري buckets follow the chosen month + year */
+    $("mhMonth").addEventListener("change", function () {
+      var y = $("mhYear").value;
+      if (y && this.value) snapToMonth(y + "-" + this.value, true);
+    });
+    $("mhYear").addEventListener("change", function () {
+      fillMhomeMY(true);          /* the month list rebuilds for the new year */
+      var mSel = $("mhMonth");
+      if (this.value && mSel.value) snapToMonth(this.value + "-" + mSel.value, true);
     });
 
     /* custom range inputs (manual change = custom period) */
@@ -3486,8 +3592,7 @@ var App = (function () {
        starts empty and hidden behind the veil (no "upload" flash). */
     state.tables = { dd: [], ot: [], pm: [], att: [], lo: [] };
     state.source = "none";
-    var nd0 = $("noData");
-    if (nd0) nd0.classList.add("on");
+    ndSet(true);   /* R36: the loading face (صلي علي النبي) until the data lands */
   }
 
   document.addEventListener("DOMContentLoaded", init);
@@ -3501,6 +3606,7 @@ var App = (function () {
     promptData: function () {
       var nd = $("noData");
       if (nd) nd.classList.add("on");
+      ndSet(false);
       goToPage("data");
     }
   };

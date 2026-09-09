@@ -456,6 +456,19 @@ sc_tt:    { ar: "الأنتاج الأساسي فقط / الإضافي فقط / 
 
 /* ---------- month switcher ---------- */
 f_month:  { ar: "الشهر", en: "Month", tr: "Ay" },
+  f_year:   { ar: "السنة", en: "Year", tr: "Yıl" },
+  m_01: { ar: "يناير", en: "January", tr: "Ocak" },
+  m_02: { ar: "فبراير", en: "February", tr: "Şubat" },
+  m_03: { ar: "مارس", en: "March", tr: "Mart" },
+  m_04: { ar: "أبريل", en: "April", tr: "Nisan" },
+  m_05: { ar: "مايو", en: "May", tr: "Mayıs" },
+  m_06: { ar: "يونيو", en: "June", tr: "Haziran" },
+  m_07: { ar: "يوليو", en: "July", tr: "Temmuz" },
+  m_08: { ar: "أغسطس", en: "August", tr: "Ağustos" },
+  m_09: { ar: "سبتمبر", en: "September", tr: "Eylül" },
+  m_10: { ar: "أكتوبر", en: "October", tr: "Ekim" },
+  m_11: { ar: "نوفمبر", en: "November", tr: "Kasım" },
+  m_12: { ar: "ديسمبر", en: "December", tr: "Aralık" },  /* R36: manager-home month/year selects */
 m_all:    { ar: "كل الأشهر", en: "All months", tr: "Tüm aylar" },
 m_jump:   { ar: "تم تحديث البيانات — انتقلنا إلى شهر ", en: "Data updated — jumped to month ", tr: "Veriler güncellendi — şu aya geçildi: " },
 
@@ -537,10 +550,11 @@ au_total_edits: { ar: "إجمالي التعديلات", en: "Total edits", tr: 
 au_empty:     { ar: "مفيش عمليات مسجلة في الفترة دي", en: "No operations recorded in this period", tr: "Bu dönemde kayıtlı işlem yok" },
 au_a_upload:  { ar: "رفع بيانات", en: "Upload", tr: "Yükleme" },
 au_a_edit:    { ar: "تعديل", en: "Edit", tr: "Düzenleme" },
-au_a_login:   { ar: "تسجيل دخول", en: "Sign in", tr: "Giriş" },
-au_a_logout:  { ar: "تسجيل خروج", en: "Sign out", tr: "Çıkış" },
+au_a_login:   { ar: "دخول الموقع", en: "Site login", tr: "Siteye giriş" },  /* R36 */
+au_a_logout:  { ar: "خروج من الموقع", en: "Site exit", tr: "Siteden çıkış" },  /* R36 */
 au_a_create:  { ar: "إنشاء", en: "Create", tr: "Oluşturma" },
 au_a_delete:  { ar: "حذف", en: "Delete", tr: "Silme" },
+au_site:      { ar: "الموقع", en: "The site", tr: "Site" },  /* R36: login/logout subject (was set_title = الإعدادات) */
 au_excel_sheet1: { ar: "الأنشطة والتعديلات", en: "Files & edits", tr: "Dosyalar ve düzenlemeler" },
 au_excel_sheet2: { ar: "كل العمليات", en: "All events", tr: "Tüm işlemler" },
 au_exported:  { ar: "تم تنزيل سجل العمليات كإكسل", en: "Activity log exported to Excel", tr: "İşlem günlüğü Excel'e aktarıldı" },
@@ -595,6 +609,7 @@ toast_need_dev:{ ar: "القسم ده لحساب المطور (Amin) بس", en: 
 dz_sub:   { ar: "الملف بيتحلل على جهازك وبيتزامن مع السيرفر فورًا", en: "The file parses locally and syncs to the server instantly", tr: "Dosya yerelde çözümlenir ve anında sunucuya eşitlenir" },
 nd_hint:  { ar: "ارفع ملف إكسل الشهر — البيانات بتتخزن على السيرفر وتظهر لكل المستخدمين", en: "Upload the month's Excel file — data is stored on the server and appears for every user", tr: "Ayın Excel dosyasını yükleyin — veriler sunucuda saklanır ve herkese görünür" },
 nd_btn:   { ar: "رفع ملف الشهر", en: "Upload month file", tr: "Ay dosyasını yükle" },
+nd_loading: { ar: "صلي علي النبي", en: "Pray upon the Prophet", tr: "Peygamber'e salavat getir" },  /* R36: the loading face */
 doc_title: { ar: "لوحة أداء مصنع مأرب", en: "Marib Garments — Performance", tr: "Marib Giyim — Performans" },
 
 dt_sync:        { ar: "مزامنة البيانات مع السيرفر", en: "Server data sync", tr: "Sunucu veri eşitleme" },

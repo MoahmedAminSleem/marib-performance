@@ -61,9 +61,9 @@ html{scroll-behavior:smooth}
 @media (min-width:901px){ html{overflow:hidden} }
 /* Arabic script must never get letter-spacing (breaks letter joins) */
 html[lang="ar"] h1,html[lang="ar"] h2,html[lang="ar"] h3,html[lang="ar"] h4,
-html[lang="ar"] h5,html[lang="ar"] h6,html[lang="ar"] .brand h1,html[lang="ar"] .mid-title h2,
+html[lang="ar"] h5,html[lang="ar"] h6,html[lang="ar"] .brand h1,
 html[lang="ar"] .page-ctrls h3,html[lang="ar"] .card-head h4,html[lang="ar"] .kpi h5{letter-spacing:0}
-h1,h2,h3,.drill-head h3,.page-ctrls h3,.mid-title h2{font-family:var(--ff-head)}
+h1,h2,h3,.drill-head h3,.page-ctrls h3{font-family:var(--ff-head)}
 .kpi-val b,.mring .val,.dk b,.drill-head h3{font-family:var(--ff-num)}
 .chart svg text{font-family:var(--ff-body)}
 .chart svg text.num{font-family:var(--ff-num)}
@@ -140,11 +140,7 @@ input,select{font-family:inherit}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brand small{display:block;color:var(--muted);font-weight:400;font-size:10.5px;letter-spacing:2.5px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mid-title{text-align:center;flex:1;min-width:0}
-.mid-title h2{font-size:19px;font-weight:800;letter-spacing:.4px;
-  text-shadow:0 0 26px rgba(239,31,37,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mid-title span{display:block;font-size:10px;color:var(--faint);letter-spacing:3.2px;margin-top:2px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* R36: .mid-title removed — the topbar keeps the brand + controls only */
 .ctrls{display:flex;align-items:center;gap:10px;min-width:0;flex:0 1 auto;justify-content:flex-end;flex-wrap:wrap}
 .live{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--muted);
   padding:6px 12px;border-radius:999px;border:1px solid var(--brd-soft);background:rgba(255,255,255,.03)}
@@ -159,7 +155,6 @@ input,select{font-family:inherit}
   border:1px solid var(--brd);background:var(--accent-soft);white-space:nowrap;
   transition:border-color .2s;max-width:34vw;overflow:hidden;text-overflow:ellipsis}
 .date-chip:hover{border-color:var(--brd-hov)}
-@media (max-width:1250px){ .mid-title{display:none} }
 @media (max-width:720px){
   .topbar{padding:10px 12px;gap:10px}
   .brand{gap:11px}
@@ -572,7 +567,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
 }
 @media (max-width:900px){
-  .mid-title{display:none}
+  /* R36: mid-title rule dropped */
   .shell{height:auto;min-height:calc(100vh - 16px);margin-block:8px}
 }
 @media (max-width:720px){
@@ -1293,7 +1288,6 @@ body{
   border-bottom:1px dashed rgba(217,168,107,.28);
 }
 .brand .logo{filter:drop-shadow(0 4px 14px rgba(0,0,0,.6))}
-.mid-title h2{text-shadow:0 0 26px rgba(217,168,107,.4)}
 .live{border-color:rgba(217,168,107,.28)}
 .live i{background:#D9A86B}
 @keyframes ping{
@@ -2085,3 +2079,24 @@ input:disabled, select:disabled { cursor: var(--cur-needle) !important; }
 @media (max-width: 1350px) { #otKpis { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 1180px) { #otKpis { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 720px)  { #otKpis { grid-template-columns: 1fr; } }
+
+/* ===== R36 — loading face (صلي علي النبي) + manager-home month/year ===== */
+
+/* (1) The no-data box wears a LOADING face while the server data is on
+   its way — spinner + صلي علي النبي. The empty face (upload prompt)
+   shows only when the server truly has no months or the sync failed. */
+.nd-load{display:none;flex-direction:column;align-items:center;gap:18px;padding:8px 0 4px}
+.nd-box.loading svg,.nd-box.loading h3,.nd-box.loading p,.nd-box.loading .nd-btn{display:none}
+.nd-box.loading .nd-load{display:flex}
+.nd-spin{width:36px;height:36px;border-radius:50%;
+  border:3px solid rgba(217,168,107,.22);border-top-color:#D9A86B;
+  animation:ndSpin .9s linear infinite}
+@keyframes ndSpin{to{transform:rotate(360deg)}}
+.nd-load b{font-size:23px;font-weight:800;color:#D9A86B}
+
+/* (2) Manager home ONLY: the month + year selects own the period — the
+   من/إلى pocket steps aside there, and يومي/أسبوعي/شهري bucket the
+   chosen month. Every other page keeps its full filter row untouched. */
+.fgroup[data-fg="mhmy"]{display:none}
+body.pg-mhome .fgroup[data-fg="mhmy"]{display:flex;flex:1 1 260px}
+body.pg-mhome .fgroup[data-fg="dates"]{display:none !important}
