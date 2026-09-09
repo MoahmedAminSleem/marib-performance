@@ -1,21 +1,21 @@
-الجولة 34 — الأوفر تايم بالأعداد في الموقع كله (2026-09-09)
+الجولة 35 — سجل العمليات: توقيت محلي 24 ساعة + «التاريخ الأول» + إكسل xlsx بالمدى (2026-09-09)
 الملفات دي هي كل اللي محتاج ترفعه على GitHub (Add file → Upload files → اسحبها).
-الـ ZIP تراكمي: شامل R28 + R29 + R30 + R31 + R32 + R33 + R34 — يشتغل حتى لو مرفعتش الجولات اللي فاتت.
+الـ ZIP تراكمي: شامل R28 → R35 — يشتغل حتى لو مرفعتش الجولات اللي فاتت.
 
 عدد الملفات: 16
 
-dbd5c76e83f0db6ee65820760c4f8824  public/app/app.css
-78d8017c13f2ea8e3e0c9f6a5157efa2  public/app/app_main.js
+83b09d0cee55447b0f871291589c4cea  public/app/app.css
+5c8d8f8a8439de5fca8a4df711d05517  public/app/app_main.js
 8e4b5973de19ac58a5a27d61ae9da905  public/app/app_charts.js
 3da2ddbd3fd8a4dd39f5399b7523fc9b  public/app/app_core.js
-38ebed57672dc537660746a48361927d  public/app/i18n_dict.js
+afe858f5e92ef5cfd9a8633f71b0d567  public/app/i18n_dict.js
 8a58dc5a1c55021307db117c972ad709  public/app/i18n_core.js
 b3933a11b77d5047b4da5bb814771f4a  public/app/cursor_needle.png
 5f855c24771eed101fabb010aafd1672  public/app/cursor_needle_thread.png
-abcd31ea610a6b7a1d46c15babf5c967  src/app/skeleton.ts
+2a0e3ebde5608b9e07669ff8e992ff8e  src/app/skeleton.ts
 3c13d6e8569f06d541507ff011e78a67  src/app/api/settings/route.ts
 b61c5070695f2997e73c0952a382cb9e  شرح-رسومات-رئيسية-المدير.html
-e3eec8e917a52f6ac1913abbfb06eed2  سير-العمل.html
-3e784ac945fb9c4902b06c5db02191b5  README.md
+4d442274d23f67bda14b2970eae7be4c  سير-العمل.html
+2b06fffef879771dde99c35707ec907b  README.md
 4e5a36d5ddca6bc56e50349284de7f94  next.config.ts
-3039d01e1bae0e15697eb8eee0a1f132  دليل-الجولة-34.html
+14fbae9d49352d1f80e9839ddd9e1d4b  دليل-الجولة-35.html

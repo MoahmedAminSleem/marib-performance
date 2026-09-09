@@ -527,7 +527,7 @@ cls_count:  { ar: " شخص في التصنيف ده", en: " people in this group
 au_sub:       { ar: "ACTIVITY LOG", en: "سجل العمليات", tr: "İŞLEM GÜNLÜĞÜ" },
 au_period:    { ar: "الفترة", en: "Period", tr: "Dönem" },
 au_all_time:  { ar: "من ساعة إنشاء الموقع", en: "Since site creation", tr: "Site kurulduğundan beri" },
-au_export:    { ar: "تنزيل Excel", en: "Download Excel", tr: "Excel indir" },
+au_export:    { ar: "تنزيل إكسل xlsx", en: "Download Excel (xlsx)", tr: "Excel indir (xlsx)" },
 au_entities:  { ar: "أنشطة الملفات والإعدادات — من أنشأها وآخر 3 تعديلات", en: "Files & settings — who created them and the last 3 edits", tr: "Dosyalar ve ayarlar — kim oluşturdu ve son 3 düzenleme" },
 au_events:    { ar: "كل العمليات بالتفصيل", en: "Every operation in detail", tr: "Tüm işlemler ayrıntısıyla" },
 au_creator:   { ar: "أنشأه", en: "Created by", tr: "Oluşturan" },
@@ -545,6 +545,19 @@ au_excel_sheet1: { ar: "الأنشطة والتعديلات", en: "Files & edits
 au_excel_sheet2: { ar: "كل العمليات", en: "All events", tr: "Tüm işlemler" },
 au_exported:  { ar: "تم تنزيل سجل العمليات كإكسل", en: "Activity log exported to Excel", tr: "İşlem günlüğü Excel'e aktarıldı" },
 au_hint:      { ar: "السجل بيتسجل تلقائيًا: كل رفع بيانات، تعديل إعدادات، إنشاء أو حذف مستخدم، ودخول وخروج — كل تعديل جديد بيشيل أقدم تعديل من التلاتة الأخيرة وبيضيف نفسه، والمنشئ بيفضل ثابت دايمًا.", en: "Recorded automatically: every data upload, settings change, user create/delete and sign-in/out — each new edit drops the oldest of the last three and adds itself; the creator entry never changes.", tr: "Otomatik kaydedilir: her yükleme, ayar değişikliği, kullanıcı işlemi ve giriş/çıkış — her düzenleme son üçten en eskiyi çıkarır; oluşturan kalıcıdır." },
+
+/* ---------- R35: audit stepper (date first, then view or export) ---------- */
+au_step1:    { ar: "حدد التاريخ الأول", en: "Pick the date first", tr: "Önce tarihi seçin" },
+au_step1_d:  { ar: "من امتى وإلى امتى عايز سجل العمليات؟", en: "From when to when do you want the log?", tr: "Günlük hangi tarihten hangisine?" },
+au_step2:    { ar: "بعد كده اختار", en: "Then choose", tr: "Sonra seçin" },
+au_step2_d:  { ar: "تشوف العمليات على الموقع ولا تنزّلها ملف إكسل xlsx — مش CSV", en: "View the log on the site or download it as an xlsx Excel file — not CSV", tr: "Günlüğü sitede görün ya da xlsx Excel dosyası olarak indirin — CSV değil" },
+au_pick:     { ar: "لسه محددتش فترة — اختار تاريخ من فوق أو دوس «من ساعة إنشاء الموقع»، وبعدين اختار عرض أو تنزيل", en: "No period picked yet — choose a date above (or “since site creation”), then view or download", tr: "Henüz dönem seçilmedi — yukarıdan bir tarih seçin (veya “kuruluştan beri”), sonra görüntüleyin veya indirin" },
+au_show:     { ar: "عرض على الموقع", en: "View on site", tr: "Sitede göster" },
+au_c_time:   { ar: "الوقت", en: "Time", tr: "Zaman" },
+au_c_user:   { ar: "المستخدم", en: "User", tr: "Kullanıcı" },
+au_c_action: { ar: "العملية", en: "Action", tr: "İşlem" },
+au_c_subject:{ ar: "الموضوع", en: "Subject", tr: "Konu" },
+au_c_label:  { ar: "التفاصيل", en: "Details", tr: "Ayrıntı" },
 
 /* ---------- storage panel (R24 #13) ---------- */
 stg_sub:      { ar: "DATABASE STORAGE", en: "مساحة قاعدة البيانات", tr: "VERİTABANI DEPOLAMA" },

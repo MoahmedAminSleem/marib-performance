@@ -2668,7 +2668,7 @@ var App = (function () {
       if (el) el.hidden = v !== view;
     });
     /* entering a view loads its data (same calls the old accordion did) */
-    if (view === "audit" && MaribAuth.isDev && MaribAuth.isDev()) loadAudit();
+    if (view === "audit" && MaribAuth.isDev && MaribAuth.isDev()) auditReset();
     if (view === "storage" && MaribAuth.isDev && MaribAuth.isDev()) loadStorage();
     if (view === "mhome" && MaribAuth.isDev && MaribAuth.isDev()) loadMhome();
   }
@@ -2903,9 +2903,16 @@ var App = (function () {
 
   /* ---------- audit section (R24 #9 — Amin only) ---------- */
   var auData = null;
+  /* R35: API timestamps are UTC (Neon TIMESTAMPTZ) — show them on the
+     viewer's local clock, 24-hour, so صبح/ليل is unmistakable. Drives the
+     audit panel, its Excel export and the Data page "last upload" column. */
   function auWhen(iso) {
     if (!iso) return "—";
-    return String(iso).replace("T", " ").slice(0, 16);
+    var s = String(iso), d = null;
+    try { d = new Date(/[Zz]$|[+\-]\d{2}:?\d{2}$/.test(s) ? s : s.replace(" ", "T") + "Z"); } catch (e) { d = null; }
+    if (!d || isNaN(d.getTime())) return s.replace("T", " ").slice(0, 16);
+    function p2(n) { return (n < 10 ? "0" : "") + n; }
+    return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + " " + p2(d.getHours()) + ":" + p2(d.getMinutes());
   }
   function auEntityPretty(x) {
     var e = x.entity || "";
@@ -2917,10 +2924,37 @@ var App = (function () {
     if (e === "site") return T("set_title");
     return e;
   }
+  /* R35: date-first flow — the log never auto-loads on open. Step 1: the
+     user picks a period (or "since site creation"). Step 2: he chooses
+     view-on-site or the Excel export. auRange remembers which period
+     auData holds, so the export can never ship a stale range. */
+  var auAllMode = false, auRange = "";
+  function auCurRange() {
+    return auAllMode ? "all" : ($("auFrom").value + "|" + $("auTo").value);
+  }
+  function auValid() {
+    return auAllMode || !!($("auFrom").value || $("auTo").value);
+  }
+  function auditSyncButtons() {
+    var ok = auValid();
+    $("auShow").disabled = !ok;
+    $("auExport").disabled = !ok;
+    var hint = $("auPickHint");
+    if (hint) hint.hidden = ok;
+  }
+  function auditReset() {
+    auData = null; auRange = ""; auAllMode = false;
+    $("auFrom").value = ""; $("auTo").value = "";
+    var tb = $("auTables"); if (tb) tb.hidden = true;
+    var hint = $("auPickHint"); if (hint) hint.hidden = false;
+    auditSyncButtons();
+  }
   function loadAudit() {
     var from = $("auFrom").value, to = $("auTo").value;
     MaribCloud.auditGet(from, to).then(function (r) {
       auData = r;
+      auRange = auCurRange();
+      var tb = $("auTables"); if (tb) tb.hidden = false;
       renderAudit();
     }).catch(function (e) {
       toast(e && e.status === 403 ? T("toast_need_dev") : T("toast_sync_err"), "err");
@@ -2954,44 +2988,69 @@ var App = (function () {
         "<td>" + esc(subj) + (ev.label ? ' <small style="color:#7E92A8">· ' + esc(ev.label) + "</small>" : "") + "</td></tr>";
     }).join("");
     if (!evs.length) vrows = "<tr><td colspan='4' style='padding:16px;color:#A9B7C7'>" + T("au_empty") + "</td></tr>";
-    $("auEvents").innerHTML = "<thead><tr><th>" + T("dt_last_sync") + "</th><th>" + T("t_sup") + "</th><th>" + T("set_audit") + "</th><th>" + T("dt_month") + "</th></tr></thead><tbody>" + vrows + "</tbody>";
+    $("auEvents").innerHTML = "<thead><tr><th>" + T("au_c_time") + "</th><th>" + T("au_c_user") + "</th><th>" + T("au_c_action") + "</th><th>" + T("au_c_subject") + "</th></tr></thead><tbody>" + vrows + "</tbody>";
   }
   function exportAudit() {
-    if (!auData) { toast(T("toast_sync_err"), "err"); return; }
-    /* SheetJS loads on demand (R24 perf) — the export waits for it once */
-    ensureXLSX().then(function () {
-    try {
-      var wb = XLSX.utils.book_new();
-      function xesc(v) {
-        var sv = String(v == null ? "" : v);
-        return /^[=+\-@]/.test(sv) ? "'" + sv : sv;   /* Excel formula-injection guard */
+    if (!auValid()) { toast(T("au_pick"), "err"); return; }
+    var build = function () {
+      if (!auData) { toast(T("toast_sync_err"), "err"); return; }
+      /* SheetJS loads on demand (R24 perf) — the export waits for it once */
+      ensureXLSX().then(function () {
+      try {
+        var wb = XLSX.utils.book_new();
+        function xesc(v) {
+          var sv = String(v == null ? "" : v);
+          return /^[=+\-@]/.test(sv) ? "'" + sv : sv;   /* Excel formula-injection guard */
+        }
+        var ents = auData.entities || [];
+        var r1 = [[T("au_entities")], [T("au_c_subject"), T("au_creator"), T("au_c_time"), T("au_edits"), T("au_total_edits")]];
+        ents.forEach(function (x) {
+          var edits = (x.edits || []).map(function (ed) { return ed.actor + " @ " + auWhen(ed.at); }).join(" | ");
+          r1.push([xesc(auEntityPretty(x) + (x.label ? " · " + x.label : "")), xesc(x.creator.actor), auWhen(x.creator.at), xesc(edits || T("au_no_edits")), x.totalEdits]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r1), T("au_excel_sheet1"));
+        var evs = auData.events || [];
+        var r2 = [[T("au_c_time"), T("au_c_user"), T("au_c_action"), T("au_c_subject"), T("au_c_label")]];
+        evs.forEach(function (ev) {
+          r2.push([auWhen(ev.at), xesc(ev.actor), T("au_a_" + ev.action), xesc(auEntityPretty(ev)), xesc(ev.label || "")]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r2), T("au_excel_sheet2"));
+        /* R35: the file name carries the exported period (ASCII-safe) */
+        var fn = auAllMode ? "marib-audit-all.xlsx"
+          : "marib-audit-" + ($("auFrom").value || "x") + "_" + ($("auTo").value || "x") + ".xlsx";
+        XLSX.writeFile(wb, fn);
+        toast(T("au_exported"), "ok");
+      } catch (e) {
+        toast(T("toast_sync_err"), "err");
       }
-      var ents = auData.entities || [];
-      var r1 = [[T("au_entities")], [T("dt_month"), T("au_creator"), T("f_from"), T("au_edits"), T("au_total_edits")]];
-      ents.forEach(function (x) {
-        var edits = (x.edits || []).map(function (ed) { return ed.actor + " @ " + auWhen(ed.at); }).join(" | ");
-        r1.push([xesc(auEntityPretty(x) + (x.label ? " · " + x.label : "")), xesc(x.creator.actor), auWhen(x.creator.at), xesc(edits || T("au_no_edits")), x.totalEdits]);
-      });
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r1), "Log");
-      var evs = auData.events || [];
-      var r2 = [[T("dt_last_sync"), T("t_sup"), T("set_audit"), T("dt_month"), T("dt_month")]];
-      evs.forEach(function (ev) {
-        r2.push([auWhen(ev.at), xesc(ev.actor), T("au_a_" + ev.action), xesc(auEntityPretty(ev)), xesc(ev.label || "")]);
-      });
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r2), "Events");
-      XLSX.writeFile(wb, "marib-activity-log.xlsx");
-      toast(T("au_exported"), "ok");
-    } catch (e) {
-      toast(T("toast_sync_err"), "err");
-    }
-    }).catch(function () { toast(T("toast_sync_err"), "err"); });
+      }).catch(function () { toast(T("toast_sync_err"), "err"); });
+    };
+    /* R35: fetch the chosen range first if it is not already loaded */
+    if (auData && auRange === auCurRange()) { build(); return; }
+    MaribCloud.auditGet($("auFrom").value, $("auTo").value).then(function (r) {
+      auData = r;
+      auRange = auCurRange();
+      build();
+    }).catch(function (e) {
+      toast(e && e.status === 403 ? T("toast_need_dev") : T("toast_sync_err"), "err");
+    });
   }
   function bindAuditPanel() {
+    /* R35: choosing a date no longer fires a request — it only arms the
+       two action buttons; the request happens when the user clicks */
     ["auFrom", "auTo"].forEach(function (id) {
-      $(id).addEventListener("change", loadAudit);
+      $(id).addEventListener("change", function () {
+        if ($("auFrom").value || $("auTo").value) auAllMode = false;
+        auditSyncButtons();
+      });
     });
     $("auAll").addEventListener("click", function () {
       $("auFrom").value = ""; $("auTo").value = "";
+      auAllMode = true;
+      auditSyncButtons();
+    });
+    $("auShow").addEventListener("click", function () {
+      if (!auValid()) { toast(T("au_pick"), "err"); return; }
       loadAudit();
     });
     $("auExport").addEventListener("click", exportAudit);

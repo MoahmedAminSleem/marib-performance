@@ -1732,6 +1732,16 @@ button:disabled, .us-ic:disabled, .us-sw input:disabled { cursor: not-allowed; }
 .au-chip.act-delete { background: rgba(248,113,113,.14); color: #F87C7C; border: 1px solid rgba(248,113,113,.35); }
 .au-wrap { max-height: 300px; overflow-y: auto; border: 1px solid rgba(169,183,199,.16); border-radius: 11px; padding: 4px 8px; background: rgba(9,16,26,.35); }
 
+/* R35: date-first stepper — pick a period, then view or export */
+.au-step { display: flex; flex-direction: column; gap: 2px; margin: 10px 0 7px; }
+.au-step b { color: #E9C68A; font-size: 12.5px; }
+.au-step small { color: #A9B7C7; font-size: 11px; }
+.au-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.au-x-btn.au-view { background: linear-gradient(180deg, #7FB3E8, #5B8FD6); border-color: rgba(127,179,232,.4); color: #10161F; }
+.au-x-btn:disabled { opacity: .42; filter: saturate(.35); pointer-events: none; }
+.au-pick-hint { color: #A9B7C7; font-size: 11px; margin: 8px 2px 0; padding: 9px 11px; border: 1px dashed rgba(217,168,107,.4); border-radius: 10px; background: rgba(217,168,107,.05); }
+#auTables[hidden] { display: none; }
+
 /* ---------- 9) storage panel (R24 #13) ---------- */
 .stg-bar { position: relative; height: 22px; border-radius: 999px;
   background: rgba(9,16,26,.7); border: 1px solid rgba(169,183,199,.2); overflow: hidden; }

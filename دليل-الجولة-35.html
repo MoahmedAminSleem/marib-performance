@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل الجولة 35 — سجل العمليات: التوقيت الصح + التاريخ الأول + إكسل حقيقي</title>
+<style>
+:root{--bg:#0A101C;--bg2:#101a2b;--card:#131f33;--line:#26364f;--txt:#DCE5EF;--dim:#A9B7C7;--gold:#C49A6C;--gold2:#E9C68A;--blue:#7FB3E8;--green:#4FD98D}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.9;padding:26px 16px}
+.wrap{max-width:860px;margin:0 auto}
+h1{color:var(--gold2);font-size:23px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+h2{color:var(--gold2);font-size:17px;margin:26px 0 10px;border-inline-start:4px solid var(--gold);padding-inline-start:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0}
+.step{display:flex;gap:12px;margin:12px 0;align-items:flex-start}
+.n{background:var(--gold);color:#141B26;font-weight:800;min-width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+.path{background:rgba(196,154,108,.14);color:var(--gold2);padding:2px 8px;border-radius:7px;font-size:12.5px;font-family:Consolas,monospace;direction:ltr;display:inline-block}
+code{background:rgba(127,179,232,.1);color:var(--blue);padding:2px 7px;border-radius:6px;font-size:12.5px;direction:ltr;display:inline-block;font-family:Consolas,monospace}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{padding:8px 10px;border:1px solid var(--line);text-align:start}
+th{color:var(--gold2);background:rgba(196,154,108,.07);font-size:12px}
+td{color:var(--txt)}
+.small{font-size:12px;color:var(--dim)}
+.g{color:var(--green);font-weight:700}
+ul{margin:8px 22px 8px 0}
+li{margin-bottom:7px}
+.warn{background:rgba(217,168,107,.08);border:1px dashed var(--gold);border-radius:10px;padding:10px 14px;color:var(--gold2);font-size:13px;margin:12px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🟢 الجولة 35 — سجل العمليات: التوقيت الصح + التاريخ الأول + إكسل حقيقي</h1>
+<div class="sub">جولة تعديل عرض فقط — مفيش أي بيانات أو مستخدمين اتلمسوا · مبنية فوق R28 → R35 (الـ ZIP تراكمي: بيشتغل حتى لو R29–R34 ما اترفعتوش)</div>
+
+<h2>إيه اللي كان غلط؟ (3 حاجات)</h2>
+<div class="card">
+<ul>
+<li><b>⏰ الوقت كان غلط خالص:</b> «تسجيل دخول» الساعة 1 الظهر كان مكتوب 10 الصبح — لأن السيرفر بيسجل بالتوقيت العالمي UTC والموقع كان بيعرضه زي ما هو (ورا 3 ساعات عن القاهرة).</li>
+<li><b>📋 يجرّ كل حاجة علطول:</b> اول ما تدوس زرار «العمليات» في الإعدادات كان بينزّل سجل الموقع كله فورًا — المطلوب: يسألني عن التاريخ الأول وبعدين أختار.</li>
+<li><b>📊 والإكسل:</b> المطلوب ملف <b>Excel حقيقي بصيغة xlsx</b> — مش CSV.</li>
+</ul>
+</div>
+
+<h2>اللي اتعمل</h2>
+<div class="card">
+<div class="step"><div class="n">1</div><div><b>التوقيت المحلي 24 ساعة:</b> كل الأوقات في سجل العمليات بتتحول لتوقيت <b>جهاز اللي بيتفرج</b> (القاهرة عندك) وبنظام 24 ساعة — 14:52 تعرفها بعد الضهر و04:39 تعرفها الفجر. نفس الإصلاح نزل على عمود «آخر رفع» في صفحة البيانات وملف الإكسل.</div></div>
+<div class="step"><div class="n">2</div><div><b>التدفق الجديد خطوتين:</b> افتح العمليات → <b>حدد التاريخ الأول</b> (من/إلى أو «من ساعة إنشاء الموقع») → <b>بعد كده اختار:</b> زرار أزرق «عرض على الموقع» أو زرار دهبي «تنزيل إكسل». الزرارين رماديين مقفولين لحد ما تحدد، وفي تنبيه «لسه محددتش فترة» بيختفي بمجرد الاختيار. لو قفلت التبويب ورجعته بيسألك من الأول.</div></div>
+<div class="step"><div class="n">3</div><div><b>إكسل xlsx حقيقي:</b> اسم الملف بيحمل المدى زي <code>marib-audit-2026-09-09_2026-09-09.xlsx</code> (أو <code>marib-audit-all.xlsx</code>) — شيتين بأسماء عربية «الأنشطة والتعديلات» و«كل العمليات» برؤوس سليمة (الوقت · المستخدم · العملية · الموضوع · التفاصيل) والأوقات جواه محلية. ولو غيّرت التاريخ بعد ما عرضت بيجيب المدى الجديد قبل التنزيل.</div></div>
+<div class="step"><div class="n">4</div><div><b>رؤوس أعمدة سليمة:</b> جدول العمليات كان واخد رؤوس مترزّقة من صفحات تانية («آخر رفع · المشرف · الشهر») — بقت «الوقت · المستخدم · العملية · الموضوع».</div></div>
+</div>
+
+<h2>خطوات الرفع (زي كل جولة)</h2>
+<div class="card">
+<ol>
+<li>فك ضغط <code>R35-audit-time-excel.zip</code>.</li>
+<li>افتح رابط الـ repo على GitHub → <b>Add file → Upload files</b>.</li>
+<li>اسحب <b>محتويات مجلد ZIP</b> (مش مجلد الـ ZIP نفسه) — 7 ملفات.</li>
+<li>اكتب Commit message زي <code>R35: audit local time + date-first flow + xlsx</code> → <b>Commit changes</b>.</li>
+<li>استنى دقيقة — Vercel بينشر لوحده.</li>
+</ol>
+</div>
+
+<h2>الملفات المتغيرة (7)</h2>
+<table>
+<tr><th>الملف</th><th>اللي اتغير فيه</th></tr>
+<tr><td><span class="path">public/app/app_main.js</span></td><td>دالة الوقت (UTC→محلي 24س) + منطق «التاريخ الأول» + التصدير الواعي للمدى + رؤوس الجداول</td></tr>
+<tr><td><span class="path">public/app/i18n_dict.js</span></td><td>13 مفتاح ترجمة جديد (خطوات/أزرار/أعمدة) عربي + إنجليزي + تركي</td></tr>
+<tr><td><span class="path">public/app/app.css</span></td><td>ستايل الخطوتين والأزرار الجديدة والزرار المقفول والتنبيه</td></tr>
+<tr><td><span class="path">src/app/skeleton.ts</span></td><td>هيكل لوحة سجل العمليات الجديدة (خطوات + زرارين + جداول داخل حاوية)</td></tr>
+<tr><td><span class="path">سير-العمل.html</span></td><td>بلوك الجولة 35 + صف جدول الجولات + الفوتر</td></tr>
+<tr><td><span class="path">README.md</span></td><td>تحديث رقم الجولة</td></tr>
+<tr><td><span class="path">دليل-الجولة-35.html</span></td><td>الملف ده</td></tr>
+</table>
+
+<h2>اتأكد بعد الرفع (6 فحوصات)</h2>
+<div class="card">
+<ol>
+<li>سجّل دخول → الإعدادات → «سجل العمليات» → <b>مفيش أي حاجة اتنزّلت تلقائي</b> — لازم يظهرلك «حدد التاريخ الأول» والزرارين رماديين.</li>
+<li>حدد من/إلى النهاردة → الزرارين اشتغلوا → دوس «عرض على الموقع» → <b>ساعة تسجيل دخولك لازم تكون بتوقيتك الصح</b> (لو دخلت 2 الظهر يكتب 14:xx).</li>
+<li>نفس المدى → دوس «تنزيل إكسل» → ملف <code>.xlsx</code> بيفتح في Excel باسم فيه التاريخين، وشيتين عربيين، والأوقات جواه زي الموقع.</li>
+<li>دوس «من ساعة إنشاء الموقع» → عرض → كل العمليات من أول إنشاء الموقع تظهر.</li>
+<li>صفحة «البيانات» → عمود «آخر رفع» → الوقت بتوقيتك الصح (كان ورا 3 ساعات).</li>
+<li>بدّل اللغة EN/TR → الخطوات والأزرار بيترجموا سليم.</li>
+</ol>
+</div>
+
+<div class="warn"><b>لو حاجة من دول مش مظبوطة بعد الرفع:</b> اصبر دقيقة (Vercel cache) وعمل Hard Refresh (Ctrl+Shift+R). لو استمرت — ارجع لملفات الجولة اللي قبلها (كل ملف مستقل) وابعت للمساعد سكرين شوت.</div>
+
+<h2>أسئلة متكررة</h2>
+<div class="card">
+<ul>
+<li><b>ليه ساعة فاتح بتظهر غير ساعتي؟</b> الوقت بيتعرض بتوقيت <b>جهاز كل واحد</b> — انت في القاهرة بتشوف توقيت القاهرة وفاتح في تركيا بيشوف توقيت تركيا، والاتنين صح من ناحيتهم، والتخزين نفسه موحّد عالمي (UTC) فمفيش أي تعارض في البيانات.</li>
+<li><b>الإكسل CSV؟</b> لأ — ملف xlsx حقيقي (صيغة Office المضغوطة) من مكتبة SheetJS، الاسم بيقول المدى والامتداد .xlsx.</li>
+<li><b>ليه بيطلب مني تاريخ كل مرة؟</b> ده طلبك انت — بدل ما ينزّل كل حاجة تلقائي. لو عايز المدى الكامل بضغطة واحدة: «من ساعة إنشاء الموقع» وبعدين اختار.</li>
+<li><b>العمليات القديمة اتغيرت أوقاتها؟</b> التخزين مقلعش خالص — نفس الأوقات العالمية المخزّنة، بس العرض اتحوّل لتوقيتك. أي حاجة كانت ظاهرة «10:22» هتلاقيها دلوقتي «13:22».</li>
+<li><b>الجولة دي بتلغي اللي قبلها؟</b> لأ — الـ ZIP تراكمي وفيه كل ملفات R28 → R35 كاملة، ارفعه فوق القديم عادي.</li>
+<li><b>حد تاني هيشوف سجل العمليات؟</b> السجل للأدمن/المطوّر (Amin) زي ما هو — مفيش صلاحيات اتغيرت في الجولة دي.</li>
+</ul>
+</div>
+</div>
+</body>
+</html>
