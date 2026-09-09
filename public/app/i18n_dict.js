@@ -131,6 +131,8 @@ window.MARIB_I18N_DICT = {
   c_mhAbs:   { ar: ["نسبة الغياب", "DEVAMSIZLIK ORANI"], en: ["Absenteeism Rate", "DEVAMSIZLIK ORANI"], tr: ["Devamsızlık Oranı", "DEVAMSIZLIK ORANI"] },
   t_wrk:     { ar: "العاملين", en: "Workers", tr: "Çalışan" },
   t_reg:     { ar: "العمال الأساسيين", en: "Regular Workers", tr: "Kadrolu İşçi" }, /* R32: absence-rate denominator label */
+  t_drill:   { ar: "اضغط لعرض التفاصيل", en: "Click for details", tr: "Ayrıntılar için tıkla" }, /* R33: hover hint on drillable bars */
+  t_wrk_max: { ar: "ذروة العاملين", en: "Peak workers", tr: "Zirve çalışan" }, /* R33: peak workers in a line/section tooltip */
   t_abs_rate:{ ar: "نسبة الغياب", en: "Absence Rate", tr: "Devamsızlık Oranı" },
   t_pcs_w:   { ar: "قطعة / عامل", en: "Pieces / Worker", tr: "Parça / İşçi" },
   nav_mhome: { ar: "الرئيسية", en: "Overview", tr: "Genel Bakış" },
@@ -215,7 +217,9 @@ window.MARIB_I18N_DICT = {
   k_ot_avg:    { ar: ["متوسط الأوفر اليومي", "DAILY OT AVG", "MEAN"], en: ["Daily OT Average", "متوسط الأوفر اليومي", "MEAN"], tr: ["Günlük FM Ortalaması", "DAILY OT AVG", "ORT"] },
   k_ot_peak:   { ar: ["أعلى يوم أوفر", "PEAK OT DAY", "MAX"], en: ["Peak OT Day", "أعلى يوم أوفر", "MAX"], tr: ["Zirve FM Günü", "PEAK OT DAY", "MAKS"] },
   k_ot_eff:    { ar: ["كفاءة الدقائق", "MINUTES EFFICIENCY", "EFF"], en: ["Minutes Efficiency", "كفاءة الدقائق", "EFF"], tr: ["Süre Verimi", "MINUTES EFFICIENCY", "VERİM"] },
+  k_ot_wrk:    { ar: ["متوسط العاملين الحاضرين", "AVG PRESENT WORKERS", "AVG"], en: ["Avg Present Workers", "متوسط العاملين الحاضرين", "AVG"], tr: ["Ortalama Hazır Çalışan", "AVG PRESENT WORKERS", "ORT"] }, /* R33 */
   ot_sub_of_avail: { ar: "من إجمالي الدقائق المتاحة", en: "of total available minutes", tr: "toplam kullanılabilir süreden" },
+  ot_sub_wrk: { ar: "متوسط الحاضرين يوميًا في الفترة", en: "avg daily present workers in range", tr: "dönemde günlük ortalama hazır çalışan" }, /* R33 */
   k_at_rate:   { ar: ["نسبة الحضور", "ATTENDANCE RATE", "MEAN"], en: ["Attendance Rate", "نسبة الحضور", "MEAN"], tr: ["Devamlılık Oranı", "ATTENDANCE RATE", "ORT"] },
   k_at_abs:    { ar: ["إجمالي الغياب", "TOTAL ABSENCES", "DAYS"], en: ["Total Absences", "إجمالي الغياب", "DAYS"], tr: ["Toplam Devamsızlık", "TOTAL ABSENCES", "GÜN"] },
   k_at_peak:   { ar: ["أعلى حضور يومي", "PEAK WORKFORCE", "MAX"], en: ["Peak Workforce", "أعلى حضور يومي", "MAX"], tr: ["Zirve İşgücü", "PEAK WORKFORCE", "MAKS"] },
@@ -327,7 +331,7 @@ window.MARIB_I18N_DICT = {
   th_sups:    { ar: ["#", "المشرف", "الهدف", "الفعلي", "التحقيق", "نسبة OT", "التقييم"], en: ["#", "Supervisor", "Target", "Actual", "Achievement", "OT %", "Status"], tr: ["#", "Vardiya Şefi", "Hedef", "Gerçek", "Gerçekleşme", "FM %", "Durum"] },
   th_secs:    { ar: ["#", "القسم", "الهدف", "الفعلي", "التحقيق", "نسبة OT", "التقييم", "أقصى حضور", "دقائق أوفر"], en: ["#", "Section", "Target", "Actual", "Achievement", "OT %", "Status", "Max Attendance", "OT Minutes"], tr: ["#", "Bölüm", "Hedef", "Gerçek", "Gerçekleşme", "FM %", "Durum", "Maks. Devam", "FM (dk)"] },
   th_pm:      { ar: ["#", "الماكينة", "الخطوط", "السجلات", "الهدف", "الفعلي", "التحقيق", "الدقائق المتاحة", "المنتجة", "الكفاءة"], en: ["#", "Machine", "Lines", "Records", "Target", "Actual", "Achievement", "Available Min", "Produced Min", "Efficiency"], tr: ["#", "Makine", "Hatlar", "Kayıtlar", "Hedef", "Gerçek", "Gerçekleşme", "Kullanılabilir (dk)", "Üretilen (dk)", "Verim"] },
-  th_ot:      { ar: ["اليوم", "الدقائق المتاحة", "دقائق الأوفر", "نسبة OT", "الدقائق المنتجة", "الكفاءة"], en: ["Day", "Available Minutes", "OT Minutes", "OT %", "Produced Minutes", "Efficiency"], tr: ["Gün", "Kullanılabilir (dk)", "FM (dk)", "FM Oranı", "Üretilen (dk)", "Verim"] },
+  th_ot:      { ar: ["اليوم", "الدقائق المتاحة", "دقائق الأوفر", "نسبة OT", "العاملين", "الدقائق المنتجة", "الكفاءة"], en: ["Day", "Available Minutes", "OT Minutes", "OT %", "Workers", "Produced Minutes", "Efficiency"], tr: ["Gün", "Kullanılabilir (dk)", "FM (dk)", "FM Oranı", "Çalışan", "Üretilen (dk)", "Verim"] }, /* R33: workers column */
   th_att:     { ar: ["اليوم", "الحضور", "الحاضرين", "الغياب"], en: ["Day", "Attendance", "Present", "Absent"], tr: ["Gün", "Devam", "Gelen", "Devamsız"] },
   at_tab_workers: { ar: "حضور وغياب العمال", en: "Workers Attendance", tr: "İşçi Devamlılığı" },
   at_tab_sups:    { ar: "حضور وغياب المشرفين", en: "Supervisors Attendance", tr: "Şef Devamlılığı" },

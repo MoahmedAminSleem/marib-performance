@@ -261,6 +261,7 @@ var MaribCharts = (function () {
   function tipHTML(p) {
     var h = '<div class="t">' + (p.tipTitle || p.label) + "</div>";
     (p.tip || []).forEach(function (r) { h += '<div class="r"><span>' + r[0] + "</span><b>" + r[1] + "</b></div>"; });
+    if (p.drill) h += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
     return h;
   }
 
@@ -379,6 +380,7 @@ var MaribCharts = (function () {
         bindTip(row, function () {
           var hh = '<div class="t">' + esc(it.label) + "</div>";
           (it.tip || [[opts.valueName || TT("t_value", "القيمة"), valTxt]]).forEach(function (r) { hh += '<div class="r"><span>' + esc(r[0]) + "</span><b>" + esc(r[1]) + "</b></div>"; });
+          if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
           return hh;
         });
         bindDrill(row, it.drill);
@@ -464,6 +466,7 @@ var MaribCharts = (function () {
             bindTip(r, function () {
               var hh = '<div class="t">' + esc(it.label) + "</div>";
               hh += '<div class="r"><span>' + esc(v.name || "") + "</span><b>" + (opts.fmt ? opts.fmt(v.v) : U.fmtInt(v.v)) + "</b></div>";
+              if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
               return hh;
             });
             /* data labels for grouped bars: vertical (rotated) value inside the bar */
@@ -485,6 +488,7 @@ var MaribCharts = (function () {
           bindTip(r, function () {
             var hh = '<div class="t">' + esc(it.label) + "</div>";
             (it.tip || [[opts.valueName || TT("t_value", "القيمة"), lab]]).forEach(function (rr) { hh += '<div class="r"><span>' + esc(rr[0]) + "</span><b>" + esc(rr[1]) + "</b></div>"; });
+            if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
             return hh;
           });
           bindDrill(r, it.drill);
@@ -559,6 +563,7 @@ var MaribCharts = (function () {
           if (it.tip && it.tip.length) {
             /* round 8: caller-supplied tooltip rows win (e.g. share-only) */
             it.tip.forEach(function (r) { hh += '<div class="r"><span>' + esc(r[0]) + "</span><b>" + esc(r[1]) + "</b></div>"; });
+            if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
             return hh;
           }
           hh += '<div class="r"><span>' + esc(opts.valueName || TT("t_value", "القيمة")) + "</span><b>" + (opts.fmt ? opts.fmt(it.value) : U.fmtInt(it.value)) + "</b></div>";

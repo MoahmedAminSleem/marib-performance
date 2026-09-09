@@ -1160,11 +1160,21 @@ var App = (function () {
       sub: I18N.subEffOf(k.eff),
       drill: { type: "period", value: null, domain: "ot" }
     }));
+    /* R33: the OT page carried minutes and percentages only — the owner
+       asked for worker COUNTS; 5th KPI = average present workers */
+    var avgW = ser.length ? ser.reduce(function (s2, x) { return s2 + (x.ddAttW || 0); }, 0) / ser.length : null;
+    wrap.appendChild(kpiTile({
+      id: "ot5", title: TV("k_ot_wrk"), en: TS("k_ot_wrk"), badge: TB("k_ot_wrk"),
+      fmt: fmtInt, unit: T("u_worker"),
+      sub: T("ot_sub_wrk"),
+      drill: { type: "period", value: null, domain: "att" }
+    }));
 
     setKpi("ot1", k.otPct == null ? null : k.otPct * 100, pctF(2));
     setKpi("ot2", avgOt == null ? null : avgOt * 100, pctF(2));
     setKpi("ot3", peak ? peak.otPct * 100 : null, pctF(2));
     setKpi("ot4", k.eff == null ? null : k.eff * 100, pctF(1));
+    setKpi("ot5", avgW == null ? null : Math.round(avgW), fmtInt);
 
     /* daily OT % — clicking a day opens the OT details of that day */
     var cmpOtD = cmpCard("otDaily", function (cmp, k2) {
@@ -1177,7 +1187,7 @@ var App = (function () {
       points: ser.map(function (s) {
         return {
           label: s.label, y: s.otPct == null ? null : s.otPct * 100, tipTitle: wd(s.date) + " " + s.label,
-          tip: [[T("t_ot_pct"), fmtPct(s.otPct, 2)], [T("t_ot_min"), fmtInt(s.otMin)], [T("t_avail"), fmtInt(s.totalMinAvail)]],
+          tip: [[T("t_ot_pct"), fmtPct(s.otPct, 2)], [T("t_ot_min"), fmtInt(s.otMin)], [T("t_avail"), fmtInt(s.totalMinAvail)], [T("t_wrk"), fmtInt(s.ddAttW)]],
           drill: { type: "date", value: s.date, domain: "ot" }
         };
       }),
@@ -1210,7 +1220,7 @@ var App = (function () {
         var st = stOf(S.otPct, TH.overtime, true);
         return {
           label: I18N.sectionName(S.section), value: Math.round((S.otPct || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_min2"), fmtInt(S.otMin)], [T("t_secout"), fmtInt(S.actual)], [T("t_real"), fmtPct(S.achv)]],
+          tip: [[T("t_sec"), I18N.sectionN(S.section)], [T("t_ot_pct"), fmtPct(S.otPct, 2)], [T("t_ot_min2"), fmtInt(S.otMin)], [T("t_secout"), fmtInt(S.actual)], [T("t_real"), fmtPct(S.achv)], [T("t_wrk_max"), fmtInt(S.maxAtt)]],
           drill: { type: "section", value: S.section, domain: "ot" }
         };
       }),
@@ -1233,7 +1243,7 @@ var App = (function () {
         var st = stOf(L.otPct, TH.overtime, true);
         return {
           label: I18N.lineN(L.line), value: Math.round((L.otPct || 0) * 1000) / 10, color: stColor(st),
-          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_ot_min2"), fmtInt(L.otMin)], [T("t_target"), fmtInt(L.target)], [T("t_achv"), fmtPct(L.achv)]],
+          tip: [[T("t_line"), I18N.lineN(L.line)], [T("t_ot_pct"), fmtPct(L.otPct, 2)], [T("t_ot_min2"), fmtInt(L.otMin)], [T("t_target"), fmtInt(L.target)], [T("t_achv"), fmtPct(L.achv)], [T("t_wrk_max"), fmtInt(L.maxAtt)]],
           drill: { type: "line", value: String(L.line), domain: "ot" }
         };
       }),
@@ -1274,6 +1284,7 @@ var App = (function () {
         "<td class='num'>" + fmtInt(s.totalMinAvail) + "</td>" +
         "<td class='num'>" + fmtInt(s.otMin) + "</td>" +
         "<td class='num' style='color:" + (st ? stColor(st) : C_MUTED) + ";font-weight:800'>" + fmtPct(s.otPct, 2) + "</td>" +
+        "<td class='num'>" + fmtInt(s.ddAttW) + "</td>" +
         "<td class='num'>" + fmtInt(s.minProd) + "</td>" +
         "<td class='num'>" + (effOKd ? fmtPct(s.eff) : "—") + "</td></tr>";
     }).join("");
@@ -2051,12 +2062,14 @@ var App = (function () {
       goal: { value: TH.efficiency.good * 100, color: C_GOOD, tipTitle: "t_goal_line" },
       height: 260
     });
-    /* 2 — ÜRETİM ADETİ / ADAM·VARDİYA: output pieces per worker */
+    /* 2 — ÜRETİM ADETİ / ADAM·VARDİYA: output pieces per worker
+       R33: bars open the day-details drill now (like the other five) */
     C.vbar($("mhProd"), {
       items: bk.map(function (b, i) {
         var a = agg[i];
         return { label: b.label, value: a.pcsW == null ? 0 : Math.round(a.pcsW * 10) / 10, color: C_ACCENT,
-          tip: [[T("t_actual"), fmtInt(a.loA)], [T("t_wrk"), fmtInt(a.wrk)], [T("t_pcs_w"), a.pcsW == null ? "—" : I18N.dec(a.pcsW.toFixed(1))], [T("t_days"), String(a.days)]] };
+          tip: [[T("t_actual"), fmtInt(a.loA)], [T("t_wrk"), fmtInt(a.wrk)], [T("t_pcs_w"), a.pcsW == null ? "—" : I18N.dec(a.pcsW.toFixed(1))], [T("t_days"), String(a.days)]],
+          drill: drill(b, "prod") };
       }),
       valueName: T("t_pcs_w"), height: 260
     });
@@ -2071,12 +2084,14 @@ var App = (function () {
       }),
       valueName: T("t_wrk"), height: 260
     });
-    /* 4 — ORT. MODEL ZAMANI: average model time (SAM) */
+    /* 4 — ORT. MODEL ZAMANI: average model time (SAM)
+       R33: bars open the day-details drill now (like the other five) */
     C.vbar($("mhSam"), {
       items: bk.map(function (b, i) {
         var a = agg[i];
         return { label: b.label, value: a.sam == null ? 0 : Math.round(a.sam * 100) / 100, color: C_WARN,
-          tip: [[T("t_sam"), a.sam == null ? "—" : I18N.dec(a.sam.toFixed(2))], [T("t_days"), String(a.days)]] };
+          tip: [[T("t_sam"), a.sam == null ? "—" : I18N.dec(a.sam.toFixed(2))], [T("t_days"), String(a.days)]],
+          drill: drill(b, "prod") };
       }),
       valueName: T("t_sam"), height: 260
     });

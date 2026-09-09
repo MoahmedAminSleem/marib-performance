@@ -2047,11 +2047,31 @@ body.pg-mhome .filters select,
 body.pg-mhome .range-pick input[type="date"] { height: 38px; font-size: 13px; }
 body.pg-mhome .dp-lab { font-size: 12.5px; }
 
-/* (3→R32) ONE cursor everywhere: the denim needle-with-thread PNG owns
-   every pixel of the site — body, buttons, links, selects, text fields,
-   charts, modals and the settings popup included (كل شبر). The R31
-   white-arrow/hand experiment is retired — the owner asked for the needle
-   in every corner. One rule on * with !important wins over every older
-   cursor rule in every state — hover, press, drag. A cursor image is
+/* (R32→R33) THE OWNER'S SMART CURSOR RULE — the plain needle (no thread)
+   is the DEFAULT over every passive pixel: backgrounds, cards, text,
+   axis labels, non-clickable bars, the settings popup chrome. The needle
+   WITH thread shows ONLY over interactive elements — links, buttons,
+   selects, inputs, labels, tabs, switches, drillable bars/rows/KPI
+   cards. Thread = "pressing this does something". Disabled controls
+   fall back to the plain needle (they do nothing). A cursor image is
    looks-only: clicks, typing and hit-testing are untouched. */
-*, *::before, *::after { cursor: var(--cur-thread) !important; }
+*, *::before, *::after { cursor: var(--cur-needle) !important; }
+a, area, button, select, label, summary, input, textarea,
+.chart svg .drillable, .chart.drillable, .kpi.kpi-drill,
+.tbl tbody tr.drill-row, .us-chk, .us-row > .us-av, .us-sw,
+.cmp-pop .cp-x { cursor: var(--cur-thread) !important; }
+button:disabled, .us-ic:disabled, .us-sw input:disabled,
+input:disabled, select:disabled { cursor: var(--cur-needle) !important; }
+
+/* R33: hover hint inside chart tooltips — one gold dashed-top row that
+   tells the owner this bar/point/row opens details; rendered by the
+   chart library only when the item actually carries a drill */
+#tip .drill-hint { margin-top: 6px; padding-top: 5px; border-top: 1px dashed rgba(217,168,107,.35);
+  font-size: 10.5px; font-weight: 700; color: #D9A86B; text-align: center; }
+
+/* R33: OT page KPI row — 5 cards now (avg present workers joined the
+   strip), so it widens to 5 columns on desktop and steps down 3/2/1 */
+#otKpis { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 1350px) { #otKpis { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 1180px) { #otKpis { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px)  { #otKpis { grid-template-columns: 1fr; } }
