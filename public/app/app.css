@@ -2124,7 +2124,7 @@ body.pg-mhome .fgroup[data-fg="dates"]{display:none !important}
 .mgate{
   position:fixed;inset:0;z-index:340;
   display:flex;align-items:center;justify-content:center;
-  background:rgba(4,2,3,.78);backdrop-filter:blur(7px);
+  background:rgba(6,12,20,.8);backdrop-filter:blur(7px);
   opacity:0;transition:opacity .26s ease;
 }
 .mgate.on{opacity:1}
@@ -2143,14 +2143,14 @@ body.pg-mhome .fgroup[data-fg="dates"]{display:none !important}
 }
 .mg-in{position:relative;display:flex;flex-direction:column;gap:26px;align-items:center;padding:28px}
 .mg-in h2{
-  margin:0;font-size:21px;font-weight:800;color:#F7EEF0;letter-spacing:.02em;
+  margin:0;font-size:21px;font-weight:800;color:#F2EBDD;letter-spacing:.02em;
   padding-bottom:10px;border-bottom:2px dashed rgba(217,168,107,.35);
 }
 .mg-cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
 .mg-card{
   display:flex;flex-direction:column;align-items:flex-start;gap:8px;
   width:280px;padding:26px 24px;border-radius:20px;text-align:start;
-  background:linear-gradient(155deg,#1C1013 0%,#120A0D 100%);
+  background:linear-gradient(162deg,#22334A 0%,#182635 58%,#14202E 100%);
   border:1px solid rgba(217,168,107,.22);
   box-shadow:0 18px 46px rgba(0,0,0,.5);
   color:var(--txt);position:relative;overflow:hidden;
@@ -2172,8 +2172,8 @@ body.pg-mhome .fgroup[data-fg="dates"]{display:none !important}
 .mg-card .mg-ico{
   display:flex;align-items:center;justify-content:center;
   width:56px;height:56px;border-radius:16px;
-  background:rgba(239,31,37,.1);color:var(--accent-2);
-  border:1px solid rgba(239,31,37,.25);
+  background:rgba(217,168,107,.1);color:var(--accent-2);
+  border:1px solid rgba(217,168,107,.25);
 }
 .mg-card.mp .mg-ico{
   background:rgba(217,168,107,.1);color:#D9A86B;
@@ -2196,9 +2196,11 @@ body.mp-on .shell{display:none}
   position:fixed;inset:0;z-index:120;
   display:flex;flex-direction:column;
   background:
-    radial-gradient(1200px 500px at 80% -10%,rgba(217,168,107,.05),transparent 60%),
-    radial-gradient(900px 420px at 10% 110%,rgba(239,31,37,.05),transparent 55%),
-    #070406;
+    repeating-linear-gradient(47deg, rgba(255,255,255,.012) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-43deg, rgba(0,0,0,.10) 0 3px, transparent 3px 6px),
+    radial-gradient(1100px 540px at 85% -12%, rgba(217,168,107,.06), transparent 58%),
+    radial-gradient(880px 460px at 5% 108%, rgba(217,168,107,.045), transparent 55%),
+    #0C1420;
   color:var(--txt);
   animation:mpFade .3s ease;
 }
@@ -2234,11 +2236,11 @@ body.mp-on .shell{display:none}
 .mp-back{
   display:inline-flex;align-items:center;gap:8px;
   padding:9px 14px;border-radius:11px;font-weight:700;font-size:12.5px;
-  background:rgba(239,31,37,.1);color:var(--accent-2);
-  border:1px solid rgba(239,31,37,.25);font-family:inherit;transition:.22s;
+  background:rgba(217,168,107,.1);color:var(--accent-2);
+  border:1px solid rgba(217,168,107,.25);font-family:inherit;transition:.22s;
 }
 .mp-back svg{width:16px;height:16px}
-.mp-back:hover{background:rgba(239,31,37,.2);transform:translateY(-1px)}
+.mp-back:hover{background:rgba(217,168,107,.2);transform:translateY(-1px)}
 
 /* hero summary cards */
 .mp-hero{
@@ -2289,10 +2291,10 @@ body.mp-on .shell{display:none}
 .mp-flex{flex:1}
 .mp-act{
   padding:10px 16px;border-radius:11px;font-size:12.5px;font-weight:800;
-  background:rgba(239,31,37,.12);border:1px solid rgba(239,31,37,.3);
+  background:rgba(217,168,107,.12);border:1px solid rgba(217,168,107,.3);
   color:var(--accent-2);font-family:inherit;transition:.22s;
 }
-.mp-act:hover{background:rgba(239,31,37,.22);transform:translateY(-1px)}
+.mp-act:hover{background:rgba(217,168,107,.22);transform:translateY(-1px)}
 
 /* table head */
 .mp-thead{
@@ -2395,7 +2397,7 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
   transition:.2s;
 }
 .mpr .mo svg{width:14px;height:14px}
-.mpr .mo:hover{color:var(--accent-2);background:rgba(239,31,37,.14)}
+.mpr .mo:hover{color:var(--accent-2);background:rgba(217,168,107,.14)}
 .mpr .mtr{
   flex:none;min-width:22px;text-align:center;
   font-size:10.5px;font-weight:800;color:var(--warn);
@@ -2485,7 +2487,7 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
   padding:8px 14px;border-radius:9px;font-size:12px;font-weight:800;font-family:inherit;
 }
 .mp-reqpop .rp-x{background:transparent;border:1px solid var(--brd-soft);color:var(--muted)}
-.mp-reqpop .rp-ok{background:rgba(239,31,37,.16);border:1px solid rgba(239,31,37,.35);color:var(--accent-2)}
+.mp-reqpop .rp-ok{background:rgba(217,168,107,.16);border:1px solid rgba(217,168,107,.35);color:var(--accent-2)}
 
 /* ---------- add / edit modal ---------- */
 .mp-modal{
@@ -2519,7 +2521,7 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
   padding:10px 18px;border-radius:10px;font-size:13px;font-weight:800;font-family:inherit;
 }
 .mpm-x{background:transparent;border:1px solid var(--brd-soft);color:var(--muted)}
-.mpm-ok{background:rgba(239,31,37,.16);border:1px solid rgba(239,31,37,.4);color:var(--accent-2)}
+.mpm-ok{background:rgba(217,168,107,.16);border:1px solid rgba(217,168,107,.4);color:var(--accent-2)}
 
 /* responsive */
 @media (max-width:760px){
@@ -2535,3 +2537,133 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
   .mpr-det{margin-inline-start:calc(var(--d,0) * 18px + 40px)}
   .mpr{padding-inline-start:calc(var(--d,0) * 18px + 10px)}
 }
+
+/* ============================================================
+   R38 — الاتزان v2: Marib 3 root · vacancies · dept management ·
+   cascading picker · labeled home button (denim/gold theme)
+   ============================================================ */
+
+/* --- the Marib 3 root row (Major Header) --- */
+.mpr.rootrow{
+  margin:2px 0 6px;
+  padding:11px 16px;
+  background:linear-gradient(120deg,rgba(217,168,107,.16),rgba(217,168,107,.05) 60%,rgba(217,168,107,.02));
+  border:1px solid rgba(217,168,107,.38);
+  border-radius:14px;
+  position:sticky;top:0;z-index:5;
+  backdrop-filter:blur(6px);
+}
+.mpr.rootrow .mi.root{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:10px;flex:none;
+  background:rgba(217,168,107,.14);color:var(--accent-2);
+}
+.mpr.rootrow .mln.rt{
+  font-size:17px;font-weight:900;color:var(--accent-2);
+  letter-spacing:.03em;
+}
+.mpr.rootrow .mv,.mpr.rootrow .mn{background:rgba(0,0,0,.18)}
+.mpr.rootrow .mbar{background:rgba(0,0,0,.25)}
+
+/* --- hero lead (Marib 3 + subtitle) --- */
+.mph-lead{
+  flex:1 1 210px;min-width:200px;
+  display:flex;flex-direction:column;justify-content:center;gap:3px;
+  padding:12px 18px;border-radius:var(--r-sm);
+  background:linear-gradient(150deg,rgba(217,168,107,.15),rgba(217,168,107,.04));
+  border:1px dashed rgba(217,168,107,.4);
+  animation:mgCard .5s ease both;
+}
+.mph-lead .mph-root{
+  font-size:27px;font-weight:900;color:var(--accent-2);
+  letter-spacing:.02em;line-height:1.1;
+}
+.mph-lead small{color:var(--muted);font-size:11.5px}
+
+/* --- vacancy rows (شاغر — required, unfilled) --- */
+.mpr.vn{
+  outline:1px dashed rgba(217,168,107,.28);
+  outline-offset:-1px;
+  background:rgba(217,168,107,.025);
+}
+.mpr.vn:hover{background:rgba(217,168,107,.06)}
+.mpr.vn .mln.vln{color:var(--muted);font-weight:700;font-size:13px}
+.mpr.vn .mi.vac{color:rgba(217,168,107,.6)}
+.mpr.vn .mls{color:var(--faint);font-style:normal}
+
+/* --- admin action icons --- */
+.mo.vf{color:var(--good)}
+.mo.vf:hover{color:var(--good);background:rgba(79,217,141,.14)}
+.mo.vx{color:var(--bad)}
+.mo.vx:hover{color:var(--bad);background:rgba(248,124,124,.14)}
+.mo.dm{color:var(--accent)}
+.mo.dm:hover{color:var(--accent-2);background:rgba(217,168,107,.14)}
+
+/* --- جديد code chip (code pending) --- */
+.mlc.newc{
+  font-style:normal;font-size:10.5px;font-weight:800;
+  padding:1.5px 9px;border-radius:99px;
+  background:rgba(240,190,85,.13);color:var(--warn);
+  border:1px dashed rgba(240,190,85,.45);
+}
+
+/* --- flex spacer inside employee/vacancy rows --- */
+.mpr .mflex{flex:1}
+
+/* --- manual-required override marker on dept labels --- */
+.ml .mls.ov{
+  color:var(--warn);font-style:normal;
+  margin-inline-start:7px;font-size:11px;vertical-align:2px;
+}
+
+/* --- cascading قسم picker (selects row) --- */
+.mpc{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.mpc-sel{
+  flex:1 1 160px;min-width:140px;
+  padding:9px 12px;border-radius:10px;
+  border:1px solid var(--brd);
+  background:var(--card-solid);
+  color:var(--txt);font-family:inherit;font-size:13px;
+  transition:.2s;
+  cursor:var(--cur-thread);
+}
+.mpc-sel:hover{border-color:var(--brd-hov)}
+.mpc-sel:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.mpc-sel option{background:#1B2A3A;color:var(--txt)}
+
+/* --- dept modal section --- */
+.md-sec{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.md-sec>b{font-size:12px;color:var(--muted);font-weight:700}
+.mpm-card{width:min(560px,94vw)}
+
+/* --- employee detail: the job is the headline --- */
+.mpr-det .drow.job{
+  background:rgba(217,168,107,.08);
+  border:1px dashed rgba(217,168,107,.25);
+  border-radius:9px;padding:8px 12px;margin-bottom:2px;
+}
+.mpr-det .drow.job b{color:var(--accent-2);font-size:14.5px;font-weight:800}
+
+/* --- archive note (e.g. "12 موظف ات نقلوا مع القسم") --- */
+.mpr .arn{font-size:10.5px;color:var(--faint);font-style:italic}
+
+/* --- labeled home button in the dashboard topbar --- */
+.ctrl-swap{
+  width:auto;padding:0 13px;gap:7px;
+  border-radius:99px;
+}
+.ctrl-swap svg{width:17px;height:17px;flex:none}
+.ctrl-swap span{
+  font-size:12.5px;font-weight:800;color:var(--accent-2);
+  white-space:nowrap;
+}
+@media (max-width:700px){
+  .ctrl-swap span{display:none}
+  .ctrl-swap{width:38px;padding:0;justify-content:center}
+}
+
+/* --- mp hero cards align with the lead --- */
+.mp-hero{align-items:stretch}
+
+/* --- vacancy fill/remove icons slightly bigger targets --- */
+.mpr.vn .mo{width:30px;height:30px}

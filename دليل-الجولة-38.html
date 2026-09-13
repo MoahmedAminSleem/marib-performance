@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل الجولة 38 — الاتزان v2: Marib 3 + إدارة الأقسام + رفع شيت Manpower</title>
+<style>:root{--bg:#0A101C;--bg2:#101a2b;--card:#131f33;--line:#26364f;--txt:#DCE5EF;--dim:#A9B7C7;--gold:#C49A6C;--gold2:#E9C68A;--blue:#7FB3E8;--green:#4FD98D;--red:#F87171}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.9;padding:26px 16px}
+.wrap{max-width:880px;margin:0 auto}
+h1{color:var(--gold2);font-size:23px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+h2{color:var(--gold2);font-size:17px;margin:26px 0 10px;border-inline-start:4px solid var(--gold);padding-inline-start:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0}
+.step{display:flex;gap:12px;margin:12px 0;align-items:flex-start}
+.n{background:var(--gold);color:#141B26;font-weight:800;min-width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+.path{background:rgba(196,154,108,.14);color:var(--gold2);padding:2px 8px;border-radius:7px;font-size:12.5px;font-family:Consolas,monospace;direction:ltr;display:inline-block}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{padding:8px 10px;border:1px solid var(--line);text-align:start}
+th{color:var(--gold2);background:rgba(196,154,108,.07);font-size:12px}
+td{color:var(--txt)}
+.small{font-size:12px;color:var(--dim)}
+ul{padding-inline-start:22px}
+li{margin:7px 0}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11.5px;font-weight:700;margin-inline-end:6px}
+.tag.new{background:rgba(79,217,141,.13);color:var(--green)}
+.tag.mod{background:rgba(127,179,232,.13);color:var(--blue)}
+b.g{color:var(--green)} b.r{color:var(--red)} b.y{color:var(--gold2)}</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>دليل الجولة 38 — الاتزان v2: Marib 3 + إدارة الأقسام + رفع شيت Manpower</h1>
+<p class="sub">نفس ثيم تحليل الأداء · ترجمة مصطلحات الجارمنت · الشواغر · «جديد» بياخد كوده من الشيت</p>
+
+<div class="card">
+<h2>اللي اتعمل في الجولة دي</h2>
+<ul>
+<li><b>الداتا:</b> من شيت <b>Database</b> في ملف Manpower (1).xlsx — 828 صف (807 موظف + 21 شاغر + 7 «جديد») و63 قسم. الزرع بيتم مرة واحدة تلقائيًا أول تشغيل بعد الرفع، من غير أي مساس بالمستخدمين أو شهور البيانات أو الإعدادات.</li>
+<li><b>الشجرة:</b> <b>Marib 3</b> ← الإدارة ← القسم ← القسم الداخلي ← <b>الاسم والكود مع بعض</b> ← Expand ← <b>الوظيفة</b>.</li>
+<li><b>الشواغر:</b> صف الشيت اللي اسمه/كوده فاضي = مطلوب مش معين — بيظهر صف منقّط «شاغر — الوظيفة»، فالمطلوب = عدد الصفوف والحالي = المعينين.</li>
+<li><b>إدارة الأقسام + نقل الموظفين</b> من الموقع بالكامل، و<b>أرشيف النقل</b> بيسجل كل حاجة (مين + إمتى + من فين لفين).</li>
+<li><b>«الصفحة الرئيسية»</b> معنون في الواجهتين · الثيم بقى نفس الدنيم/الذهبي بتاع تحليل الأداء.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>خطوات التسليم (3 دقايق)</h2>
+<div class="step"><div class="n">1</div><div>حمّل الـ ZIP وفكّه، وارفع <b>كل الملفات اللي جواه</b> على GitHub (Add file ← Upload files ← اسحبها كلها). الـ ZIP تراكمي — يشتغل حتى لو آخر جولة رفعتها قبل كده.</div></div>
+<div class="step"><div class="n">2</div><div>افتح الموقع على Vercel وسجّل دخول. أول طلب هيشغّل الزرع الجديد (حاجز ثواني واحدة بس، مرة واحدة في العمر) — <b>مستحيل يلمس المستخدمين أو الشهور</b>.</div></div>
+<div class="step"><div class="n">3</div><div>دوس <b>«الاتزان»</b> — هتلاقي <b>Marib 3</b> فوق وتحته الإدارات السبعة بالأعداد. جرّب: الخياطة ← خط 1 ← أمامي = <b>23 حالي / 25 مطلوب / <span class="r">-2</span></b> + صفين شاغر + الأسماء والأكواد ظاهرة، ودوس على أي اسم تجيب وظيفته.</div></div>
+</div>
+
+<div class="card">
+<h2>الملفات المتغيرة (18 ملف)</h2>
+<table>
+<tr><th>الملف</th><th>النوع</th><th>اللي فيه</th></tr>
+<tr><td><span class="path">public/app/app_manpower.js</span></td><td><span class="tag mod">تعديل جوهري</span></td><td>الاتزان v2: شجرة Marib 3 · الشواغر · «جديد» · مودالات الأقسام والموظفين بالمنتقي المتدرّج · مسرد الترجمة · استيراد الشيتين</td></tr>
+<tr><td><span class="path">src/app/api/manpower/route.ts</span></td><td><span class="tag mod">تعديل</span></td><td>GET الأقسام+الشواغر · POST: add/edit/fill/vacAdd/vacDel/deptAdd/deptRename/deptMove/req/import</td></tr>
+<tr><td><span class="path">src/server/seed/manpower-seed.ts</span></td><td><span class="tag mod">تعديل</span></td><td>زرع شيت Database (828 صف + 63 قسم)</td></tr>
+<tr><td><span class="path">src/lib/marib/db.ts</span></td><td><span class="tag mod">تعديل</span></td><td>جدول marib_dept + بوابة إصدار الزرع mp_seed_ver + الفهارس الجزئية للكود</td></tr>
+<tr><td><span class="path">src/app/skeleton.ts</span></td><td><span class="tag mod">تعديل</span></td><td>زرار الصفحة الرئيسية في الواجهتين · إضافة قسم · رفع شيت Manpower · رأس الجدول الجديد</td></tr>
+<tr><td><span class="path">public/app/i18n_dict.js</span></td><td><span class="tag mod">تعديل</span></td><td>+31 مفتاح ×3 لغات (البيت · الشواغر · الأقسام · المزامنة)</td></tr>
+<tr><td><span class="path">public/app/app.css</span></td><td><span class="tag mod">تعديل</span></td><td>ثيم الدنيم للاتزان والبوابة + صف Marib 3 + الشواغر + المنتقي المتدرّج</td></tr>
+<tr><td><span class="path">سير-العمل.html</span> · <span class="path">README.md</span> · <span class="path">دليل-الجولة-38.html</span> · <span class="path">الملفات-المتغيرة.txt</span></td><td><span class="tag new">مستندات</span></td><td>سجل الجولات والمرجع والتوجيه</td></tr>
+<tr><td colspan="3" class="small">+ الباقي ملفات الجولات اللي فاتت (الـ ZIP تراكمي R28→R38): app_auth · app_main · app_core · app_charts · i18n_core · marib_cloud · page.tsx · الثيمات…</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>9 فحوصات سريعة بعد الرفع</h2>
+<ul>
+<li>Marib 3 فوق بتوعي <b>807 / 828 / <span class="r">-21</span></b> · الشواغر 21 · الإدارات 7.</li>
+<li>الخياطة ← خط 1 ← أمامي: <b>23/25/<span class="r">-2</span></b> + «شاغر — شريط» + «شاغر — تعويض نسب غياب» (زي شيت Manpower بالظبط).</li>
+<li>Expand على أي اسم ← الوظيفة أول سطر في الكارت + الكود + التعيين + المسار.</li>
+<li>«أجا» (خط 1 مونتاج) عليها شارة <b>«جديد»</b> — لحد ما الشيت يترفع فيه كودها.</li>
+<li>زرار <b>«الصفحة الرئيسية»</b> موجود ومعنون في شريط تحليل الأداء وفي هيدر الاتزان — بيرجعك للزرارين.</li>
+<li>القلم على أي قسم = إعادة تسمية + نقله جوه/برا — والسهمين على أي موظف بينقلوه بالقوائم المنسدلة.</li>
+<li>زرار <b>«رفع شيت Manpower»</b>: ارفع نفس الملف → «تم الاستيراد — 828». عدّل كود «جديد» في الشيت وارفعه → «كود اتحدث 1».</li>
+<li>EN: Sewing · Front · Montage · Home — TR: Dikim · Ön · Monte · Ana Sayfa — وخطوط الخياطة: خط 1 / Line 1 / Hat 1.</li>
+<li>المشاهد (مش أدمن): شجرة read-only — مفيش أقلام ولا أزرار، والـ API بيرفض (403).</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>أسئلة متكررة</h2>
+<ul>
+<li><b>الشغل ميت من كتر البيانات؟</b> — لأ: كل حسابات الشجرة في المتصفح، والـ GET واحد في الجلسة (828 صف — أقل من الجولة اللي فاتت)، وفتح الكل كله (~892 صف) بيرندر في ثانية من غير أي طلب إضافي.</li>
+<li><b>حد عدّل على الموقع وبعدين رفعت شيت قديم؟</b> — الموظفين اللي مش في الشيت <b>بيفضلوا زي ما هم</b> (مفيش مسح أبدًا) وبيتقال عددهم في رسالة الاستيراد.</li>
+<li><b>عايز أقسم قسم جوه قسم بتاعي؟</b> — القلم على القسم ← «نقله جوه» ← اختار الأب الجديد (أو «انتهي هنا» للمستوى الأول). مينفعش تنقل القسم جوه نفسه — الموقع بيرفضها.</li>
+<li><b>المطلوب بيتحدّ منين؟</b> — من الداتا نفسها (عدد الصفوف). لو عايز تتجاوز ده يدويًا، دوس على رقم «المطلوب» لأي عقدة وحدد رقم — بيظهر علامة ✎ جنب القسم اللي عليه تجاوز يدوي.</li>
+<li><b>الشواغر بتتحط إزاي؟</b> — من الشيت (الخلايا الفاضية). ومن الموقع كمان: «تعيين في الشاغر» (زرار +) بيملاه بموظف، وزرار × بيشيله لو مبقاش مطلوب.</li>
+<li><b>الترجمة طلعت غلط في مصطلح؟</b> — المسرد أول ملف app_manpower.js (قسم GLOSS) — عدّل السطر اللي فيه المصطلح وخلاص، البيانات نفسها مش بتتغير.</li>
+</ul>
+</div>
+
+<p class="small">Marib Garments — الجولة 38 · 13 سبتمبر 2026</p>
+
+</div>
+</body>
+</html>

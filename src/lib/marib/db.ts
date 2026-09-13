@@ -161,6 +161,34 @@ const BOOT_SQL: string[] = [
     kind      TEXT NOT NULL DEFAULT 'move'
   )`,
   `CREATE INDEX IF NOT EXISTS marib_transfer_at_idx ON marib_transfer (at DESC)`,
+  /* R38 — dept transfer notes (e.g. "12 موظف ات نقلوا مع القسم") */
+  `ALTER TABLE marib_transfer ADD COLUMN IF NOT EXISTS note TEXT`,
+  /* R38 — الاتزان v2: the قسم tree (arbitrary depth, survives renames
+     and moves without touching a single employee row) + the seed version
+     gate. code becomes nullable (vacancy rows) and the uniqueness moves
+     to a partial index that ignores NULLs and 'جديد' (code pending). */
+  `CREATE TABLE IF NOT EXISTS marib_dept (
+    id        TEXT PRIMARY KEY,
+    name      TEXT NOT NULL,
+    parent_id TEXT,
+    ord       INT  NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS marib_dept_parent_idx ON marib_dept (parent_id)`,
+  `CREATE TABLE IF NOT EXISTS marib_meta (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL
+  )`,
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS dept_id TEXT`,
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS note TEXT`,
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS vac BOOLEAN NOT NULL DEFAULT false`,
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS ord INT NOT NULL DEFAULT 0`,
+  `ALTER TABLE marib_emp ALTER COLUMN code DROP NOT NULL`,
+  `ALTER TABLE marib_emp ALTER COLUMN name DROP NOT NULL`,
+  `ALTER TABLE marib_emp DROP CONSTRAINT IF EXISTS marib_emp_code_key`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS marib_emp_code_uq
+     ON marib_emp (code) WHERE code IS NOT NULL AND code <> 'جديد'`,
+  `CREATE INDEX IF NOT EXISTS marib_emp_dept_id_idx ON marib_emp (dept_id)`,
 ];
 
 let booting: Promise<void> | null = null;
@@ -187,26 +215,54 @@ export async function ensureBoot(): Promise<void> {
     if ((a[0]?.n as number) === 0) {
       await audit("Amin", "create", "site", null, null);
     }
-    // R37 — seed الاتزان once: the owner's Employees Database snapshot
-    // (2005 people) lands automatically on the first boot after deploy.
-    // Bulk insert via unnest in chunks — one statement per 500 rows.
+    // R38 — seed الاتزان from the owner's Manpower (1).xlsx "Database"
+    // sheet. Version-gated: the R37 snapshot (old Employees DB + E2E test
+    // rows) is replaced by the new structure exactly once, then the gate
+    // key marib_meta.mp_seed_ver=38 keeps this block idle on every boot.
+    // Users / months / settings / audit are NEVER touched.
     try {
-      const m = await q("SELECT COUNT(*)::int AS n FROM marib_emp");
-      if ((m[0]?.n as number) === 0) {
-        const { MANPOWER_SEED } = await import("../../server/seed/manpower-seed");
-        for (let i = 0; i < MANPOWER_SEED.length; i += 500) {
-          const chunk = MANPOWER_SEED.slice(i, i + 500);
-          const codes = chunk.map((r) => r[0]);
-          const names = chunk.map((r) => r[1]);
-          const jobs = chunk.map((r) => r[2]);
-          const depts = chunk.map((r) => r[3]);
-          const hires = chunk.map((r) => r[4]);
+      const ver = await q("SELECT value FROM marib_meta WHERE key = 'mp_seed_ver'");
+      if ((ver[0]?.value as string) !== "38") {
+        const { MANPOWER_DEPTS, MANPOWER_EMPS } = await import("../../server/seed/manpower-seed");
+        await q("BEGIN");
+        try {
+          await q("DELETE FROM marib_emp");
+          await q("DELETE FROM marib_dept");
+          await q("DELETE FROM marib_req");
+          await q("DELETE FROM marib_transfer");
+          for (let i = 0; i < MANPOWER_DEPTS.length; i += 200) {
+            const ch = MANPOWER_DEPTS.slice(i, i + 200);
+            await q(
+              `INSERT INTO marib_dept (id, name, parent_id, ord)
+               SELECT i, n, p, o FROM unnest($1::text[], $2::text[], $3::text[], $4::int[]) AS t(i, n, p, o)`,
+              [ch.map((r) => r[0]), ch.map((r) => r[1]), ch.map((r) => r[2]), ch.map((r) => r[3])]
+            );
+          }
+          for (let i = 0; i < MANPOWER_EMPS.length; i += 500) {
+            const ch = MANPOWER_EMPS.slice(i, i + 500);
+            await q(
+              `INSERT INTO marib_emp (code, name, job, dept_id, hire, vac, note, ord)
+               SELECT c, n, j, d, h, v, no, o FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::bool[], $7::text[], $8::int[]) AS t(c, n, j, d, h, v, no, o)`,
+              [
+                ch.map((r) => r[0] || null),
+                ch.map((r) => r[1] || ""),
+                ch.map((r) => r[2] || ""),
+                ch.map((r) => r[3] || null),
+                ch.map((r) => r[4] || ""),
+                ch.map((r) => !!r[5]),
+                ch.map((r) => r[6] || ""),
+                ch.map((r) => r[7] || 0),
+              ]
+            );
+          }
           await q(
-            `INSERT INTO marib_emp (code, name, job, dept, hire)
-             SELECT c, n, j, d, h FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[]) AS t(c, n, j, d, h)
-             ON CONFLICT (code) DO NOTHING`,
-            [codes, names, jobs, depts, hires]
+            `INSERT INTO marib_meta (key, value) VALUES ('mp_seed_ver', '38')
+             ON CONFLICT (key) DO UPDATE SET value = '38'`
           );
+          await q("COMMIT");
+        } catch (e) {
+          await q("ROLLBACK").catch(() => {});
+          throw e;
         }
       }
     } catch (e) {
