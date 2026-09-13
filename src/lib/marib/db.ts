@@ -128,6 +128,39 @@ const BOOT_SQL: string[] = [
     details JSONB
   )`,
   `CREATE INDEX IF NOT EXISTS marib_audit_at_idx ON marib_audit (at DESC)`,
+  /* R37 — الاتزان (manpower balance): employees, per-node required
+     counts, and the transfer archive. Additive only: existing tables
+     are untouched; these appear on the first boot after deploy. */
+  `CREATE TABLE IF NOT EXISTS marib_emp (
+    id       TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    code     TEXT NOT NULL UNIQUE,
+    name     TEXT NOT NULL,
+    job      TEXT NOT NULL DEFAULT '',
+    dept     TEXT NOT NULL DEFAULT '',
+    hire     TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS marib_emp_dept_idx ON marib_emp (dept)`,
+  `CREATE TABLE IF NOT EXISTS marib_req (
+    node_key   TEXT PRIMARY KEY,
+    required   INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by TEXT
+  )`,
+  `CREATE TABLE IF NOT EXISTS marib_transfer (
+    id        TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    actor     TEXT NOT NULL,
+    code      TEXT NOT NULL,
+    name      TEXT NOT NULL,
+    from_dept TEXT,
+    from_job  TEXT,
+    to_dept   TEXT,
+    to_job    TEXT,
+    kind      TEXT NOT NULL DEFAULT 'move'
+  )`,
+  `CREATE INDEX IF NOT EXISTS marib_transfer_at_idx ON marib_transfer (at DESC)`,
 ];
 
 let booting: Promise<void> | null = null;
@@ -153,6 +186,31 @@ export async function ensureBoot(): Promise<void> {
     const a = await q("SELECT COUNT(*)::int AS n FROM marib_audit");
     if ((a[0]?.n as number) === 0) {
       await audit("Amin", "create", "site", null, null);
+    }
+    // R37 — seed الاتزان once: the owner's Employees Database snapshot
+    // (2005 people) lands automatically on the first boot after deploy.
+    // Bulk insert via unnest in chunks — one statement per 500 rows.
+    try {
+      const m = await q("SELECT COUNT(*)::int AS n FROM marib_emp");
+      if ((m[0]?.n as number) === 0) {
+        const { MANPOWER_SEED } = await import("../../server/seed/manpower-seed");
+        for (let i = 0; i < MANPOWER_SEED.length; i += 500) {
+          const chunk = MANPOWER_SEED.slice(i, i + 500);
+          const codes = chunk.map((r) => r[0]);
+          const names = chunk.map((r) => r[1]);
+          const jobs = chunk.map((r) => r[2]);
+          const depts = chunk.map((r) => r[3]);
+          const hires = chunk.map((r) => r[4]);
+          await q(
+            `INSERT INTO marib_emp (code, name, job, dept, hire)
+             SELECT c, n, j, d, h FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[]) AS t(c, n, j, d, h)
+             ON CONFLICT (code) DO NOTHING`,
+            [codes, names, jobs, depts, hires]
+          );
+        }
+      }
+    } catch (e) {
+      console.error("manpower seed failed", e); // non-fatal: the app still boots
     }
   })();
   booting = attempt;

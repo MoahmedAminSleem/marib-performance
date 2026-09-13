@@ -1,21 +1,27 @@
-الجولة 36 — صلي علي النبي + دخول الموقع في السجل + شيل العنوان + فلاتر الشهر والسنة لرئيسية المدير (2026-09-09)
+الجولة 37 — الاتزان: هيكل القوى العاملة + أرشيف النقل + زرارين بعد الدخول (2026-09-13)
 الملفات دي هي كل اللي محتاج ترفعه على GitHub (Add file → Upload files → اسحبها).
-الـ ZIP تراكمي: شامل R28 → R36 — يشتغل حتى لو مرفعتش الجولات اللي فاتت.
+الـ ZIP تراكمي: شامل R28 → R37 — يشتغل حتى لو مرفعتش الجولات اللي فاتت.
 
-عدد الملفات: 16
+عدد الملفات: 21
 
-1c6828e05bd93d78bbdfce703a6158b6  public/app/app.css
-4333289d7deda5200ae8d71c420e989e  public/app/app_main.js
-8e4b5973de19ac58a5a27d61ae9da905  public/app/app_charts.js
+8fa2a2d83f1859a2eaf80493cc46b838  public/app/app_manpower.js
+c2fbdf2db4cdb6b4820df9d0be89891d  src/app/api/manpower/route.ts
+e0abc52d2743af91d767ad2ce8f70b0a  src/server/seed/manpower-seed.ts
+77bf4f77c37ca0f4f31fee3748353886  public/app/app_auth.js
+2dcb596d17e41fd8b062f73e67c75801  public/app/app_main.js
+452507eee0677a7fc5bfc3d1d5011624  public/app/i18n_dict.js
+4a30eae34123893052cbc698b388b7fe  public/app/app.css
+110d2d0078d4bd382e535d07969a0c78  public/app/marib_cloud.js
+07e279b51e919553d17ae2289abaf98e  src/app/skeleton.ts
+836b9e254ecf392e2bb27a31f33b7cd4  src/app/page.tsx
+5080a4dc2ce2b44a633b9fc299c19de0  src/lib/marib/db.ts
+5b39bcda374812eb0f33631660af9e86  سير-العمل.html
+ff7d5e54df2df648977ebb8699e4b35f  README.md
+852339ac31e391fc12ae6d14d2cfc58a  دليل-الجولة-37.html
 3da2ddbd3fd8a4dd39f5399b7523fc9b  public/app/app_core.js
-b9b0c888f74b6622e1a2c94515a15e55  public/app/i18n_dict.js
+8e4b5973de19ac58a5a27d61ae9da905  public/app/app_charts.js
 8a58dc5a1c55021307db117c972ad709  public/app/i18n_core.js
 b3933a11b77d5047b4da5bb814771f4a  public/app/cursor_needle.png
 5f855c24771eed101fabb010aafd1672  public/app/cursor_needle_thread.png
-13ea39d0dcd21593a96a136de45a3d10  src/app/skeleton.ts
-3c13d6e8569f06d541507ff011e78a67  src/app/api/settings/route.ts
 f242bf6056d98c235753e66e3690189d  شرح-رسومات-رئيسية-المدير.html
-6c960b69e25aceff130c0b0ead35a2f7  سير-العمل.html
-a0c83480f1c1b3dabfee9fb733000891  README.md
 4e5a36d5ddca6bc56e50349284de7f94  next.config.ts
-61498873697d72471750ff520a7d163c  دليل-الجولة-36.html

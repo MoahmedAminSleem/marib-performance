@@ -14,6 +14,7 @@ const SCRIPTS = [
   "/app/marib_cloud.js",   // server sync client (R23)
   "/app/app_main.js",      // App module (a+b+c concatenated — one closure)
   "/app/app_auth.js",      // MaribAuth — server login gate
+  "/app/app_manpower.js",  // R37 — الاتزان (manpower balance)
 ];
 /* xlsx.full.min.js (~950KB) is NOT loaded upfront anymore: App.ensureXLSX()
    pulls it on first upload/export (R24 perf — the first paint got heavy). */

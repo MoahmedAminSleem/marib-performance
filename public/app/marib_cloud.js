@@ -76,12 +76,21 @@ var MaribCloud = (function () {
   /* ---------- storage (dev) ---------- */
   function storageGet() { return api("/api/storage"); }
 
+  /* ---------- manpower / الاتزان (R37) ---------- */
+  function manpowerGet() { return api("/api/manpower"); }
+  function manpowerPost(action, payload) {
+    var body = { action: action };
+    if (payload) for (var k in payload) body[k] = payload[k];
+    return api("/api/manpower", { method: "POST", body: body });
+  }
+
   return {
     session: session, login: login, logout: logout,
     usersList: usersList, userCreate: userCreate, userUpdate: userUpdate, userDelete: userDelete,
     userPhoto: userPhoto, userTitle: userTitle,
     dataGet: dataGet, dataSync: dataSync,
     settingsGet: settingsGet, settingsPut: settingsPut,
-    auditGet: auditGet, storageGet: storageGet
+    auditGet: auditGet, storageGet: storageGet,
+    manpowerGet: manpowerGet, manpowerPost: manpowerPost
   };
 })();

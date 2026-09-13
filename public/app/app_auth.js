@@ -307,6 +307,10 @@ var MaribAuth = (function () {
   function showLogin() {
     me = null;
     closeAppModals();
+    /* R37: leaving via logout also drops the الاتزان surface — the login
+       screen must never sit on top of a hidden shell mode */
+    if (window.MaribManpower && MaribManpower.hide) { try { MaribManpower.hide(); } catch (e) { } }
+    if (mgEl && !mgEl.hidden) hideModeGate();
     refreshChrome();
     loginEl.classList.add("on");
     document.body.classList.add("lg-locked");
@@ -357,14 +361,43 @@ var MaribAuth = (function () {
     hideLogin();
     refreshChrome();
     if (fresh && me) toast(T("us_hello") + me.username, "ok");
-    /* cloud data: fetch the server months — the upload prompt only
-       appears when the server actually has no months (no flash in between) */
-    if (window.App && App.cloudLoad) {
-      App.cloudLoad().then(function () {
-        if (!App.hasData() && window.App && App.promptData) App.promptData();
-      });
+    /* R37: after login the user picks the surface — تحليل الأداء (the
+       existing dashboard) or الاتزان (the manpower hierarchy). The
+       gate re-opens any time from the topbar ⇄ button. */
+    showModeGate();
+  }
+
+  /* ============================================================
+     R37 — mode gate (تحليل الأداء / الاتزان)
+     ============================================================ */
+  var mgEl = null;
+  function showModeGate() {
+    if (!mgEl) mgEl = $("modeGate");
+    if (!mgEl) {
+      /* skeleton without the gate (older cache) — straight to the dashboard */
+      if (window.App && App.enterDash) App.enterDash();
+      return;
     }
-    if (window.App && App.updateTitle) App.updateTitle();
+    mgEl.hidden = false;
+    /* entrance animation on the next frame so display→opacity transitions run */
+    requestAnimationFrame(function () { mgEl.classList.add("on"); });
+  }
+  function hideModeGate() {
+    if (!mgEl) mgEl = $("modeGate");
+    if (!mgEl) return;
+    mgEl.classList.remove("on");
+    setTimeout(function () { if (!mgEl.classList.contains("on")) mgEl.hidden = true; }, 260);
+  }
+  function bindModeGate() {
+    var d = $("mgDash"), m = $("mgMp");
+    if (d) d.addEventListener("click", function () {
+      hideModeGate();
+      if (window.App && App.enterDash) App.enterDash();
+    });
+    if (m) m.addEventListener("click", function () {
+      hideModeGate();
+      if (window.MaribManpower && MaribManpower.show) MaribManpower.show();
+    });
   }
 
   function refreshChrome() {
@@ -845,6 +878,7 @@ var MaribAuth = (function () {
     bindLogin();
     bindUsers();
     bindParallax();
+    bindModeGate();   /* R37: تحليل الأداء / الاتزان chooser */
     /* R26: link-opened tabs (right-click / Ctrl / middle-click on the nav
        links) arrive with ?_st=<token>. Chromium does NOT copy this tab's
        sessionStorage to them (only window.open / target=_blank get a
@@ -896,6 +930,8 @@ var MaribAuth = (function () {
     me: function () { return me; },
     isAdmin: function () { return isAdmin(me); },
     isDev: function () { return isDev(me); },
-    veilOff: veilOff
+    veilOff: veilOff,
+    /* R37: both surfaces reopen the mode gate through this handle */
+    showGate: showModeGate
   };
 })();

@@ -3015,6 +3015,8 @@ var App = (function () {
     if (e === "settings:mhome") return T("set_mhome");   /* R36: the raw key leaked into the table */
     if (e.indexOf("users:") === 0) return T("nav_users") + " · " + e.slice(6);
     if (e === "site") return T("au_site");   /* R36: was set_title (الإعدادات) — wrong face for login/logout rows */
+    if (e === "manpower") return T("au_mp");           /* R37: الاتزان rows */
+    if (e === "manpower-req") return T("au_mp_req");   /* R37: required-count edits */
     return e;
   }
   /* R35: date-first flow — the log never auto-loads on open. Step 1: the
@@ -3587,6 +3589,12 @@ var App = (function () {
     /* thread-spool scrollbar */
     initSpoolScroll();
 
+    /* R37: the topbar ⇄ button re-opens the mode gate (تحليل الأداء / الاتزان) */
+    var swp = $("btnSwap");
+    if (swp) swp.addEventListener("click", function () {
+      if (window.MaribAuth && MaribAuth.showGate) MaribAuth.showGate();
+    });
+
     /* the session layer (MaribAuth) owns the boot veil and triggers
        cloudLoad() as soon as the session resolves — the dashboard itself
        starts empty and hidden behind the veil (no "upload" flash). */
@@ -3597,11 +3605,31 @@ var App = (function () {
 
   document.addEventListener("DOMContentLoaded", init);
 
+  /* R37 — enter the dashboard surface (from the mode gate / الاتزان).
+     Same flow the old enterApp ran: fetch the server months once per
+     session, then only re-use them (server stays light on every swap). */
+  function enterDash() {
+    if (window.MaribManpower && MaribManpower.hide) { try { MaribManpower.hide(); } catch (e) { } }
+    updateTitle();
+    var loaded = !!(state.model && state.model.dates && state.model.dates.length);
+    if (!loaded) {
+      cloudLoad().then(function () {
+        if (!(state.model && state.model.dates && state.model.dates.length)) {
+          var nd = $("noData");
+          if (nd) nd.classList.add("on");
+          ndSet(false);
+          goToPage("data");
+        }
+      });
+    }
+  }
+
   return {
     state: state, render: render, goToPage: goToPage, openDrill: openDrill, applyQP: applyQP,
     scopedModel: scopedModel,
     hasData: function () { return !!(state.model && state.model.dates && state.model.dates.length); },
     cloudLoad: cloudLoad,
+    enterDash: enterDash,
     updateTitle: updateTitle,
     promptData: function () {
       var nd = $("noData");
