@@ -949,7 +949,9 @@ var MaribAuth = (function () {
     isDev: function () { return isDev(me); },
     veilOff: veilOff,
     /* R37: both surfaces reopen the mode gate through this handle */
-    showGate: showModeGate
+    showGate: showModeGate,
+    hideGate: hideModeGate   /* R43: enterDash يقفلها لو الدخول من زراير البوابة */,
+    hideGate: hideModeGate   /* R43: enterDash يقفلها لو الدخول من زراير البوابة */
   };
   window.__maribAuth42 = __authApi42;
   return __authApi42;

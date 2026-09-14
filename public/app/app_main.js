@@ -2823,6 +2823,29 @@ var App = (function () {
       if (el) el.hidden = v !== view;
     });
     /* entering a view loads its data (same calls the old accordion did) */
+    if (view === "groups") {
+      /* R43: تصنيف المشرفين من البوابة/الاتزان — نجيب الداتا مرة واحدة
+         من غير ما نلمس شاشة التحليل ونملأ القائمة على طول */
+      if (state.model) {
+        buildClsList();
+      } else {
+        var chost = $("clsPeople");
+        if (chost) chost.innerHTML = "<div style='padding:16px;color:var(--muted);font-weight:700'>&#8230;</div>";
+        MaribCloud.dataGet().then(function (d) {
+          var months = (d && d.months) || [];
+          var m2 = null;
+          if (months.length) {
+            var tables = { dd: [], ot: [], pm: [], att: [], lo: [] };
+            months.forEach(function (mo) {
+              var t = unpackTables((d.pack || {})[mo] || {});
+              Object.keys(tables).forEach(function (k) { tables[k] = tables[k].concat(t[k] || []); });
+            });
+            m2 = MaribCore.buildModel(tables, MaribCore.DEFAULT_CONFIG);
+          }
+          buildClsList(m2);
+        }).catch(function () { buildClsList(null); });
+      }
+    }
     if (view === "audit" && MaribAuth.isDev && MaribAuth.isDev()) auditReset();
     if (view === "storage" && MaribAuth.isDev && MaribAuth.isDev()) loadStorage();
     if (view === "mhome" && MaribAuth.isDev && MaribAuth.isDev()) loadMhome();
@@ -2991,10 +3014,10 @@ var App = (function () {
     var a = state.groups && state.groups.assignments;
     return (a && a[name]) || derivedGroupOf(name);
   }
-  function buildClsList() {
+  function buildClsList(m2) {
     var host = $("clsPeople");
-    if (!host || !state.model) return;
-    var m = state.model;
+    var m = m2 || state.model;   /* R43: بيقبل موديل جاهز — عشان الفتح من البوابة */
+    if (!host || !m) return;
     var seen = {};
     var names = [];
     (m.supervisors || []).concat(m.leaders || []).concat(m.managers || []).forEach(function (n) {
@@ -3688,6 +3711,8 @@ var App = (function () {
      session, then only re-use them (server stays light on every swap). */
   function enterDash(page) {
     if (window.MaribManpower && MaribManpower.hide) { try { MaribManpower.hide(); } catch (e) { } }
+    /* R43: الدخول من زرار «البيانات» في البوابة لازم يقفل البوابة نفسها */
+    if (window.MaribAuth && MaribAuth.hideGate) { try { MaribAuth.hideGate(); } catch (e) { } }
     updateTitle();
     var loaded = !!(state.model && state.model.dates && state.model.dates.length);
     if (page && $("page-" + page)) {

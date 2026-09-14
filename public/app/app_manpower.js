@@ -191,7 +191,6 @@ var MaribManpower = (function () {
   var view = "tree";
   var loaded = false;
   /* R42: التحديد المتعدد + ترتيب وظيفة/عامل + صفحة الكروت */
-  var selMode = false;
   var selSet = {};
   var ordMode = "emp";            /* emp = الاسم ثم الوظيفة · job = الوظيفة ثم الاسم */
   try { ordMode = localStorage.getItem("marib_mp_ord") === "job" ? "job" : "emp"; } catch (e) { }
@@ -392,16 +391,17 @@ var MaribManpower = (function () {
     var varBig = totVar === null ? "—" : (totVar > 0 ? "+" : "") + totVar;
     h.innerHTML =
       '<div class="mph-lead"><b class="mph-root">' + esc(rootLabel()) + '</b><small>' + esc(T("mg_mp_sub")) + "</small></div>" +
-      /* R42: كل كارت بيدوس — يفتح صفحة التفاصيل بتاعته */
+      /* R43: الموظفين/المطلوب/الشواغر بيدوسوا — الفرق والإدارات للعرض بس */
       card("click", String(ROOT ? ROOT.tCount : 0), T("mp_total_emp")) +
       card("req click", totReq === null ? "—" : String(totReq), T("mp_total_req")) +
-      card(varCls + " click", varBig, T("mp_total_var")) +
+      card(varCls, varBig, T("mp_total_var")) +
       card("click", String(vac), T("mp_vac")) +
-      card("click", String(ROOT ? ROOT.kids.length : 0), T("mp_depts"));
+      card("", String(ROOT ? ROOT.kids.length : 0), T("mp_depts"));
     /* الربط: idx 0=موظفين 1=مطلوب 2=فرق 3=شواغر 4=إدارات */
-    var modes = ["emps", "req", "var", "vacs", "depts"];
+    var modes = ["emps", "req", null, "vacs", null];
     var cards = h.querySelectorAll(".mph-card");
     for (var ci = 0; ci < cards.length && ci < modes.length; ci++) {
+      if (!modes[ci]) continue;   /* R43: كروت الفرق والإدارات مش أزرار */
       (function (el, mode) {
         el.setAttribute("role", "button");
         el.setAttribute("tabindex", "0");
@@ -517,14 +517,14 @@ var MaribManpower = (function () {
          (من غير title عشان ميتعملش تولتيبين فوق بعض) */
       ((e[8] || e[7]) ? '<i class="mtag" aria-hidden="true">' + ICO_MACH + "</i>" : "") + "</span>";
     var pen = ADMIN ? '<span class="mo" role="button" tabindex="0" title="' + esc(T("mp_edit")) + '" data-ei="' + esc(id) + '">' + ICO_PEN + "</span>" : "";
-    /* R42: وضع التحديد — تشيك بوكس جنب كل موظف بدل القلم */
-    var chk = selMode ? '<span class="mchk' + (selSet[id] ? " on" : "") + '" data-chk="' + esc(id) + '" role="checkbox" aria-checked="' + (selSet[id] ? "true" : "false") + '" tabindex="0">' + (selSet[id] ? '\u2713' : "") + "</span>" : "";
+    /* R43: تشيك بوكس دايم جنب كل موظف (للأدمن) — من غير وضع تحديد */
+    var chk = ADMIN ? '<span class="mchk' + (selSet[id] ? " on" : "") + '" data-chk="' + esc(id) + '" role="checkbox" aria-checked="' + (selSet[id] ? "true" : "false") + '" tabindex="0">' + (selSet[id] ? '\u2713' : "") + "</span>" : "";
     var style = "--d:" + (depthOf(e[4]) + 1) + (delay !== undefined ? ";animation-delay:" + delay + "ms" : "");
     /* R39: class "em" (NOT "en") — the dashboard's single-language rule
        ".en { display:none !important }" (R31) used to swallow these whole
        rows: names+codes went invisible, only vacancy (job) rows stayed. */
     return '<div class="mpr em' + (isOpen ? " ex" : "") + (anim ? " in" : "") + (selSet[id] ? " sel" : "") + '" style="' + style + '" data-i="' + esc(id) + '" data-t="emp">' +
-      (selMode ? chk : tw) + (selMode ? '<span class="tw ghost"></span>' : "") + ico + label + '<span class="mflex"></span>' + (trs.length ? '<span class="mtr" title="' + esc(T("mp_emp_transfers")) + '">' + trs.length + "</span>" : "") + pen + "</div>";
+      chk + tw + ico + label + '<span class="mflex"></span>' + (trs.length ? '<span class="mtr" title="' + esc(T("mp_emp_transfers")) + '">' + trs.length + "</span>" : "") + pen + "</div>";
   }
 
   /* ---------------- R42: صف الوظيفة (وضع «الوظيفة ثم العامل») ---------------- */
@@ -1546,7 +1546,13 @@ var MaribManpower = (function () {
     var bar = $("mpSelBar");
     if (!bar) return;
     var n = selCount();
-    bar.classList.toggle("on", view !== "arch" && view !== "cards" && (selMode || n > 0));
+    bar.classList.toggle("on", view !== "arch" && view !== "cards" && n > 0);
+    /* R43: زر «تحديد الكل» بيبقى مفعل طول ما في تحديد */
+    var sb = $("mpSelBtn");
+    if (sb) {
+      sb.classList.toggle("on", n > 0);
+      sb.setAttribute("aria-pressed", n > 0 ? "true" : "false");
+    }
     var cnt = $("mpSelCount");
     if (cnt) cnt.textContent = String(n);
     /* عدّاد الأرشيف */
@@ -1557,13 +1563,14 @@ var MaribManpower = (function () {
     var abar = $("mpArchBar");
     if (abar) abar.classList.toggle("on", an > 0);
   }
-  function toggleSelMode(force) {
-    selMode = force !== undefined ? force : !selMode;
-    if (!selMode) selSet = {};
-    var btn = $("mpSelBtn");
-    if (btn) {
-      btn.classList.toggle("on", selMode);
-      btn.setAttribute("aria-pressed", selMode ? "true" : "false");
+  function toggleSelMode() {
+    /* R43: التحديد بقى دايم بالتشيك بوكسات — الزر «تحديد الكل / إلغاء» */
+    if (selCount() > 0) {
+      selSet = {};
+    } else if (DATA) {
+      for (var si = 0; si < DATA.emps.length; si++) {
+        if (!DATA.emps[si][6]) selSet[DATA.emps[si][0]] = true;   /* الفعليين بس (مش الشواغر) */
+      }
     }
     updateSelBar();
     renderTree();
@@ -1806,7 +1813,8 @@ var MaribManpower = (function () {
      بعد كل تحميل: نجمع الأقسام والوظايف اللي ملهاش ترجمة (مش في
      الجلوسار ولا في خريطة السيرفر) ونبعتها دفعة واحدة — السيرفر
      بيرجّع الخريطة متحدثة وكل حاجة بترسم نفسها. صامتة تمامًا. */
-  function trScan() {
+  function trScan(round) {
+    round = round || 1;
     if (!DATA || !ADMIN) return;
     var tr = DATA.tr || {};
     var need = {};
@@ -1821,11 +1829,13 @@ var MaribManpower = (function () {
     }
     var terms = Object.keys(need);
     if (!terms.length) return;
-    MaribCloud.manpowerPost("trSync", { terms: terms.slice(0, 40) }).then(function (r) {
+    /* R43: 100 مصطلح في الجولة — ولحد 4 جولات ورا بعض عشان المتراكم يخلص */
+    MaribCloud.manpowerPost("trSync", { terms: terms.slice(0, 100) }).then(function (r) {
       if (r && r.tr && (r.tr.length || Object.keys(r.tr).length)) {
         DATA.tr = r.tr;
         buildTree();
         renderAll();
+        if (round < 4 && terms.length > 100) setTimeout(function () { trScan(round + 1); }, 500);
       }
     }).catch(function () { });
   }
@@ -1882,7 +1892,6 @@ var MaribManpower = (function () {
     closeReqPop();
     tipCurId = null;   /* R40: قفل التولتيب مع الشاشة نفسها */
     tipHide();
-    selMode = false;   /* R42: خروج من وضع التحديد كمان */
     selSet = {};
     archSel = {};
     updateSelBar();
@@ -1991,7 +2000,7 @@ var MaribManpower = (function () {
       if (ids.length) openTransferMany(ids);
     });
     if (selDel) selDel.addEventListener("click", applySelDelete);
-    if (selX) selX.addEventListener("click", function () { toggleSelMode(false); });
+    if (selX) selX.addEventListener("click", function () { selSet = {}; updateSelBar(); renderTree(); });
     /* شريط الأرشيف */
     var archDel2 = $("mpArchDel"), archX = $("mpArchX");
     if (archDel2) archDel2.addEventListener("click", applyArchDelete);
@@ -2144,17 +2153,21 @@ var MaribManpower = (function () {
         }
         return;
       }
+      var chkEl = el.closest ? el.closest(".mchk") : null;
+      if (chkEl) {                           /* R43: التشيك بوكس — تحديد من غير فتح الصف */
+        var cid = chkEl.getAttribute("data-chk");
+        if (cid) {
+          selSet[cid] = !selSet[cid];
+          updateSelBar();
+          renderTree();
+          return;
+        }
+      }
       var row = el.closest ? el.closest(".mpr") : null;
       if (!row) return;
       var t = row.getAttribute("data-t");
       if (t === "emp") {
         var c = row.getAttribute("data-i");
-        if (selMode) {                       /* R42: وضع التحديد — الضغطة بتحدد */
-          selSet[c] = !selSet[c];
-          updateSelBar();
-          renderTree();
-          return;
-        }
         empOpen[c] = !empOpen[c];
         renderTree();
       } else if (t === "job") {
@@ -2219,7 +2232,7 @@ var MaribManpower = (function () {
         clearTimeout(tipTimer);
         tipHide();
         var emp = findEmp(id);
-        if (!emp || (!emp[8] && !emp[7])) return;  /* ملوش ماكينة ولا ملاحظة */
+        if (!emp) return;   /* R43: الكارت بيبان لكل موظف — الوظيفة دايمًا فيه */
         tipTimer = setTimeout(function () { tipShow(emp, e); }, 140);
       });
       tree.addEventListener("mouseout", function (e) {

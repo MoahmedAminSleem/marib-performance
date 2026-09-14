@@ -697,7 +697,7 @@ nav_tt_swap: { ar: "التبديل بين الواجهتين", en: "Switch betwe
   mp_sel_move:   { ar: "نقل المحدد", en: "Move selected", tr: "Seçilenleri taşı" },
   mp_sel_del:    { ar: "حذف المحدد", en: "Delete selected", tr: "Seçilenleri sil" },
   mp_sel_clear:  { ar: "إلغاء التحديد", en: "Clear selection", tr: "Seçimi kaldır" },
-  mp_sel_mode:   { ar: "تحديد", en: "Select", tr: "Seç" },
+  mp_sel_mode:   { ar: "تحديد الكل", en: "Select all", tr: "Tümünü seç" },
   mp_sel_n:      { ar: "محدد", en: "selected", tr: "seçili" },
   mp_card_open:  { ar: "اضغط لعرض التفاصيل", en: "Click to open details", tr: "Ayrıntılar için tıkla" },
   mp_cards_back: { ar: "رجوع للهيكل", en: "Back to hierarchy", tr: "Hiyerarşiye dön" },

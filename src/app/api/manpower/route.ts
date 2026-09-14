@@ -84,9 +84,9 @@ function normName(v: unknown): string {
    النتيجة تتخزن في marib_i18n — مرة واحدة لكل كلمة. الفشل صامت:
    الكلمة تظهر زي ما هي (مفيش ترجمة أحسن من ترجمة غلط). */
 const AR_RE = /[\u0600-\u06FF]/;
-async function gtx(text: string, from: string, to: string): Promise<string> {
+async function gtx(text: string, from: string, to: string, host = "translate.googleapis.com"): Promise<string> {
   const u =
-    "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" +
+    "https://" + host + "/translate_a/single?client=gtx&sl=" +
     from + "&tl=" + to + "&dt=t&q=" + encodeURIComponent(text);
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 3500);
@@ -120,7 +120,10 @@ async function myMemory(text: string, from: string, to: string): Promise<string>
   }
 }
 async function translateInto(text: string, from: string, to: string): Promise<string> {
-  return (await gtx(text, from, to)) || (await myMemory(text, from, to));
+  /* R43: مضيفين لجوجل + MyMemory — 3 فرص قبل ما الكلمة تفضل زي ما هي */
+  return (await gtx(text, from, to))
+    || (await gtx(text, from, to, "translate.google.com"))
+    || (await myMemory(text, from, to));
 }
 /* يترجم مصطلحًا للغتين التانيتين ويخزنهم — يستخدمها deptAdd/deptRename
    و trSync (الدفعات اللي بيبعتها العميل). */
@@ -131,8 +134,9 @@ async function translateAndStore(term: string): Promise<void> {
   const done = new Set(have.map((r) => r.lang as string));
   const from = AR_RE.test(t) ? "ar" : "en";
   const targets: string[] = from === "ar" ? ["en", "tr"] : ["ar", "tr"];
-  for (const tl of targets) {
-    if (done.has(tl)) continue;
+  /* R43: اللغتين بالتوازي */
+  await Promise.all(targets.map(async (tl) => {
+    if (done.has(tl)) return;
     const out = await translateInto(t, from, tl);
     if (out && out !== t) {
       await q(
@@ -141,7 +145,7 @@ async function translateAndStore(term: string): Promise<void> {
         [t, tl, out.slice(0, 90)]
       );
     }
-  }
+  }));
 }
 
 export async function GET(req: NextRequest) {
@@ -288,12 +292,13 @@ export async function POST(req: NextRequest) {
        السيرفر يترجمها بالخدمة المجانية ويخزنها ويرجّع الخريطة كلها. */
     if (action === "trSync") {
       const terms = Array.isArray(body.terms)
-        ? (body.terms as unknown[]).map((x) => cleanStr(x, 90)).filter(Boolean).slice(0, 40)
+        ? (body.terms as unknown[]).map((x) => cleanStr(x, 90)).filter(Boolean).slice(0, 100)
         : [];
       const have = new Set((await q("SELECT term FROM marib_i18n")).map((r) => r.term as string));
-      for (const t of terms) {
-        if (have.has(t)) continue;
-        await translateAndStore(t);
+      const todo = terms.filter((t) => !have.has(t));
+      /* R43: 8 مصطلحات بالتوازي — أسرع بكتير من التتابع (Vercel-safe) */
+      for (let i = 0; i < todo.length; i += 8) {
+        await Promise.all(todo.slice(i, i + 8).map((t) => translateAndStore(t).catch(() => {})));
       }
       const trRows = await q("SELECT term, lang, tr FROM marib_i18n");
       const tr: Record<string, Record<string, string>> = {};
