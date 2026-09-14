@@ -632,6 +632,15 @@ nav_tt_swap: { ar: "التبديل بين الواجهتين", en: "Switch betwe
   home_btn:   { ar: "الصفحة الرئيسية", en: "Home", tr: "Ana Sayfa" },
   mp_item:    { ar: "القسم / الموظف", en: "Section / Employee", tr: "Bölüm / Personel" },
   mp_upload:  { ar: "رفع شيت Manpower", en: "Upload Manpower sheet", tr: "Manpower sayfası yükle" },
+  /* R39 — Excel export */
+  mp_export:        { ar: "تصدير Excel", en: "Export Excel", tr: "Excel'e aktar" },
+  mp_export_going:  { ar: "جاري بناء ملف الاتزان…", en: "Building the balance workbook…", tr: "Cetvel dosyası hazırlanıyor…" },
+  mp_export_done:   { ar: "اتنزّل ملف الاتزان — Excel جاهز", en: "Balance workbook downloaded", tr: "Cetvel dosyası indirildi" },
+  /* R39 — employee delete (site-side management, away from Excel) */
+  mp_del_emp:     { ar: "حذف الموظف من الموقع", en: "Remove employee from site", tr: "Çalışanı kaldır" },
+  mp_confirm_del: { ar: "حذف {n} من الاتزان؟ خروجه هيتسجل في الأرشيف.", en: "Remove {n}? The exit is recorded in the archive.", tr: "{n} kaldırılsın mı? Çıkış arşive yazılır." },
+  mp_deleted:     { ar: "الحذف اتعمل واتسجل الخروج في الأرشيف", en: "Removed — exit recorded in the archive", tr: "Kaldırıldı — çıkış arşive yazıldı" },
+  mp_kind_out:    { ar: "خروج", en: "Exit", tr: "Çıkış" },
   mp_code_new:{ ar: "جديد", en: "New", tr: "Yeni" },
   mp_code_ph: { ar: "فاضي = لسه من غير كود", en: "Empty = code pending", tr: "Boş = kod bekliyor" },
   mp_vac:     { ar: "شاغر", en: "Vacant", tr: "Boş" },

@@ -75,6 +75,9 @@ var MaribManpower = (function () {
     "MANGMENT":          { ar: "الإدارة",              en: "Management",          tr: "Yönetim" },
     "General Maintenance": { ar: "الصيانة العامة",     en: "General Maintenance", tr: "Genel Bakım" },
     "FOLLOW UP":         { ar: "المتابعة",             en: "Follow Up",           tr: "Takip" },
+    "PRO. - SEWING FOLLOW UP": { ar: "متابعة الخياطة", en: "Sewing Follow Up", tr: "Dikim Takibi" },  /* R39: new dept in the 2026-09 sheet */
+    "IAS - IA - IAA":   { ar: "المراجعة الداخلية",    en: "Internal Audit",        tr: "İç Denetim" },          /* R39 */
+    "INHOUSE ADM.IT":   { ar: "تكنولوجيا المعلومات",  en: "In-house IT Admin",     tr: "Bilgi İşlem" },         /* R39 */
     "PRO. - PROD.MAINT. - TECHNICIAN":  { ar: "صيانة الإنتاج",  en: "Production Maintenance", tr: "Üretim Bakım" },
     "PRO. - Q.A. - SEWING":             { ar: "جودة الخياطة",   en: "Sewing QA",              tr: "Dikim Kalite" },
     "PRO. - SEWING - MANAGEMENT":       { ar: "إدارة الخياطة",  en: "Sewing Management",      tr: "Dikim Yönetimi" },
@@ -145,6 +148,26 @@ var MaribManpower = (function () {
   var ADMIN = false;
   var jobsAll = [];
 
+  /* R39: natural compare — "خط 2" before "خط 10", digits compared as
+     numbers (used as the tie-break of the ascending ord sort) */
+  function natCmp(a, b) {
+    var A = String(a == null ? "" : a), B = String(b == null ? "" : b);
+    var re = /(\d+)|(\D+)/g, pa = [], pb = [], m;
+    while ((m = re.exec(A)) !== null) pa.push(m[1] ? { n: parseInt(m[1], 10) } : { s: m[2] });
+    var re2 = /(\d+)|(\D+)/g;
+    while ((m = re2.exec(B)) !== null) pb.push(m[1] ? { n: parseInt(m[1], 10) } : { s: m[2] });
+    for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
+      var x = pa[i], y = pb[i];
+      if (!x) return -1;
+      if (!y) return 1;
+      if (x.n !== undefined && y.n !== undefined) { if (x.n !== y.n) return x.n - y.n; }
+      else if (x.n !== undefined) return -1;
+      else if (y.n !== undefined) return 1;
+      else { var c = x.s.localeCompare(y.s, "ar"); if (c) return c; }
+    }
+    return 0;
+  }
+
   function fmtWhen(iso) {
     var d = new Date(iso);
     if (!d || isNaN(d.getTime())) return String(iso || "");
@@ -209,16 +232,13 @@ var MaribManpower = (function () {
       n.tRows = n.rows;
     })(ROOT);
 
-    /* shortage first (variance asc), unset last, then biggest */
+    /* R39: ترتيب تصاعدي ثابت — ترتيب الشيت (ord) الأول، وبين المتساويين
+       مقارنة طبيعية للأسامي (خط 2 قبل خط 10). اللي كان قبل كده (الناقص
+       الأول) هو اللي خلى الخطوط تطلع 4 ، 5 ، 1 ، 2 ، 3 بالظبط. */
     (function sortKids(n) {
       n.kids.sort(function (a, b) {
-        var va = a.eff === null ? null : a.tCount - a.eff;
-        var vb = b.eff === null ? null : b.tCount - b.eff;
-        if (va === null && vb === null) return b.tCount - a.tCount;
-        if (va === null) return 1;
-        if (vb === null) return -1;
-        if (va !== vb) return va - vb;
-        return b.tCount - a.tCount;
+        if ((a.ord || 0) !== (b.ord || 0)) return (a.ord || 0) - (b.ord || 0);
+        return natCmp(deptLabel(a), deptLabel(b));
       });
       for (var k = 0; k < n.kids.length; k++) sortKids(n.kids[k]);
     })(ROOT);
@@ -359,8 +379,8 @@ var MaribManpower = (function () {
     var ico = '<span class="mi dept">' + ICO_DEPT + "</span>";
     var label = '<span class="ml">' + hl(deptLabel(n), needle) +
       (n.own !== null ? '<i class="mls ov" title="' + esc(T("mp_req_own")) + '">✎</i>' : "") + "</span>";
-    var adm = ADMIN ? '<span class="mo dm" role="button" tabindex="0" title="' + esc(T("mp_dept_move")) + '" data-dm="' + esc(n.id) + '">' + ICO_MOVE + "</span>" +
-      '<span class="mo rn" role="button" tabindex="0" title="' + esc(T("mp_dept_rename")) + '" data-rn="' + esc(n.id) + '">' + ICO_PEN + "</span>" : "";
+    /* R39: زرار واحد بس — نفس المودال بيعمل التسمية والنقل مع بعض */
+    var adm = ADMIN ? '<span class="mo rn" role="button" tabindex="0" title="' + esc(T("mp_dept_edit")) + '" data-rn="' + esc(n.id) + '">' + ICO_PEN + "</span>" : "";
     var style = "--d:" + n.depth + (delay !== undefined ? ";animation-delay:" + delay + "ms" : "");
     return '<div class="mpr dn' + (anim ? " in" : "") + '" style="' + style + '" data-k="' + esc(n.key) + '" data-t="dept">' +
       tw + ico + label + bar(n) + badgeHTML(n) + adm + "</div>";
@@ -380,7 +400,10 @@ var MaribManpower = (function () {
     var label = '<span class="ml"><b class="mln">' + hl(name, needle) + "</b>" + codeChip + "</span>";
     var pen = ADMIN ? '<span class="mo" role="button" tabindex="0" title="' + esc(T("mp_edit")) + '" data-ei="' + esc(id) + '">' + ICO_PEN + "</span>" : "";
     var style = "--d:" + (depthOf(e[4]) + 1) + (delay !== undefined ? ";animation-delay:" + delay + "ms" : "");
-    return '<div class="mpr en' + (isOpen ? " ex" : "") + (anim ? " in" : "") + '" style="' + style + '" data-i="' + esc(id) + '" data-t="emp">' +
+    /* R39: class "em" (NOT "en") — the dashboard's single-language rule
+       ".en { display:none !important }" (R31) used to swallow these whole
+       rows: names+codes went invisible, only vacancy (job) rows stayed. */
+    return '<div class="mpr em' + (isOpen ? " ex" : "") + (anim ? " in" : "") + '" style="' + style + '" data-i="' + esc(id) + '" data-t="emp">' +
       tw + ico + label + '<span class="mflex"></span>' + (trs.length ? '<span class="mtr" title="' + esc(T("mp_emp_transfers")) + '">' + trs.length + "</span>" : "") + pen + "</div>";
   }
 
@@ -419,12 +442,15 @@ var MaribManpower = (function () {
         '</span><span class="dtp">' + esc(from) + ' <b>←</b> ' + esc(to) + "</span>" +
         (t[9] ? '<span class="dtn">' + esc(t[9]) + "</span>" : "") + "</div>";
     }
+    /* R39: الكود أول حاجة بعد الاسم — الوظيفة بعدها (الاسم هو عنوان الصف) */
     return '<div class="mpr-det">' +
-      '<div class="drow job"><span>' + esc(T("mp_job")) + "</span><b>" + esc(job ? TT(job) : T("mp_no_job")) + "</b></div>" +
       '<div class="drow"><span>' + esc(T("mp_code")) + '</span><b class="num">' + (isNew ? esc(T("mp_code_new")) : esc(code)) + "</b></div>" +
+      '<div class="drow job"><span>' + esc(T("mp_job")) + "</span><b>" + esc(job ? TT(job) : T("mp_no_job")) + "</b></div>" +
       '<div class="drow"><span>' + esc(T("mp_hire")) + '</span><b class="num">' + esc(e[5] || "—") + "</b></div>" +
       '<div class="drow"><span>' + esc(T("mp_dept")) + "</span><b>" + esc(node ? nodePathTT(node) : "—") + "</b></div>" +
       (trs.length ? '<div class="dth">' + esc(T("mp_emp_transfers")) + " (" + trs.length + ')</div><div class="dtrs">' + rows + "</div>" : "") +
+      /* R39: حذف موظف من الموقع — للادمن بس، وبتأكيد، وبتسجيل خروج في الأرشيف */
+      (ADMIN ? '<div class="mpm-btns det-del"><button type="button" class="mp-del" data-del="' + esc(id) + '">' + esc(T("mp_del_emp")) + "</button></div>" : "") +
       "</div>";
   }
   function nodePathTT(n) {
@@ -470,6 +496,10 @@ var MaribManpower = (function () {
     html.push(rootNodeRow());
     shown++;
 
+    /* R39: سهم Marib 3 بقى بيفتح ويقفل بجد — قبل كده الصفوف كانت بتترسم
+       دايمًا مهما حصل. البحث بيفضل الشجرة مفتوحة عشان النتايج تبان. */
+    var rootOpen = needle ? true : !!expanded["root"];
+
     function walk(n, anim) {
       var kids = n.kids;
       for (var i = 0; i < kids.length; i++) {
@@ -504,7 +534,7 @@ var MaribManpower = (function () {
       if (n === ROOT) return;
     }
 
-    walk(ROOT, false);
+    if (rootOpen) walk(ROOT, false);
     box.innerHTML = html.join("");
     if (em) em.hidden = shown > 1;
     var th = $("mpThead");
@@ -526,6 +556,7 @@ var MaribManpower = (function () {
       var kind = t[8] === "dept" || t[8] === "dept-move" ? "mp_kind_deptmove"
         : t[8] === "dept-rename" ? "mp_kind_rename"
         : t[8] === "fill" ? "mp_kind_fill"
+        : t[8] === "out" ? "mp_kind_out"          /* R39: حذف/خروج */
         : t[8] === "dept" ? "mp_kind_dept"
         : t[8] === "job" ? "mp_kind_job"
         : "mp_kind_move";
@@ -623,9 +654,13 @@ var MaribManpower = (function () {
   /* ---------------- DEPT modal (rename + move) ---------------- */
   function openDeptModal(node) {
     if (!ADMIN) { toast(T("mp_need_admin"), "err"); return; }
+    /* R39: خانة الاسم بتوري الكلمة بنفس لغة الموقع (الخياطة / Sewing /
+       Dikim) — مش الكلمة الإنجليزية اللي جوه الإكسل. إعادة التسمية بتتسجل
+       بس لو الكلمة اتغيرت فعلاً عن اللي مكتوب قدامك. */
+    var shown0 = deptLabel(node);
     var m = modalOpen("mpm-dept",
-      '<h3>' + esc(T("mp_dept_edit")) + ': ' + esc(deptLabel(node)) + "</h3>" +
-      '<label><span>' + esc(T("mp_dept_name")) + '</span><input id="mdName" type="text" maxlength="90" value="' + esc(node.label) + '"></label>' +
+      '<h3>' + esc(T("mp_dept_edit")) + ': ' + esc(shown0) + "</h3>" +
+      '<label><span>' + esc(T("mp_dept_name")) + '</span><input id="mdName" type="text" maxlength="90" value="' + esc(shown0) + '"></label>' +
       '<div class="md-sec"><b>' + esc(T("mp_dept_move")) + '</b><div class="mpc" id="mdMove"></div></div>' +
       '<div class="mpm-btns">' +
       '<button type="button" class="mpm-x" data-i18n="mp_cancel">' + esc(T("mp_cancel")) + "</button>" +
@@ -640,7 +675,7 @@ var MaribManpower = (function () {
       var newName = $("mdName").value.trim();
       var newParent = trailToId($("mdMove")._trail || []);
       if (!newName) { toast(T("mp_fill"), "err"); return; }
-      var renamed = newName !== node.label;
+      var renamed = newName !== shown0;   /* R39: compare against the shown word */
       var movedParent = newParent !== node.parent;
       if (!renamed && !movedParent) { m.remove(); return; }
       /* guard: can't move a node inside itself */
@@ -971,10 +1006,11 @@ var MaribManpower = (function () {
     document.body.classList.add("mp-on");
     var w = $("mpWrap");
     if (w) w.hidden = false;
-    var add = $("mpAddBtn"), imp = $("mpImportBtn"), dad = $("mpDeptBtn");
+    var add = $("mpAddBtn"), imp = $("mpImportBtn"), dad = $("mpDeptBtn"), exp = $("mpExportBtn");
     if (add) add.style.display = ADMIN ? "" : "none";
     if (imp) imp.style.display = ADMIN ? "" : "none";
     if (dad) dad.style.display = ADMIN ? "" : "none";
+    if (exp) exp.style.display = "";   /* R39: التصدير متاح لكل المسجلين — قراءة بس */
     if (!loaded && !loading) reload();
     else renderAll();
   }
@@ -1028,7 +1064,7 @@ var MaribManpower = (function () {
       renderTree("__all__");
     });
     if (cx) cx.addEventListener("click", function () {
-      expanded = { root: true };   /* Marib 3 stays open — the 7 departments stay visible */
+      expanded = {};   /* R39: تقفيل الكل = تقفيل Marib 3 نفسه كمان */
       empOpen = {};
       renderTree();
     });
@@ -1046,6 +1082,33 @@ var MaribManpower = (function () {
       var f = pick.files && pick.files[0];
       pick.value = "";
       if (f) importExcel(f);
+    });
+
+    /* R39: تصدير الهيكل كله كإكسل (باترن + هيكل + موظفين + أرشيف) —
+       السيرفر هو اللي بيبني الملف فالموقع بيفضل خفيف */
+    var exp = $("mpExportBtn");
+    if (exp) exp.addEventListener("click", function () {
+      exp.disabled = true;
+      toast(T("mp_export_going"), "");
+      var d = new Date();
+      function p2(n) { return (n < 10 ? "0" : "") + n; }
+      var stamp = d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate());
+      fetch("/api/manpower/export", { credentials: "same-origin" })
+        .then(function (r) {
+          if (!r.ok) throw new Error("export " + r.status);
+          return r.blob();
+        })
+        .then(function (b) {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(b);
+          a.download = "Manpower-Marib3-" + stamp + ".xlsx";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
+          toast(T("mp_export_done"), "ok");
+        })
+        .catch(function () { toast(T("toast_sync_err"), "err"); })
+        .then(function () { exp.disabled = false; });
     });
 
     /* tree interaction — one delegated listener */
@@ -1073,14 +1136,17 @@ var MaribManpower = (function () {
         save({ action: "vacDel", id: vx.getAttribute("data-vx") }, T("mp_vac_deleted"), true);
         return;
       }
-      /* dept edit / move */
-      var dm = el.closest ? el.closest(".mo.dm") : null;
-      if (dm) {
+      /* R39: حذف موظف (زرار جوه كارت التفاصيل) */
+      var del = el.closest ? el.closest(".mp-del") : null;
+      if (del) {
         e.stopPropagation();
-        var dn = findByKey("d:" + dm.getAttribute("data-dm"));
-        if (dn) openDeptModal(dn);
+        var e3 = findEmp(del.getAttribute("data-del"));
+        if (e3 && window.confirm(T("mp_confirm_del").replace("{n}", e3[2]))) {
+          save({ action: "del", id: e3[0] }, T("mp_deleted"), true);
+        }
         return;
       }
+      /* dept edit (rename + move in ONE modal) */
       var rn = el.closest ? el.closest(".mo.rn") : null;
       if (rn) {
         e.stopPropagation();

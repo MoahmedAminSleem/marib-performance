@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل الجولة 39 — الاتزان v3: إصلاحات الشجرة + إدارة الأشخاص + تصدير Pivot Excel</title>
+<style>:root{--bg:#0A101C;--bg2:#101a2b;--card:#131f33;--line:#26364f;--txt:#DCE5EF;--dim:#A9B7C7;--gold:#C49A6C;--gold2:#E9C68A;--blue:#7FB3E8;--green:#4FD98D;--red:#F87171}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.9;padding:26px 16px}
+.wrap{max-width:880px;margin:0 auto}
+h1{color:var(--gold2);font-size:23px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+h2{color:var(--gold2);font-size:17px;margin:26px 0 10px;border-inline-start:4px solid var(--gold);padding-inline-start:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0}
+.step{display:flex;gap:12px;margin:12px 0;align-items:flex-start}
+.n{background:var(--gold);color:#141B26;font-weight:800;min-width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+.path{background:rgba(196,154,108,.14);color:var(--gold2);padding:2px 8px;border-radius:7px;font-size:12.5px;font-family:Consolas,monospace;direction:ltr;display:inline-block}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{padding:8px 10px;border:1px solid var(--line);text-align:start}
+th{color:var(--gold2);background:rgba(196,154,108,.07);font-size:12px}
+td{color:var(--txt)}
+.small{font-size:12px;color:var(--dim)}
+ul{padding-inline-start:22px}
+li{margin:7px 0}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11.5px;font-weight:700;margin-inline-end:6px}
+.tag.new{background:rgba(79,217,141,.13);color:var(--green)}
+.tag.mod{background:rgba(127,179,232,.13);color:var(--blue)}
+b.g{color:var(--green)} b.r{color:var(--red)} b.y{color:var(--gold2)}</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>دليل الجولة 39 — الاتزان v3: إصلاحات الشجرة + إدارة الأشخاص من الموقع + تصدير Pivot Excel</h1>
+<p class="sub">6 إصلاحات من تقرير المالك · حذف موظف بأرشيف «خروج» · آخر داتا Manpower.xlsx · ملف Excel جاهز بثيم الموقع</p>
+
+<div class="card">
+<h2>اللي اتعمل في الجولة دي</h2>
+<ul>
+<li><b>الأسماء والأكواد ظهرت:</b> كان فيهم كلاس CSS قديم بيخفيهم في وضع اللغة الواحدة — اتصلح، وكارت الموظف بقى <b>الكود الأول</b> بعدين الوظيفة.</li>
+<li><b>سهم Marib 3 بقى يقفل ويفتح بجد</b> — و«تقفيل الكل» بيقفل الجذر نفسه كمان (الشجرة بترجع صف واحد).</li>
+<li><b>الترتيب تصاعدي ثابت بترتيب الشيت:</b> خط 1 ← خط 2 ← خط 3 ← خط 4 ← خط 5 (كان بيرتب بالنواقص فطلع 4 · 5 · 1…).</li>
+<li><b>زرار واحد للقسم:</b> القلم والنقلة اندمجوا في مودال واحد، واسم القسم في الحوار بيظهر <b>بلغة الموقع</b> (الخياطة / Sewing / Dikim) مش كلمة الإكسل.</li>
+<li><b>إدارة الأشخاص من الموقع بعيدًا عن الإكسل:</b> «إضافة موظف» زي ما هي + <b>زرار أحمر «حذف الموظف من الموقع»</b> في كارت التفاصيل — بتأكيد فيه اسم الموظف، والخروج بيتسجل في <b>أرشيف النقل</b> (مين · إمتى · من أي قسم · «خروج من الموقع») وفي سجل التدقيق.</li>
+<li><b>داتا محدثة:</b> من آخر Manpower.xlsx (2026-09-14) — 828 صف: 810 معين + 18 شاغر + 10 «جديد» (منهم 3 اتعينوا في شواغر النسخة اللي فاتت) — والأرقام متطابقة مع شيت Manpower نفسه 34/34.</li>
+<li><b>تصدير Excel جاهز (Pivot):</b> زرار «تصدير Excel» بينزّل ملف واحد فيه 4 شيتات: <b>Pivot الاتزان</b> (مجموعات بإجماليات جزئية + صف الإجمالي + ألوان) · <b>الهيكل</b> (الشجرة كاملة بأوتلاين قابل للطي) · <b>الموظفين</b> (828 صف + فلتر + حالة ملونة) · <b>الأرشيف</b> — بثيم الدنيم/الذهبي، 65KB بس، متاح لأي مستخدم داخل.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>خطوات التسليم (3 دقايق)</h2>
+<div class="step"><div class="n">1</div><div>حمّل الـ ZIP وفكّه، وارفع <b>كل الملفات اللي جواه</b> على GitHub (Add file ← Upload files ← اسحبها كلها). الـ ZIP تراكمي — يشتغل حتى لو آخر جولة رفعتها قبل كده.</div></div>
+<div class="step"><div class="n">2</div><div>افتح الموقع وسجّل دخول. أول طلب هيعمل زرع نظيف ببوابة الإصدار 41 (ثواني، مرة واحدة) — <b>مش بيلمس المستخدمين ولا الشهور ولا الإعدادات</b>.</div></div>
+<div class="step"><div class="n">3</div><div>دوس <b>«الاتزان»</b> — جرّب: سهم Marib 3 يقفل ويفتح · الخطوط من 1 لـ 5 بالترتيب · دوس على اسم = كود + وظيفة · زرار <b>«تصدير Excel»</b> ينزّل الملف ويفتحه Pivot جاهز.</div></div>
+</div>
+
+<div class="card">
+<h2>الملفات المتغيرة (22 ملف)</h2>
+<table>
+<tr><th>الملف</th><th>النوع</th><th>اللي فيه</th></tr>
+<tr><td><span class="path">public/app/app_manpower.js</span></td><td><span class="tag mod">تعديل جوهري</span></td><td>الترتيب الطبيعي (خط 2 قبل خط 10) · طي الجذر الحقيقي · كلاس الموظف em (إصلاح الاختفاء) · الكود قبل الوظيفة · مودال القسم المدمج بلغة الموقع · زرار الحذف + معالجه · مسرد +2 (المراجعة الداخلية · تكنولوجيا المعلومات)</td></tr>
+<tr><td><span class="path">src/app/api/manpower/route.ts</span></td><td><span class="tag mod">تعديل</span></td><td>فعل <b>del</b>: حذف موظف + صف أرشيف kind=out + تدقيق</td></tr>
+<tr><td><span class="path">src/app/api/manpower/export/route.ts</span></td><td><span class="tag new">جديد</span></td><td>مولّد Excel الجاهز (ExcelJS): Pivot + هيكل + موظفين + أرشيف — نفس حسابات الموقع حرفيًا</td></tr>
+<tr><td><span class="path">src/server/seed/manpower-seed.ts</span></td><td><span class="tag mod">تعديل</span></td><td>زرع آخر Manpower.xlsx (828 صف + 63 قسم — 3 معينين جدد)</td></tr>
+<tr><td><span class="path">src/lib/marib/db.ts</span></td><td><span class="tag mod">تعديل</span></td><td>بوابة إصدار الزرع mp_seed_ver=41 (زرع نظيف مرة واحدة)</td></tr>
+<tr><td><span class="path">public/app/i18n_dict.js</span></td><td><span class="tag mod">تعديل</span></td><td>+5 مفاتيح ×3 لغات (الحذف · التأكيد · «خروج» في الأرشيف · التصدير)</td></tr>
+<tr><td><span class="path">public/app/app.css</span></td><td><span class="tag mod">تعديل</span></td><td>ستايل زرار الحذف الأحمر الخفيف في كارت التفاصيل</td></tr>
+<tr><td><span class="path">سير-العمل.html</span> · <span class="path">README.md</span> · <span class="path">دليل-الجولة-39.html</span> · <span class="path">الملفات-المتغيرة.txt</span></td><td><span class="tag new">مستندات</span></td><td>سجل الجولات والمرجع والتوجيه</td></tr>
+<tr><td colspan="3" class="small">+ الباقي ملفات الجولات اللي فاتت (الـ ZIP تراكمي R28→R39): app_auth · app_main · app_core · app_charts · i18n_core · marib_cloud · page.tsx · الثيمات…</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>9 فحوصات سريعة بعد الرفع</h2>
+<ul>
+<li>Marib 3 فوق بتوعي <b>810 / 828 / <span class="r">-18</span></b> · الشواغر 18 · «جديد» 10 · الإدارات 7.</li>
+<li>سهم Marib 3: دوس عليه = <b>صف واحد</b> · دوس تاني = الإدارات السبعة رجعت.</li>
+<li>الخياطة: الخطوط <b>1 · 2 · 3 · 4 · 5 بالترتيب</b> — خط 1 = <b>114/117/<span class="r">-3</span></b> (زي شيت Manpower).</li>
+<li>خط 1 ← أمامي: <b>23/25/<span class="r">-2</span></b> + الأسماء والأكواد ظاهرة في كل صف (الاسم أولًا ثم الكود).</li>
+<li>دوس على أي اسم: الكارت بيبدأ <b>بالكود</b> ثم الوظيفة — ولو أدمن يظهر تحت <b>زرار الحذف الأحمر</b>.</li>
+<li>القلم على أي قسم = <b>مودال واحد</b> (تسمية + نقل) واسم القسم معروض <b>باللغة الحالية</b> — بدّل EN وشوف Sewing.</li>
+<li>جرّب الحذف بموظف تجريبي: إضافة موظف ← حذفه ← «أرشيف النقل» فيه صف <b>«خروج»</b> كامل (التاريخ + اليوزر + القسم).</li>
+<li>زرار <b>«تصدير Excel»</b>: ملف 65KB فيه 4 شيتات — Pivot فيها مجموعات وإجمالي وخطوط «خط 1» والألوان زي الموقع.</li>
+<li>المشاهد (مش أدمن): شجرة + تصدير بس — صفر أقلام ولا حذف، والـ API بيرفض (403).</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>أسئلة متكررة</h2>
+<ul>
+<li><b>حذفت موظف بالغلط؟</b> — الزرار بتأكيد فيه اسم الموظف قبل ما يمسح. وبعد الحذف، صف «خروج» كامل في أرشيف النقل بيقول مين وإمتى ومن أي قسم — تقدر تعيده تاني بـ «إضافة موظف» بنفس الكود.</li>
+<li><b>هدير الأشخاص من الموقع دلوقتي — أرفع الشيت تاني؟</b> — لأ لازم. الاستيراد اختياري. بس لو رفعته: اللي مش في الشيت بيفضل زي ما هو (مفيش مسح)، واللي اتضافوا من الموقع ورميتهم في الشيت بنفس الكود هيتحدثوا من غير صفوف نقل غلط.</li>
+<li><b>ملف الـ Excel بيتولد فين؟</b> — على السيرفر لحظة ما تدوس الزرار (ExcelJS) — الموقع نفسه خفيف، والملف 65KB فيه كل حاجة: Pivot للإدارات والخطوط والأقسام الداخلية + الشجرة كاملة + كل الموظفين بفلتر + الأرشيف.</li>
+<li><b>ليه الترتيب اتغير من النواقص للشيت؟</b> — المالك طلب ترتيب تصاعدي. النواقص لسه ظاهرة بالألوان (الأحمر ناقص والأخضر متوازن) وبيدور عليها بالبحث — بس ترتيب العرض بقى ثابت زي الشيت فمحدش يتلخبط.</li>
+<li><b>الزرارين بتوع القسم راحوا فين؟</b> — اندمجوا. قلم واحد يفتح مودال واحد فيه التسمية والنقل مع بعض — نفس الوظايف بالظبط بس أسرع.</li>
+<li><b>«جديد» دول مين؟</b> — معينين لسه كودهم ما وصلش. أول ما الكود يتحدد، يا إما تعدّل الموظف من الموقع (خانة الكود فاضية بتفضل قابلة للكتابة لهم) أو ترفع الشيت وفيه الكود وبياخده لوحده.</li>
+</ul>
+</div>
+
+<p class="small">Marib Garments — الجولة 39 · 14 سبتمبر 2026</p>
+
+</div>
+</body>
+</html>

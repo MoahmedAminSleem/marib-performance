@@ -173,6 +173,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    /* ---------- delete one employee (R39: the owner manages people on
+       the site, away from Excel — deletion keeps a trace: a transfer
+       row kind="out" + an audit entry, so the archive answers "مين خرج
+       وامتى ومين عمله") ---------- */
+    if (action === "del") {
+      const id = cleanStr(body.id, 40);
+      if (!id) return fail("id", 400);
+      const cur = await q("SELECT id, code, name, job, dept_id, vac FROM marib_emp WHERE id = $1 LIMIT 1", [id]);
+      if (!cur.length) return fail("none", 404);
+      const old = cur[0];
+      if (old.vac) return fail("vac", 400); /* vacancies have their own vacDel */
+      const p = await deptPath(old.dept_id as string);
+      await q("DELETE FROM marib_emp WHERE id = $1 AND vac = false", [id]);
+      await logTransfer(
+        actor, (old.code as string) || "جديد", old.name as string,
+        p, old.job as string, "—", "—", "out", "خروج من الموقع"
+      );
+      await audit(actor, "delete", "manpower", old.name as string, { code: old.code, dept: p, job: old.job });
+      lg.info("employee removed", { actor, name: old.name, code: old.code });
+      return NextResponse.json({ ok: true });
+    }
+
     /* ---------- fill a vacancy (turn the empty row into an employee) ---------- */
     if (action === "fill") {
       const id = cleanStr(body.id, 40);

@@ -215,14 +215,15 @@ export async function ensureBoot(): Promise<void> {
     if ((a[0]?.n as number) === 0) {
       await audit("Amin", "create", "site", null, null);
     }
-    // R38 — seed الاتزان from the owner's Manpower (1).xlsx "Database"
-    // sheet. Version-gated: the R37 snapshot (old Employees DB + E2E test
-    // rows) is replaced by the new structure exactly once, then the gate
-    // key marib_meta.mp_seed_ver=38 keeps this block idle on every boot.
+    // R39 — seed الاتزان from the owner's latest Manpower.xlsx "Database"
+    // sheet (2026-09-14: adds the الماكينة column + the PRO. - SEWING
+    // FOLLOW UP dept, job renames like تركيب جيب خلفى). Version-gated: the
+    // R38 snapshot is replaced exactly once, then the gate key
+    // marib_meta.mp_seed_ver=41 keeps this block idle on every boot.
     // Users / months / settings / audit are NEVER touched.
     try {
       const ver = await q("SELECT value FROM marib_meta WHERE key = 'mp_seed_ver'");
-      if ((ver[0]?.value as string) !== "38") {
+      if ((ver[0]?.value as string) !== "41") {
         const { MANPOWER_DEPTS, MANPOWER_EMPS } = await import("../../server/seed/manpower-seed");
         await q("BEGIN");
         try {
@@ -256,8 +257,8 @@ export async function ensureBoot(): Promise<void> {
             );
           }
           await q(
-            `INSERT INTO marib_meta (key, value) VALUES ('mp_seed_ver', '38')
-             ON CONFLICT (key) DO UPDATE SET value = '38'`
+            `INSERT INTO marib_meta (key, value) VALUES ('mp_seed_ver', '41')
+             ON CONFLICT (key) DO UPDATE SET value = '41'`
           );
           await q("COMMIT");
         } catch (e) {

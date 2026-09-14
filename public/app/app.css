@@ -2407,9 +2407,10 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
 /* job-node tint (one level above people) */
 .mpr.jn{background:rgba(110,168,254,.028)}
 .mpr.jn:hover{background:rgba(110,168,254,.06)}
-/* employee rows */
-.mpr.en{padding-block:5px}
-.mpr.en .ml{font-weight:600}
+/* employee rows — R39: "em" not "en" (the dashboard's .en sub-caption
+   rule used to hide every employee row: no names, no codes, ever) */
+.mpr.em{padding-block:5px}
+.mpr.em .ml{font-weight:600}
 
 /* employee detail card */
 .mpr-det{
@@ -2522,6 +2523,16 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
 }
 .mpm-x{background:transparent;border:1px solid var(--brd-soft);color:var(--muted)}
 .mpm-ok{background:rgba(217,168,107,.16);border:1px solid rgba(217,168,107,.4);color:var(--accent-2)}
+
+/* R39 — حذف موظف (زرار خفيف أحمر تحت كارت التفاصيل) */
+.mpr-det .det-del{justify-content:flex-start;margin-top:10px}
+.mpr-det .mp-del{
+  padding:7px 14px;border-radius:9px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  background:rgba(198,71,68,.10);border:1px solid rgba(198,71,68,.35);color:#e08e8b;
+  transition:background .18s,border-color .18s,color .18s;
+}
+.mpr-det .mp-del:hover{background:rgba(198,71,68,.2);border-color:rgba(198,71,68,.55);color:#f0b1ae}
+.mpr-det .mp-del:disabled{opacity:.5;cursor:wait}
 
 /* responsive */
 @media (max-width:760px){
