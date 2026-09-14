@@ -9,6 +9,33 @@ var MaribCharts = (function () {
   var NS = "http://www.w3.org/2000/svg";
   var MUTED = "#A9B7C7", FAINT = "#7E92A8", TXT = "#F2EBDD", GRID = "rgba(217,168,107,.10)";
   var SERIES = ["#D9A86B", "#8FB3D9", "#E9C68A", "#4FD98D", "#E08A5A", "#D98A9E", "#9A8FD9", "#5AC8C0"];
+  /* R42 — ألوان الثيم: كل الألوان بتتقرا من CSS variables عند أول رسم
+     وعند كل تبديل ثيم (refreshPalette) — الدنيم هو الافتراضي لو المتغير
+     مش موجود. كده الرسومات بيلبسوا أي ثيم بالظبط زي باقي الموقع. */
+  var DENIM_SERIES = SERIES.slice();
+  var GOODC = "#4FD98D", WARNC = "#F0BE55", BADC = "#F87C7C", HALOC = "#160C10", INKC = "#06121E";
+  function refreshPalette() {
+    try {
+      var cs = getComputedStyle(document.documentElement);
+      function v(name, fb) {
+        var x = cs.getPropertyValue(name).trim();
+        return x || fb;
+      }
+      MUTED = v("--chart-muted", "#A9B7C7");
+      FAINT = v("--chart-faint", "#7E92A8");
+      TXT = v("--chart-txt", "#F2EBDD");
+      GRID = v("--chart-grid", "rgba(217,168,107,.10)");
+      GOODC = v("--good", "#4FD98D");
+      WARNC = v("--warn", "#F0BE55");
+      BADC = v("--bad", "#F87C7C");
+      HALOC = v("--chart-halo", "#160C10");
+      INKC = v("--chart-ink", "#06121E");
+      var s = [];
+      for (var i = 1; i <= 8; i++) s.push(v("--chart-" + i, DENIM_SERIES[i - 1]));
+      SERIES = s;
+    } catch (e) { /* أول تحميل قبل الـ CSS؟ الافتراضي الدنيم شغال */ }
+  }
+  refreshPalette();
   var U = MaribCore ? MaribCore.utils : (typeof require !== "undefined" ? require("./core.js").utils : null);
 
   /* ---------- UI direction (ar=rtl / en+tr=ltr) — set by I18N ---------- */
@@ -50,7 +77,7 @@ var MaribCharts = (function () {
     if (opts.cls) t.setAttribute("class", opts.cls);
     if (opts.halo) {
       t.setAttribute("paint-order", "stroke");
-      t.setAttribute("stroke", opts.haloColor || "#160C10");
+      t.setAttribute("stroke", opts.haloColor || HALOC);
       t.setAttribute("stroke-width", opts.haloW || 3);
       t.setAttribute("stroke-linejoin", "round");
     }
@@ -193,7 +220,7 @@ var MaribCharts = (function () {
       (opts.refLines || []).forEach(function (rf) {
         if (rf.y < lo || rf.y > hi) return;
         var ry = Y(rf.y);
-        var col = rf.color || "#F0BE55";
+        var col = rf.color || WARNC;
         el("line", { x1: m.l, x2: m.l + iw, y1: ry, y2: ry, stroke: col, "stroke-width": 1.4, "stroke-dasharray": "7 5", opacity: .9 }, svg);
         var hit = el("rect", { x: m.l, y: Math.max(m.t - 3, ry - 11), width: iw, height: 22, fill: "transparent", "class": "goal-hit" });
         bindTip(hit, function () { return goalTipHTML(rf, rf.cur != null ? rf.cur : curAvg, opts.fmt || opts.yFmt); });
@@ -220,7 +247,7 @@ var MaribCharts = (function () {
         }
         el("path", { d: d, fill: "none", stroke: opts.color || SERIES[0], "stroke-width": 2.4, "stroke-linecap": "round", "stroke-linejoin": "round", "class": "aD" }, svg);
         seg.forEach(function (s) {
-          el("circle", { cx: X(s.i), cy: Y(s.p.y), r: 3, fill: "#160C10", stroke: opts.color || SERIES[0], "stroke-width": 2 }, svg);
+          el("circle", { cx: X(s.i), cy: Y(s.p.y), r: 3, fill: HALOC, stroke: opts.color || SERIES[0], "stroke-width": 2 }, svg);
           var hit = el("rect", { x: X(s.i) - iw / pts.length / 2, y: m.t, width: iw / pts.length, height: ih, fill: "transparent" }, svg);
           bindTip(hit, function () { return tipHTML(s.p); });
           bindDrill(hit, s.p.drill);
@@ -314,7 +341,7 @@ var MaribCharts = (function () {
     var good = goodUp ? pct >= 0 : pct <= 0;
     return {
       s: (pct >= 0 ? "+" : "−") + TPCT(Math.abs(pct), 1),
-      col: pct === 0 ? MUTED : (good ? "#4FD98D" : "#F87C7C")
+      col: pct === 0 ? MUTED : (good ? GOODC : BADC)
     };
   }
 
@@ -361,7 +388,7 @@ var MaribCharts = (function () {
         el("rect", { x: barLeft, y: y, width: zone, height: h, rx: 5, fill: "rgba(217,168,107,.07)" }, svg);
         var rc = el("rect", { x: x0, y: y, width: len, height: h, rx: 5, fill: it.color || SERIES[0], opacity: .92, "class": "aL" }, svg);
         rc.style.animationDelay = (idx * 55) + "ms";
-        if (it.color && it.color === "var(--good)") rc.setAttribute("fill", "#4FD98D");
+        if (it.color && it.color === "var(--good)") rc.setAttribute("fill", GOODC);
         var valTxt = opts.fmt ? opts.fmt(v) : U.fmtInt(v);
         txt(svg, ltr ? x0 + len + 6 : x0 - 6, y + h / 2 + 4, valTxt, { size: 11, fill: MUTED, anchor: ltr ? "start" : "end", cls: "num", halo: true });
         /* round 8: compare delta chip riding after the value */
@@ -389,7 +416,7 @@ var MaribCharts = (function () {
         /* round 8: dashed goal line, no label chip — hover shows
            goal + current average + ratio */
         var gx = ltr ? barLeft + (opts.goal.value / maxV) * zone : barRight - (opts.goal.value / maxV) * zone;
-        var colH = opts.goal.color || "#F0BE55";
+        var colH = opts.goal.color || WARNC;
         el("line", { x1: gx, x2: gx, y1: m.t - 2, y2: m.t + items.length * (opts.rowH || 30) - 8, stroke: colH, "stroke-dasharray": "6 4", "stroke-width": 1.4, opacity: .9 }, svg);
         var sumV = items.reduce(function (s, x) { return s + (x.value || 0); }, 0);
         var curAvgH = items.length ? sumV / items.length : null;
@@ -473,7 +500,7 @@ var MaribCharts = (function () {
             var vlab = (opts.fmt ? opts.fmt(v.v) : U.fmtInt(v.v));
             if ((v.v || 0) > 0 && hgt > 42 && bw >= 13 && opts.dataLabels !== false) {
               var ax = x + bw / 2 + 3.4, ay = y + hgt - 7;
-              var vl = txt(svg, ax, ay, vlab, { size: 9, fill: "#FFFFFF", anchor: "start", weight: 700, cls: "num", halo: true, haloW: 2.6 });
+              var vl = txt(svg, ax, ay, vlab, { size: 9, fill: TXT, anchor: "start", weight: 700, cls: "num", halo: true, haloW: 2.6 });
               vl.setAttribute("transform", "rotate(-90 " + ax.toFixed(1) + " " + ay.toFixed(1) + ")");
             }
             bindDrill(r, it.drill);
@@ -498,7 +525,7 @@ var MaribCharts = (function () {
         /* round 8: dashed goal line, no label chip — hover shows
            goal + current average + ratio */
         var gy = m.t + ih - (opts.goal.value / maxV) * ih;
-        var col = opts.goal.color || "#F0BE55";
+        var col = opts.goal.color || WARNC;
         el("line", { x1: m.l, x2: m.l + iw, y1: gy, y2: gy, stroke: col, "stroke-dasharray": "7 5", "stroke-width": 1.4, opacity: .9 }, svg);
         var valsV = items.map(function (x) { return x.value || 0; });
         var curAvgV = valsV.length ? valsV.reduce(function (a, b) { return a + b; }, 0) / valsV.length : null;
@@ -556,7 +583,7 @@ var MaribCharts = (function () {
         var p1 = pt(cx, cy, R, a0), p2 = pt(cx, cy, R, a1), p3 = pt(cx, cy, r0, a1), p4 = pt(cx, cy, r0, a0);
         var d = "M" + p1.x + " " + p1.y + " A" + R + " " + R + " 0 " + large + " 1 " + p2.x + " " + p2.y +
                 " L" + p3.x + " " + p3.y + " A" + r0 + " " + r0 + " 0 " + large + " 0 " + p4.x + " " + p4.y + " Z";
-        var path = el("path", { d: d, fill: it.color || SERIES[i % SERIES.length], opacity: .92, stroke: "#160C10", "stroke-width": 2, "class": "aP" }, svg);
+        var path = el("path", { d: d, fill: it.color || SERIES[i % SERIES.length], opacity: .92, stroke: HALOC, "stroke-width": 2, "class": "aP" }, svg);
         path.style.animationDelay = (i * 90) + "ms";
         bindTip(path, function () {
           var hh = '<div class="t">' + esc(it.label) + "</div>";
@@ -581,8 +608,8 @@ var MaribCharts = (function () {
             var chord = 2 * rMid * Math.sin(Math.min(Math.PI, frac * Math.PI * 2) / 2);
             var nameMax = Math.max(6, Math.floor((chord - 8) / 6.1));
             var nm = truncate(it.label, nameMax);
-            txt(svg, lx, ly - 2, pctStr, { size: 12.5, fill: "#FFFFFF", anchor: "middle", weight: 800, cls: "num", halo: true, haloW: 3.2 });
-            txt(svg, lx, ly + 10.5, nm, { size: 8.8, fill: "#FFFFFF", anchor: "middle", weight: 600, halo: true, haloW: 2.6 });
+            txt(svg, lx, ly - 2, pctStr, { size: 12.5, fill: TXT, anchor: "middle", weight: 800, cls: "num", halo: true, haloW: 3.2 });
+            txt(svg, lx, ly + 10.5, nm, { size: 8.8, fill: TXT, anchor: "middle", weight: 600, halo: true, haloW: 2.6 });
           } else {
             /* tiny slice: callout line to the outside + combined label */
             var pOut = pt(cx, cy, R + 8, mid), pOut2 = pt(cx, cy, R + 24, mid);
@@ -629,7 +656,7 @@ var MaribCharts = (function () {
       arc(0, ang(th.good), "rgba(79,217,141,.32)");
       arc(ang(th.good), ang(th.warn), "rgba(240,190,85,.32)");
       arc(ang(th.warn), Math.PI, "rgba(248,124,124,.28)");
-      arc(0, ang(v), v <= th.good ? "#4FD98D" : v <= th.warn ? "#F0BE55" : "#F87C7C", 11);
+      arc(0, ang(v), v <= th.good ? GOODC : v <= th.warn ? WARNC : BADC, 11);
       var vt = txt(svg, cx, cy - 8, U.fmtPct(v), { size: 25, fill: TXT, anchor: "middle", weight: 800, cls: "num" });
       var lt = txt(svg, cx, cy + 16, opts.label || "", { size: 11, fill: MUTED, anchor: "middle" });
       [[0, "0"], [th.good, null], [th.warn, null], [maxV, null]].slice(0, 4).forEach(function (pair, i) {
@@ -673,7 +700,7 @@ var MaribCharts = (function () {
           var rc = el("rect", { x: x, y: y, width: cell, height: cell, rx: 7, fill: fill, stroke: "rgba(217,168,107,.12)", "class": "aF" }, svg);
           rc.style.animationDelay = (wi * 55 + di * 40) + "ms";
           if (c && c.pct != null) {
-            txt(svg, x + cell / 2, y + cell / 2 + 3.5, (c.pct * 100).toFixed(0), { size: 10, fill: c.pct > .62 ? "#06121E" : TXT, anchor: "middle", weight: 700, cls: "num" });
+            txt(svg, x + cell / 2, y + cell / 2 + 3.5, (c.pct * 100).toFixed(0), { size: 10, fill: c.pct > .62 ? INKC : TXT, anchor: "middle", weight: 700, cls: "num" });
             bindTip(rc, function () {
               var hh = '<div class="t">' + dname + " " + U.isoShort(wk) + "</div>";
               hh += '<div class="r"><span>' + esc(TT("t_disc", "الانضباط")) + "</span><b>" + U.fmtPct(c.pct) + "</b></div>";
@@ -726,6 +753,6 @@ var MaribCharts = (function () {
   return {
     line: line, hbar: hbar, vbar: vbar, donut: donut, gauge: gauge, heat: heat,
     SERIES: SERIES, tipHide: tipHide, setDir: setDir, DIRV: DIRV, cmpStrip: cmpStrip,
-    redrawIn: redrawIn
+    redrawIn: redrawIn, refreshPalette: refreshPalette
   };
 })();

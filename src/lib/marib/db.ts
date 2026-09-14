@@ -192,6 +192,17 @@ const BOOT_SQL: string[] = [
   `CREATE UNIQUE INDEX IF NOT EXISTS marib_emp_code_uq
      ON marib_emp (code) WHERE code IS NOT NULL AND code <> 'جديد'`,
   `CREATE INDEX IF NOT EXISTS marib_emp_dept_id_idx ON marib_emp (dept_id)`,
+  /* R42 — الترجمة التلقائية: cache للترجمات المجانية (أقسام ووظائف
+     المستخدم المضافة من الموقع). term = الكلمة زي ما اتكتبت،
+     lang = en|tr|ar، tr = الترجمة. يقرأها GET /api/manpower ويرجعها
+     خريطة ترجمة للعميل — TT() بيدور فيها بعد الجلوسار. */
+  `CREATE TABLE IF NOT EXISTS marib_i18n (
+    term      TEXT NOT NULL,
+    lang      TEXT NOT NULL,
+    tr        TEXT NOT NULL,
+    at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (term, lang)
+  )`,
 ];
 
 let booting: Promise<void> | null = null;

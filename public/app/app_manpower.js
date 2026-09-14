@@ -17,6 +17,11 @@
    ============================================================ */
 var MaribManpower = (function () {
   "use strict";
+  /* R42: حماية من التحميل المزدوج — React (dev) بيرسم الـ script tags
+     مرتين أحيانًا، فالموديول كان بيتعرّف مرتين وكل الـ listeners بتتربط
+     مرتين (التحديد كان بيفتح ويقفل في نفس اللحظة). النسخة الثانية
+     بترجّع نفس نسخة الأولى — ربط واحد، حالة واحدة. */
+  if (window.__maribMP42) return window.__maribMP42;
   var T = I18N.t;
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -115,13 +120,50 @@ var MaribManpower = (function () {
     "S.V  Security":     { ar: "مشرف أمن",            en: "Security Supervisor", tr: "Güvenlik Süpervizörü" },
     "Overlocker":        { ar: "عامل أوفر",            en: "Overlocker",          tr: "Overlok Operatörü" },
     "Cover Operator":    { ar: "كوفر",                 en: "Coverstitch Operator", tr: "Coverstitch Operatörü" },
-    "BT":                { ar: "زرار (BT)",            en: "Button (BT)",         tr: "Düğme (BT)" }
+    "BT":                { ar: "زرار (BT)",            en: "Button (BT)",         tr: "Düğme (BT)" },
+    /* R42: مصطلحات المستخدم بعد إعادة التنظيم — ترجمة احترافية يدوية
+       (الترجمة التلقائية بتشتغل لأي حاجة جديدة، بس دول المصطلحات
+       بتوع المصنع نفسه فتستاهل الصياغة الصح) */
+    "الإنتاج":           { ar: "الإنتاج",              en: "Production",           tr: "Üretim" },
+    "الصدر":             { ar: "الصدر",                en: "Front",                tr: "Ön" },
+    "الضهر":             { ar: "الضهر",                en: "Back",                 tr: "Arka" },
+    "التجميع":           { ar: "التجميع",              en: "Assembly",             tr: "Monte" },
+    "الأمن":             { ar: "الأمن",                en: "Security",             tr: "Güvenlik" },
+    "النظافة":           { ar: "النظافة",              en: "Cleaning",             tr: "Temizlik" },
+    "المديرين":          { ar: "المديرين",             en: "Managers",             tr: "Yöneticiler" },
+    "التارجت وهندسة الانتاج": { ar: "التارجت وهندسة الانتاج", en: "Target & Production Engineering", tr: "Hedef ve Üretim Müh." },
+    "التخطيط":           { ar: "التخطيط",              en: "Planning",             tr: "Planlama" },
+    "المترجمين":         { ar: "المترجمين",            en: "Translators",          tr: "Çevirmenler" },
+    "بوفيه":             { ar: "بوفيه",                en: "Buffet",               tr: "Büfe" },
+    "الحسابات":          { ar: "الحسابات",             en: "Accounting",           tr: "Muhasebe" },
+    "العيادة":           { ar: "العيادة",              en: "Clinic",               tr: "Klinik" },
+    "التسليمات":         { ar: "التسليمات",            en: "Deliveries",           tr: "Teslimatlar" },
+    "المراجعة الداخلية (الاوديت)": { ar: "المراجعة الداخلية (الاوديت)", en: "Internal Audit", tr: "İç Denetim" },
+    "مخزن إكسسوارات":    { ar: "مخزن إكسسوارات",       en: "Accessories Warehouse", tr: "Aksesuar Deposu" },
+    "العينات والبايلوت": { ar: "العينات والبايلوت",    en: "Samples & Pilot",      tr: "Numune ve Pilot" },
+    "العينات":           { ar: "العينات",              en: "Samples",              tr: "Numune" }
   };
   function TT(term) {
     var g = GLOSS[term];
-    if (!g) return term == null ? "" : String(term);
     var L = I18N.lang();
-    return g[L] || g.en || String(term);
+    if (g) return g[L] || g.en || String(term);
+    /* R42: الترجمات التلقائية من السيرفر (الأقسام/الوظايف اللي المستخدم
+       ضيفها — مترجمة مجانًا ومتخزنة في marib_i18n) */
+    if (DATA && DATA.tr && DATA.tr[term]) {
+      var t = DATA.tr[term];
+      if (t[L]) return t[L];
+      /* الكلمة الأصلية عربي (زي «تعويض نسب غياب») — العرض العربي
+         يفضل بيها زي ما هي، مش بالترجمة الإنجليزية */
+      if (L === "ar") return String(term);
+      return t.en || t.ar || String(term);
+    }
+    return term == null ? "" : String(term);
+  }
+  /* R42: اسم الجذر — «مأرب 3» عربي / Marib 3 غيره (المستخدم يعدله) */
+  function rootLabel() {
+    var def = { ar: "\u0645\u0623\u0631\u0628 3", en: "Marib 3", tr: "Marib 3" };
+    var r = (DATA && DATA.root) || def;
+    return r[I18N.lang()] || r.en || r.ar || "Marib 3";
   }
   /* sewing lines show as خط 1 / Line 1 / Hat 1 */
   function lineLabel(n) {
@@ -148,6 +190,15 @@ var MaribManpower = (function () {
   var archQ = "";
   var view = "tree";
   var loaded = false;
+  /* R42: التحديد المتعدد + ترتيب وظيفة/عامل + صفحة الكروت */
+  var selMode = false;
+  var selSet = {};
+  var ordMode = "emp";            /* emp = الاسم ثم الوظيفة · job = الوظيفة ثم الاسم */
+  try { ordMode = localStorage.getItem("marib_mp_ord") === "job" ? "job" : "emp"; } catch (e) { }
+  var jobOpen = {};               /* مفتوحية صفوف الوظائف (وضع الوظيفة-أولًا) */
+  var cardMode = null;            /* emps|req|var|vacs|depts — صفحة تفاصيل الكارت */
+  var cardQ = "";
+  var archSel = {};                /* R42: تحديد سجلات الأرشيف (id → true) */
   var loading = false;
   var on = false;
   var ADMIN = false;
@@ -292,19 +343,36 @@ var MaribManpower = (function () {
   }
   function resetIndex() { nodeIndex = {}; }
 
+  /* ---------------- R42: تطبيع عربي للبحث ----------------
+     الهمزة بأشكالها = ا، والی بأشكالها = ي، والتاء المربوطة = ه،
+     والتشكيل والتطويل بيتشالوا — عشان «احمد» يلاقي «أحمد» و«هدى»
+     يلاقي «هدي». بتشتغل جوه البحث في الهيكل والأرشيف وصفحات الكروت. */
+  function norm(s) {
+    return String(s == null ? "" : s)
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+      .replace(/[\u0623\u0625\u0622]/g, "\u0627")
+      .replace(/\u0649/g, "\u064A")
+      .replace(/\u0629/g, "\u0647")
+      .replace(/[\u0624]/g, "\u0648")
+      .replace(/[\u0626]/g, "\u064A")
+      .toLowerCase();
+  }
+
   /* ---------------- search ---------------- */
   function nodeMatches(n, needle) {
-    if (hay(n.label).toLowerCase().indexOf(needle) >= 0) return true;
+    var N = norm(needle);
+    var H = norm(hay(n.label));                 /* R42: مطابقة مطبّعة */
+    if (H.indexOf(N) >= 0) return true;
     var i;
     for (i = 0; i < n.emps.length; i++) {
       var e = n.emps[i];
-      if (hay(e[2]).toLowerCase().indexOf(needle) >= 0) return true;
-      if (String(e[1]).toLowerCase().indexOf(needle) >= 0) return true;
-      if (String(e[2]).toLowerCase().indexOf(needle) >= 0) return true;
-      if (String(e[0]).indexOf(needle) >= 0) return true;
+      if (norm(hay(e[2])).indexOf(N) >= 0) return true;
+      if (norm(String(e[1])).indexOf(N) >= 0) return true;
+      if (norm(String(e[3])).indexOf(N) >= 0) return true;   /* الوظيفة كمان */
+      if (norm(String(e[0])).indexOf(N) >= 0) return true;
     }
     for (i = 0; i < n.vacs.length; i++) {
-      if (hay(n.vacs[i][3]).toLowerCase().indexOf(needle) >= 0) return true;
+      if (norm(hay(n.vacs[i][3])).indexOf(N) >= 0) return true;
     }
     for (var k = 0; k < n.kids.length; k++) if (nodeMatches(n.kids[k], needle)) return true;
     return false;
@@ -323,30 +391,63 @@ var MaribManpower = (function () {
     var varCls = totVar === null ? "" : totVar < 0 ? "neg" : totVar > 0 ? "pos" : "zero";
     var varBig = totVar === null ? "—" : (totVar > 0 ? "+" : "") + totVar;
     h.innerHTML =
-      '<div class="mph-lead"><b class="mph-root">Marib 3</b><small>' + esc(T("mg_mp_sub")) + "</small></div>" +
-      card("", String(ROOT ? ROOT.tCount : 0), T("mp_total_emp")) +
-      card("req", totReq === null ? "—" : String(totReq), T("mp_total_req")) +
-      card(varCls, varBig, T("mp_total_var")) +
-      card("", String(vac), T("mp_vac")) +
-      card("", String(ROOT ? ROOT.kids.length : 0), T("mp_depts"));
+      '<div class="mph-lead"><b class="mph-root">' + esc(rootLabel()) + '</b><small>' + esc(T("mg_mp_sub")) + "</small></div>" +
+      /* R42: كل كارت بيدوس — يفتح صفحة التفاصيل بتاعته */
+      card("click", String(ROOT ? ROOT.tCount : 0), T("mp_total_emp")) +
+      card("req click", totReq === null ? "—" : String(totReq), T("mp_total_req")) +
+      card(varCls + " click", varBig, T("mp_total_var")) +
+      card("click", String(vac), T("mp_vac")) +
+      card("click", String(ROOT ? ROOT.kids.length : 0), T("mp_depts"));
+    /* الربط: idx 0=موظفين 1=مطلوب 2=فرق 3=شواغر 4=إدارات */
+    var modes = ["emps", "req", "var", "vacs", "depts"];
+    var cards = h.querySelectorAll(".mph-card");
+    for (var ci = 0; ci < cards.length && ci < modes.length; ci++) {
+      (function (el, mode) {
+        el.setAttribute("role", "button");
+        el.setAttribute("tabindex", "0");
+        el.setAttribute("data-card", mode);
+        el.title = T("mp_card_open");
+        el.addEventListener("click", function () { openCards(mode); });
+      })(cards[ci], modes[ci]);
+    }
   }
 
   /* ---------------- render: tree rows ---------------- */
   function hl(text, needle) {
     var s = String(text);
     if (!needle) return esc(s);
-    var low = s.toLowerCase();
-    var i = low.indexOf(needle);
+    /* R42: الدور على النص المطبّع — عشان «أحمد» تتعلم حتى لو كتبت «احمد» */
+    var N = norm(needle);
+    var low = norm(s);
+    var i = low.indexOf(N);
     if (i < 0) return esc(s);
-    return esc(s.slice(0, i)) + "<mark>" + esc(s.slice(i, i + needle.length)) + "</mark>" + esc(s.slice(i + needle.length));
+    return esc(s.slice(0, i)) + "<mark>" + esc(s.slice(i, i + N.length)) + "</mark>" + esc(s.slice(i + N.length));
   }
 
-  function varBadge(count, eff) {
+  function varBadge(count, eff, key) {
     if (eff === null) return '<b class="mv na">—</b>';
     var v = count - eff;
     var cls = v < 0 ? "neg" : v > 0 ? "pos" : "zero";
     var txt = v > 0 ? "+" + v : String(v);
-    return '<b class="mv ' + cls + '"><bdi>' + txt + "</bdi></b>";
+    /* R42: مربع الفرق بقى بيتقفى بالماوس — بيقول الوظايف الناقصة
+       جوه الفرع ده بالظبط (context-aware) */
+    return '<b class="mv ' + cls + '" data-vk="' + esc(key || "") + '"><bdi>' + txt + "</bdi></b>";
+  }
+
+  /* الوظايف الناقصة جوه subtree العقدة (مجمّعة بالعدد) */
+  function missingOf(n) {
+    var byJob = {};
+    var out = [];
+    (function walk(x) {
+      for (var i = 0; i < x.vacs.length; i++) {
+        var j = x.vacs[i][3] || T("mp_no_job");
+        byJob[j] = (byJob[j] || 0) + 1;
+      }
+      for (var k = 0; k < x.kids.length; k++) walk(x.kids[k]);
+    })(n);
+    for (var j2 in byJob) out.push({ job: j2, n: byJob[j2] });
+    out.sort(function (a, b) { return b.n - a.n || String(a.job).localeCompare(String(b.job), "ar"); });
+    return out;
   }
 
   function reqChip(n) {
@@ -363,16 +464,21 @@ var MaribManpower = (function () {
   }
 
   function badgeHTML(n) {
-    return '<b class="mn a"><bdi>' + n.tCount + "</bdi></b>" + reqChip(n) + varBadge(n.tCount, n.eff);
+    return '<b class="mn a"><bdi>' + n.tCount + "</bdi></b>" + reqChip(n) + varBadge(n.tCount, n.eff, n.key);
   }
 
   /* the Marib 3 root row — always the first row of the tree */
   function rootNodeRow() {
     var open = !!expanded["root"];
-    var tw = '<button class="tw' + (open ? " open" : "") + '" type="button" aria-expanded="' + (open ? "true" : "false") + '" aria-label="Marib 3">' + ICO_CHEV + "</button>";
+    var lbl = rootLabel();
+    var tw = '<button class="tw' + (open ? " open" : "") + '" type="button" aria-expanded="' + (open ? "true" : "false") + '" aria-label="' + esc(lbl) + '">' + ICO_CHEV + "</button>";
     var ico = '<span class="mi root">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>' + "</span>";
+    /* R42: قلم تعديل جنب Marib 3 نفسه (الاسم بالـ3 لغات) */
+    var adm = ADMIN
+      ? '<span class="mo rn" role="button" tabindex="0" title="' + esc(T("mp_root_edit")) + '" data-rootedit="1">' + ICO_PEN + "</span>"
+      : "";
     return '<div class="mpr rootrow' + (open ? " ex" : "") + '" data-k="root" data-t="dept">' +
-      tw + ico + '<span class="ml"><b class="mln rt">Marib 3</b></span>' + bar(ROOT) + badgeHTML(ROOT) + "</div>";
+      tw + ico + '<span class="ml"><b class="mln rt">' + esc(lbl) + "</b></span>" + bar(ROOT) + badgeHTML(ROOT) + adm + "</div>";
   }
 
   function deptRow(n, needle, anim, delay) {
@@ -411,12 +517,29 @@ var MaribManpower = (function () {
          (من غير title عشان ميتعملش تولتيبين فوق بعض) */
       ((e[8] || e[7]) ? '<i class="mtag" aria-hidden="true">' + ICO_MACH + "</i>" : "") + "</span>";
     var pen = ADMIN ? '<span class="mo" role="button" tabindex="0" title="' + esc(T("mp_edit")) + '" data-ei="' + esc(id) + '">' + ICO_PEN + "</span>" : "";
+    /* R42: وضع التحديد — تشيك بوكس جنب كل موظف بدل القلم */
+    var chk = selMode ? '<span class="mchk' + (selSet[id] ? " on" : "") + '" data-chk="' + esc(id) + '" role="checkbox" aria-checked="' + (selSet[id] ? "true" : "false") + '" tabindex="0">' + (selSet[id] ? '\u2713' : "") + "</span>" : "";
     var style = "--d:" + (depthOf(e[4]) + 1) + (delay !== undefined ? ";animation-delay:" + delay + "ms" : "");
     /* R39: class "em" (NOT "en") — the dashboard's single-language rule
        ".en { display:none !important }" (R31) used to swallow these whole
        rows: names+codes went invisible, only vacancy (job) rows stayed. */
-    return '<div class="mpr em' + (isOpen ? " ex" : "") + (anim ? " in" : "") + '" style="' + style + '" data-i="' + esc(id) + '" data-t="emp">' +
-      tw + ico + label + '<span class="mflex"></span>' + (trs.length ? '<span class="mtr" title="' + esc(T("mp_emp_transfers")) + '">' + trs.length + "</span>" : "") + pen + "</div>";
+    return '<div class="mpr em' + (isOpen ? " ex" : "") + (anim ? " in" : "") + (selSet[id] ? " sel" : "") + '" style="' + style + '" data-i="' + esc(id) + '" data-t="emp">' +
+      (selMode ? chk : tw) + (selMode ? '<span class="tw ghost"></span>' : "") + ico + label + '<span class="mflex"></span>' + (trs.length ? '<span class="mtr" title="' + esc(T("mp_emp_transfers")) + '">' + trs.length + "</span>" : "") + pen + "</div>";
+  }
+
+  /* ---------------- R42: صف الوظيفة (وضع «الوظيفة ثم العامل») ---------------- */
+  function jobRow(node, job, list, needle, anim, delay) {
+    var jk = node.key + "|" + job;
+    var open = !!jobOpen[jk];
+    var filled = 0, vacs = 0;
+    for (var i = 0; i < list.length; i++) if (list[i][6]) vacs++; else filled++;
+    var tw = '<button class="tw' + (open ? " open" : "") + '" type="button" aria-expanded="' + (open ? "true" : "false") + '" aria-label="' + esc(job) + '">' + ICO_CHEV + "</button>";
+    var ico = '<span class="mi job">' + ICO_JOB + "</span>";
+    var label = '<span class="ml"><b class="mln">' + hl(TT(job) || T("mp_no_job"), needle) + "</b>" +
+      (vacs ? '<i class="mls vln">' + esc(T("mp_vac")) + " " + vacs + "</i>" : "") + "</span>";
+    var style = "--d:" + (node.depth + 1) + (delay !== undefined ? ";animation-delay:" + delay + "ms" : "");
+    return '<div class="mpr jr' + (open ? " ex" : "") + (anim ? " in" : "") + '" style="' + style + '" data-jk="' + esc(jk) + '" data-t="job">' +
+      tw + ico + label + '<span class="mflex"></span>' + badgeHTML({ tCount: filled, eff: filled + vacs, key: "j:" + jk, own: null }) + "</div>";
   }
 
   /* vacancy row — a required position with nobody in it */
@@ -509,11 +632,15 @@ var MaribManpower = (function () {
   function tipBuild(emp) {
     var mach = String(emp[8] || "").trim();
     var note = String(emp[7] || "").trim();
+    var job = String(emp[3] || "").trim();
     var isNew = !emp[1] || emp[1] === "جديد";
     var h = '<div class="tt-h">' +
       '<span class="tt-ico">' + ICO_EMP + "</span><b>" + esc(emp[2]) + "</b>" +
       (isNew ? '<i class="tt-new">' + esc(T("mp_code_new")) + "</i>" : '<i class="num">' + esc(emp[1]) + "</i>") +
       "</div>";
+    /* R42 (الطلب 11): الوظيفة بقت أول سطر في التولتيب — قبل الماكينة
+       والملاحظات */
+    if (job) h += '<div class="tt-r"><span>' + esc(T("mp_job")) + '</span><b class="tt-j">' + esc(TT(job)) + "</b></div>";
     if (mach) h += '<div class="tt-r"><span>' + esc(T("mp_mach")) + '</span><b class="tt-m num">' + esc(mach) + "</b></div>";
     if (note) h += '<div class="tt-r"><span>' + esc(T("mp_note")) + '</span><b class="tt-n">' + esc(note) + "</b></div>";
     return h;
@@ -557,7 +684,7 @@ var MaribManpower = (function () {
     if (!DATA || !ROOT) { box.innerHTML = ""; return; }
 
     resetIndex();
-    var needle = q.toLowerCase();
+    var needle = q;   /* R42: التطبيع بيحصل جوه nodeMatches/hl نفسها */
     var html = [];
     var shown = 0;
     var animIdx = 0;
@@ -581,21 +708,60 @@ var MaribManpower = (function () {
         var open = needle ? true : !!expanded[c.key];
         if (open) {
           walk(c, ra);
-          /* employees under THIS dept node — الاسم والكود مع بعض */
-          var emps = c.emps.slice().sort(function (a, b) {
-            return String(a[2]).localeCompare(String(b[2]), "ar");
-          });
-          for (var j = 0; j < emps.length; j++) {
-            var ed = ra ? Math.min(animIdx++ * 12, 260) : undefined;
-            html.push(empRow(emps[j], needle, ra, ed));
-            shown++;
-            if (empOpen[emps[j][0]]) html.push(empDetail(emps[j]));
-          }
-          /* then the vacancies (ناقص ومحتاجينه) */
-          for (var v = 0; v < c.vacs.length; v++) {
-            var vd = ra ? Math.min(animIdx++ * 12, 260) : undefined;
-            html.push(vacRow(c.vacs[v], needle, ra, vd));
-            shown++;
+          if (ordMode === "job") {
+            /* R42: وضع «الوظيفة ثم العامل» — الموظفين بتوع القسم
+               بيتجمعوا حسب الوظيفة، وكل وظيفة بتتفتح على العمال */
+            var byJob = {};
+            var jobOrder = [];
+            var all2 = c.emps.concat(c.vacs);
+            for (var jj = 0; jj < all2.length; jj++) {
+              var jb = all2[jj][3] || "";
+              if (!byJob[jb]) { byJob[jb] = []; jobOrder.push(jb); }
+              byJob[jb].push(all2[jj]);
+            }
+            jobOrder.sort(function (a, b) {
+              return byJob[b].length - byJob[a].length || natCmp(TT(a), TT(b));
+            });
+            for (var jo = 0; jo < jobOrder.length; jo++) {
+              var jname = jobOrder[jo];
+              var jd = ra ? Math.min(animIdx++ * 12, 260) : undefined;
+              html.push(jobRow(c, jname, byJob[jname], needle, ra, jd));
+              shown++;
+              var jk = c.key + "|" + jname;
+              if (jobOpen[jk]) {
+                var jl = byJob[jname].slice().sort(function (a, b) {
+                  var av = a[6] ? 1 : 0, bv = b[6] ? 1 : 0;
+                  if (av !== bv) return av - bv;               /* الشواغر آخر */
+                  return String(a[2]).localeCompare(String(b[2]), "ar");
+                });
+                for (var je = 0; je < jl.length; je++) {
+                  var jed = ra ? Math.min(animIdx++ * 12, 260) : undefined;
+                  if (jl[je][6]) html.push(vacRow(jl[je], needle, ra, jed));
+                  else {
+                    html.push(empRow(jl[je], needle, ra, jed));
+                    if (empOpen[jl[je][0]]) html.push(empDetail(jl[je]));
+                  }
+                  shown++;
+                }
+              }
+            }
+          } else {
+            /* employees under THIS dept node — الاسم والكود مع بعض */
+            var emps = c.emps.slice().sort(function (a, b) {
+              return String(a[2]).localeCompare(String(b[2]), "ar");
+            });
+            for (var j = 0; j < emps.length; j++) {
+              var ed = ra ? Math.min(animIdx++ * 12, 260) : undefined;
+              html.push(empRow(emps[j], needle, ra, ed));
+              shown++;
+              if (empOpen[emps[j][0]]) html.push(empDetail(emps[j]));
+            }
+            /* then the vacancies (ناقص ومحتاجينه) */
+            for (var v = 0; v < c.vacs.length; v++) {
+              var vd = ra ? Math.min(animIdx++ * 12, 260) : undefined;
+              html.push(vacRow(c.vacs[v], needle, ra, vd));
+              shown++;
+            }
           }
         }
       }
@@ -615,13 +781,13 @@ var MaribManpower = (function () {
     var box = $("mpArch"), em = $("mpArchEmpty");
     if (!box) return;
     if (!DATA) { box.innerHTML = ""; return; }
-    var needle = archQ.toLowerCase();
+    var needle = archQ;   /* R42: بحث مطبّع */
     var html = [];
     var trs = DATA.transfers;
     for (var i = 0; i < trs.length; i++) {
       var t = trs[i];
-      var hayS = (t[1] + " " + t[2] + " " + t[3] + " " + (t[4] || "") + " " + (t[5] || "") + " " + (t[6] || "") + " " + (t[7] || "") + " " + (t[8] || "") + " " + (t[9] || "")).toLowerCase();
-      if (needle && hayS.indexOf(needle) < 0) continue;
+      var hayS = t[1] + " " + t[2] + " " + t[3] + " " + (t[4] || "") + " " + (t[5] || "") + " " + (t[6] || "") + " " + (t[7] || "") + " " + (t[8] || "") + " " + (t[9] || "");
+      if (needle && norm(hayS).indexOf(norm(needle)) < 0) continue;
       var kind = t[8] === "dept" || t[8] === "dept-move" ? "mp_kind_deptmove"
         : t[8] === "dept-rename" ? "mp_kind_rename"
         : t[8] === "dept-del" ? "mp_kind_deptdel"    /* R41: مسح قسم */
@@ -631,7 +797,11 @@ var MaribManpower = (function () {
         : t[8] === "job" ? "mp_kind_job"
         : "mp_kind_move";
       var isDeptOp = t[8] === "dept-move" || t[8] === "dept-rename" || t[8] === "dept-del";
-      html.push('<div class="mpr ar in" style="--d:0">' +
+      /* R42: تحديد متعدد في الأرشيف (للأدمن) — مسح السجلات المحددة */
+      var tid = t[10] || "";
+      var chk = ADMIN && tid ? '<span class="mchk' + (archSel[tid] ? " on" : "") + '" data-achk="' + esc(tid) + '" role="checkbox" aria-checked="' + (archSel[tid] ? "true" : "false") + '" tabindex="0">' + (archSel[tid] ? '\u2713' : "") + "</span>" : "";
+      html.push('<div class="mpr ar in' + (archSel[tid] ? " sel" : "") + '" style="--d:0">' +
+        chk +
         '<span class="arw num"><bdi>' + esc(fmtWhen(t[0])) + "</bdi></span>" +
         '<span class="ara">' + esc(t[1]) + "</span>" +
         '<span class="are">' + (isDeptOp ? esc(t[3]) : esc(t[3]) + ' <i class="num">' + esc(t[2]) + "</i>") + "</span>" +
@@ -644,11 +814,118 @@ var MaribManpower = (function () {
     if (em) em.hidden = html.length > 0;
   }
 
+  /* ---------------- R42: صفحات الكروت (تفاصيل كل كارت) ----------------
+     الضغط على أي كارت في الملخص يفتح صفحة كاملة بكل اللي جواه + بحث.
+     الموظفين / المطلوب / الفرق / الشواغر / الإدارات — كل واحدة بترتيبها. */
+  function openCards(mode) {
+    cardMode = mode;
+    cardQ = "";
+    var inp = $("mpCardsSearch");
+    if (inp) inp.value = "";
+    setView("cards");
+    renderCards();
+  }
+  function closeCards() {
+    cardMode = null;
+    setView("tree");
+  }
+  function renderCards() {
+    var box = $("mpCardsList");
+    if (!box || !DATA || !ROOT) return;
+    var ttl = $("mpCardsTitle");
+    var titles = { emps: "mp_total_emp", req: "mp_total_req", var: "mp_total_var", vacs: "mp_vac", depts: "mp_depts" };
+    if (ttl) ttl.textContent = T(titles[cardMode] || "mg_mp");
+    var needle = cardQ;
+    var html = [];
+    var N = norm(needle);
+
+    function sub(v, deptId) {
+      return '<div class="cc-sub">' + esc(deptPathTT(findByKey("d:" + deptId)) || rootLabel()) + "</div>";
+    }
+
+    if (cardMode === "depts") {
+      /* كل الإدارات بالمسار + الأعداد */
+      var list2 = [];
+      (function collect(n) {
+        for (var i = 0; i < n.kids.length; i++) {
+          var c = n.kids[i];
+          list2.push(c);
+          collect(c);
+        }
+      })(ROOT);
+      for (var i2 = 0; i2 < list2.length; i2++) {
+        var d = list2[i2];
+        var hayD = hay(d.label) + " " + d.tCount + " " + d.eff;
+        if (N && norm(hayD).indexOf(N) < 0) continue;
+        var v2 = d.tCount - d.eff;
+        html.push('<div class="cc-row"><span class="cc-main">' + hl(deptLabel(d), needle) + "</span>" +
+          sub(0, d.parent || "") +
+          badgeHTML(d) + "</div>");
+      }
+    } else if (cardMode === "vacs") {
+      /* كل الشواغر — الوظيفة والمكان، وزرار التعيين للأدمن */
+      var vacs2 = [];
+      (function collectV(n) {
+        for (var i = 0; i < n.vacs.length; i++) vacs2.push({ e: n.vacs[i], n: n });
+        for (var k = 0; k < n.kids.length; k++) collectV(n.kids[k]);
+      })(ROOT);
+      vacs2.sort(function (a, b) { return natCmp(nodePathTT(a.n), nodePathTT(b.n)); });
+      for (var iv = 0; iv < vacs2.length; iv++) {
+        var vv = vacs2[iv];
+        var jname2 = vv.e[3] || "";
+        if (N && norm(hay(jname2) + " " + nodePathTT(vv.n)).indexOf(N) < 0) continue;
+        var adm = ADMIN
+          ? '<span class="cc-act"><span class="mo vf" role="button" tabindex="0" title="' + esc(T("mp_vac_fill")) + '" data-vf="' + esc(vv.e[0]) + '">' + ICO_PLUS + "</span>" +
+            '<span class="mo vx" role="button" tabindex="0" title="' + esc(T("mp_vac_del")) + '" data-vx="' + esc(vv.e[0]) + '">' + ICO_X + "</span></span>"
+          : "";
+        html.push('<div class="cc-row vac"><span class="cc-main vln">' + esc(T("mp_vac")) + " — " + hl(TT(jname2) || T("mp_no_job"), needle) + "</span>" +
+          '<div class="cc-sub">' + esc(nodePathTT(vv.n)) + "</div>" + adm + "</div>");
+      }
+    } else {
+      /* موظفين / مطلوب / فرق — كل الموظفين بالمسار */
+      var emps3 = [];
+      (function collectE(n) {
+        for (var i = 0; i < n.emps.length; i++) emps3.push({ e: n.emps[i], n: n });
+        for (var k = 0; k < n.kids.length; k++) collectE(n.kids[k]);
+      })(ROOT);
+      emps3.sort(function (a, b) { return String(a.e[2]).localeCompare(String(b.e[2]), "ar"); });
+      var deptList = [];
+      (function collectD(n) {
+        for (var i = 0; i < n.kids.length; i++) { deptList.push(n.kids[i]); collectD(n.kids[i]); }
+      })(ROOT);
+      /* كارت «الفرق»: صف لكل قسم فيه فرق مش صفر */
+      if (cardMode === "var") {
+        for (var idp = 0; idp < deptList.length; idp++) {
+          var dd = deptList[idp];
+          var v3 = dd.tCount - dd.eff;
+          if (v3 === 0) continue;
+          if (N && norm(hay(dd.label)).indexOf(N) < 0) continue;
+          html.push('<div class="cc-row"><span class="cc-main">' + hl(deptLabel(dd), needle) + "</span>" +
+            '<div class="cc-sub">' + esc(nodePathTT(parentOf(dd)) || rootLabel()) + "</div>" +
+            badgeHTML(dd) + "</div>");
+        }
+      } else {
+        for (var ie = 0; ie < emps3.length; ie++) {
+          var ee = emps3[ie].e;
+          var nn = emps3[ie].n;
+          if (N && norm(hay(ee[2]) + " " + ee[1] + " " + hay(ee[3]) + " " + nodePathTT(nn)).indexOf(N) < 0) continue;
+          html.push('<div class="cc-row"><span class="cc-main">' + hl(ee[2], needle) + ' <i class="mlc num">' + hl(String(ee[1] || ""), needle) + "</i></span>" +
+            '<div class="cc-sub">' + esc(TT(ee[3]) || T("mp_no_job")) + " · " + esc(nodePathTT(nn)) + "</div></div>");
+        }
+      }
+    }
+    var emptyEl = $("mpCardsEmpty");
+    if (emptyEl) emptyEl.hidden = html.length > 0;
+    box.innerHTML = html.join("");
+    mpTitle();   /* R42: عنوان التاب — العنوان بيتحدد بعد ما اسم الكارت يتكتب */
+  }
+
   /* ---------------- render: all ---------------- */
   function renderAll(animAll) {
     renderHero();
     renderTree(animAll ? "__all__" : null);
     renderArch();
+    if (cardMode) renderCards();
     fillLists();
     syncLangBtns();
   }
@@ -664,6 +941,99 @@ var MaribManpower = (function () {
     btns.forEach(function (b) {
       b.classList.toggle("on", b.getAttribute("data-lang") === cur);
     });
+  }
+
+  /* ---------------- R42: combobox الوظائف ----------------
+     خانة الوظيفة بقت دروب ليست حقيقية: السهم بيفتح القايمة كلها،
+     والكتابة بتفلتر — وتقدر تكتب وظيفة جديدة براحتك. */
+  function attachCombo(input, getOptions) {
+    if (!input || input._combo) return;
+    var wrap = document.createElement("span");
+    wrap.className = "mp-combo";
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mc-arrow";
+    btn.setAttribute("aria-label", T("mp_combo_open"));
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    wrap.appendChild(btn);
+    var list = document.createElement("div");
+    list.className = "mc-list";
+    wrap.appendChild(list);
+    input.setAttribute("autocomplete", "off");
+
+    function renderList() {
+      var qv = norm(input.value.trim());
+      var opts = getOptions() || [];
+      var html = [];
+      var shown = 0;
+      for (var i = 0; i < opts.length && shown < 300; i++) {
+        var o = opts[i];
+        if (qv && norm(o).indexOf(qv) < 0) continue;
+        shown++;
+        html.push('<button type="button" class="mc-o" data-v="' + esc(o) + '">' + hl(o, qv) + "</button>");
+      }
+      if (!shown) html.push('<div class="mc-none">' + esc(T("mp_combo_none")) + "</div>");
+      list.innerHTML = html.join("");
+    }
+    function open() {
+      renderList();
+      list.classList.add("on");
+      input.setAttribute("aria-expanded", "true");
+      setTimeout(function () {
+        var sel = list.querySelector(".mc-o.sel");
+        if (sel) sel.classList.remove("sel");
+      }, 0);
+    }
+    function close() {
+      list.classList.remove("on");
+      input.setAttribute("aria-expanded", "false");
+    }
+    btn.addEventListener("mousedown", function (e) {
+      e.preventDefault();
+      if (list.classList.contains("on")) close(); else open();
+      input.focus();
+    });
+    input.addEventListener("focus", open);
+    input.addEventListener("input", function () {
+      if (!list.classList.contains("on")) open(); else renderList();
+    });
+    input.addEventListener("blur", function () {
+      setTimeout(close, 140);
+    });
+    input.addEventListener("keydown", function (e) {
+      var items = list.querySelectorAll(".mc-o");
+      var idx = -1;
+      for (var i = 0; i < items.length; i++) if (items[i].classList.contains("sel")) { idx = i; break; }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!list.classList.contains("on")) { open(); return; }
+        if (items.length) {
+          items[idx] && items[idx].classList.remove("sel");
+          var nx = e.key === "ArrowDown" ? (idx + 1) % items.length : (idx - 1 + items.length) % items.length;
+          items[nx].classList.add("sel");
+          items[nx].scrollIntoView({ block: "nearest" });
+        }
+      } else if (e.key === "Enter") {
+        if (list.classList.contains("on") && idx >= 0 && items[idx]) {
+          e.preventDefault();
+          input.value = items[idx].getAttribute("data-v") || "";
+          close();
+        }
+      } else if (e.key === "Escape") {
+        close();
+      }
+    });
+    list.addEventListener("mousedown", function (e) {
+      var b = e.target.closest ? e.target.closest(".mc-o") : null;
+      if (!b) return;
+      e.preventDefault();
+      input.value = b.getAttribute("data-v") || "";
+      close();
+      input.focus();
+    });
+    input._combo = true;
   }
 
   /* ---------------- cascading قسم picker ----------------
@@ -748,6 +1118,27 @@ var MaribManpower = (function () {
     q = "";
     var s = $("mpSearch");
     if (s) s.value = "";
+  }
+
+  /* ---------------- R42: confirmBox — تأكيد بثيم الموقع ----------------
+     بدل حوارات المتصفح (window.confirm) اللي شكلها تبع المتصفح مش
+     الموقع: نفس المودال الدنيم وزرار خطر أحمر للمسح. بترجع Promise. */
+  function confirmBox(opts) {
+    /* opts: { title, html, danger, okText, cancelText } */
+    return new Promise(function (resolve) {
+      var m = modalOpen("mpm-confirm",
+        '<h3 class="' + (opts.danger ? "del-h" : "") + '">' + esc(opts.title || T("mp_confirm_t")) + "</h3>" +
+        '<div class="cf-body">' + (opts.html || "") + "</div>" +
+        '<div class="mpm-btns">' +
+        '<button type="button" class="mpm-x">' + esc(opts.cancelText || T("mp_cancel")) + "</button>" +
+        '<button type="button" class="' + (opts.danger ? "mpm-del" : "mpm-ok") + '">' + esc(opts.okText || T("mp_save")) + "</button>" +
+        "</div>");
+      m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); resolve(false); });
+      var okBtn = m.querySelector(".mpm-del, .mpm-ok");
+      okBtn.addEventListener("click", function () { m.remove(); resolve(true); });
+      okBtn._t41 = null;
+      setTimeout(function () { try { okBtn.focus(); } catch (e) { } }, 60);
+    });
   }
 
   /* ---------------- generic modal shell ---------------- */
@@ -923,6 +1314,7 @@ var MaribManpower = (function () {
     $("mpmCode").value = editing ? (emp[1] || "") : "";
     $("mpmCode").readOnly = editing && !isNew;
     $("mpmJob").value = editing ? (emp[3] || "") : (preset && preset.job ? preset.job : "");
+    attachCombo($("mpmJob"), function () { return jobsAll; });   /* R42: دروب ليست حقيقية */
     $("mpmHire").value = editing ? (emp[5] || "") : "";
     var trail = [];
     if (editing) {
@@ -944,7 +1336,16 @@ var MaribManpower = (function () {
         var oldNode = findByKey("d:" + emp[4]);
         var newNode = findByKey("d:" + deptId);
         var moved = (oldNode && newNode && oldNode.key !== newNode.key) || job !== (emp[3] || "");
-        if (moved && !window.confirm(T("mp_confirm_edit"))) return;
+        if (moved) {
+          confirmBox({ title: T("mp_confirm_edit_t"), html: '<div class="cf-warn">' + esc(T("mp_confirm_edit")) + "</div>", okText: T("mp_save") })
+            .then(function (yes) {
+              if (!yes) return;
+              save({ action: "edit", id: emp[0], code: code, name: name, job: job, deptId: deptId, hire: hire },
+                moved ? T("mp_moved") : T("mp_saved"), true);
+              m.remove();
+            });
+          return;
+        }
         save({ action: "edit", id: emp[0], code: code, name: name, job: job, deptId: deptId, hire: hire },
           moved ? T("mp_moved") : T("mp_saved"), true);
         m.remove();
@@ -1016,6 +1417,200 @@ var MaribManpower = (function () {
     }
   }
 
+  /* ---------------- R42: تعديل اسم الجذر (مأرب 3 / Marib 3) ---------------- */
+  function openRootEdit() {
+    if (!ADMIN) { toast(T("mp_need_admin"), "err"); return; }
+    var r = (DATA && DATA.root) || { ar: "\u0645\u0623\u0631\u0628 3", en: "Marib 3", tr: "Marib 3" };
+    var m = modalOpen("mpm-dept",
+      '<h3>' + esc(T("mp_root_edit")) + "</h3>" +
+      '<label><span>' + esc(T("mp_root_ar")) + '</span><input id="mrAr" type="text" maxlength="40" value="' + esc(r.ar || "") + '"></label>' +
+      '<label><span>English</span><input id="mrEn" type="text" maxlength="40" dir="ltr" value="' + esc(r.en || "") + '"></label>' +
+      '<label>T\u00fcrk\u00e7e<input id="mrTr" type="text" maxlength="40" dir="ltr" value="' + esc(r.tr || "") + '"></label>' +
+      '<div class="mpm-btns">' +
+      '<button type="button" class="mpm-x">' + esc(T("mp_cancel")) + "</button>" +
+      '<button type="button" class="mpm-ok">' + esc(T("mp_save")) + "</button>" +
+      "</div>");
+    m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); });
+    var okBtn = m.querySelector(".mpm-ok"), busy = false;
+    m.querySelector(".mpm-ok").addEventListener("click", function () {
+      if (busy) return;
+      var ar = $("mrAr").value.trim(), en = $("mrEn").value.trim(), tr = $("mrTr").value.trim();
+      if (!ar || !en || !tr) { toast(T("mp_fill"), "err"); return; }
+      busy = true; btnBusy(okBtn);
+      MaribCloud.manpowerPost("rootSet", { ar: ar, en: en, tr: tr }).then(function () {
+        toast(T("mp_root_saved"), "ok");
+        m.remove();
+        return reload();
+      }).catch(function (e) {
+        busy = false; btnIdle(okBtn);
+        toast(e && e.status === 403 ? T("mp_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
+    setTimeout(function () { try { $("mrAr").focus(); $("mrAr").select(); } catch (e) { } }, 60);
+  }
+
+  /* ---------------- R42: إضافة عجز (شاغر مهيكل) ----------------
+     «العجز في وظيفة إيه في قسم إيه في إدارة ايه» — المودال بيطلب
+     السلسلة والوظيفة، وبيسيب مكان فاضي في الشجرة يتعين فيه الاسم بعدين. */
+  function openVacAdd() {
+    if (!ADMIN) { toast(T("mp_need_admin"), "err"); return; }
+    var m = modalOpen("mpm-dept",
+      '<h3>' + esc(T("mp_vac_add")) + "</h3>" +
+      '<div class="md-sec"><b>' + esc(T("mp_dept")) + '</b><div class="mpc" id="mvDept"></div></div>' +
+      '<label><span>' + esc(T("mp_job")) + '</span><input id="mvJob" type="text" maxlength="90" autocomplete="off"></label>' +
+      '<label class="mv-count"><span>' + esc(T("mp_vac_count")) + '</span><input id="mvCount" type="number" min="1" max="50" step="1" value="1" class="num"></label>' +
+      '<div class="mpm-btns">' +
+      '<button type="button" class="mpm-x">' + esc(T("mp_cancel")) + "</button>" +
+      '<button type="button" class="mpm-ok">' + esc(T("mp_save")) + "</button>" +
+      "</div>");
+    fillLists();
+    cascadeBuild($("mvDept"), []);
+    attachCombo($("mvJob"), function () { return jobsAll; });
+    $("mvJob").value = "";
+    m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); });
+    var okBtn = m.querySelector(".mpm-ok"), busy = false;
+    m.querySelector(".mpm-ok").addEventListener("click", function () {
+      if (busy) return;
+      var deptId = trailToId($("mvDept")._trail || []);
+      var job = $("mvJob").value.trim();
+      var count = parseInt($("mvCount").value, 10) || 1;
+      if (!deptId || !job) { toast(T("mp_fill"), "err"); return; }
+      if (count < 1 || count > 50) count = 1;
+      busy = true; btnBusy(okBtn);
+      var chain = Promise.resolve();
+      var n = count;
+      while (n-- > 0) {
+        (function () {
+          chain = chain.then(function () { return MaribCloud.manpowerPost("vacAdd", { deptId: deptId, job: job }); });
+        })();
+      }
+      chain.then(function () {
+        toast(T("mp_vac_added") + " — " + count + " \u00d7 " + job, "ok");
+        m.remove();
+        clearSearch();
+        return reload().then(function () {
+          expandToDept(deptId);
+          renderTree();
+          flashDept(deptId);
+        });
+      }).catch(function (e) {
+        busy = false; btnIdle(okBtn);
+        toast(e && e.status === 403 ? T("mp_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
+    setTimeout(function () { try { $("mvJob").focus(); } catch (e) { } }, 60);
+  }
+
+  /* ---------------- R42: نقل المحددين (multi-select) ---------------- */
+  function openTransferMany(ids) {
+    var m = modalOpen("mpm-dept",
+      '<h3>' + esc(T("mp_move_many")) + " (" + ids.length + ")</h3>" +
+      '<div class="md-sec"><b>' + esc(T("mp_dept")) + '</b><div class="mpc" id="mmDept"></div></div>' +
+      '<label><span>' + esc(T("mp_job_opt")) + '</span><input id="mmJob" type="text" maxlength="90" autocomplete="off" placeholder="' + esc(T("mp_job_keep")) + '"></label>' +
+      '<div class="mpm-btns">' +
+      '<button type="button" class="mpm-x">' + esc(T("mp_cancel")) + "</button>" +
+      '<button type="button" class="mpm-ok">' + esc(T("mp_save")) + "</button>" +
+      "</div>");
+    fillLists();
+    cascadeBuild($("mmDept"), []);
+    attachCombo($("mmJob"), function () { return jobsAll; });
+    m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); });
+    var okBtn = m.querySelector(".mpm-ok"), busy = false;
+    m.querySelector(".mpm-ok").addEventListener("click", function () {
+      if (busy) return;
+      var deptId = trailToId($("mmDept")._trail || []);
+      var job = $("mmJob").value.trim();
+      if (!deptId) { toast(T("mp_fill"), "err"); return; }
+      busy = true; btnBusy(okBtn);
+      MaribCloud.manpowerPost("editMany", { ids: ids, deptId: deptId, job: job || null }).then(function (r) {
+        toast(T("mp_moved_many").replace("{n}", String(r && r.moved != null ? r.moved : ids.length)), "ok");
+        m.remove();
+        selSet = {};
+        updateSelBar();
+        return reload().then(function () { renderTree(); });
+      }).catch(function (e) {
+        busy = false; btnIdle(okBtn);
+        toast(e && e.status === 403 ? T("mp_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
+    setTimeout(function () { try { $("mmDept").querySelector("select").focus(); } catch (e) { } }, 60);
+  }
+
+  /* ---------------- R42: شريط التحديد ---------------- */
+  function selCount() {
+    var n = 0;
+    for (var k in selSet) if (selSet[k]) n++;
+    return n;
+  }
+  function updateSelBar() {
+    var bar = $("mpSelBar");
+    if (!bar) return;
+    var n = selCount();
+    bar.classList.toggle("on", view !== "arch" && view !== "cards" && (selMode || n > 0));
+    var cnt = $("mpSelCount");
+    if (cnt) cnt.textContent = String(n);
+    /* عدّاد الأرشيف */
+    var an = 0;
+    for (var k2 in archSel) if (archSel[k2]) an++;
+    var acnt = $("mpArchCount");
+    if (acnt) acnt.textContent = String(an);
+    var abar = $("mpArchBar");
+    if (abar) abar.classList.toggle("on", an > 0);
+  }
+  function toggleSelMode(force) {
+    selMode = force !== undefined ? force : !selMode;
+    if (!selMode) selSet = {};
+    var btn = $("mpSelBtn");
+    if (btn) {
+      btn.classList.toggle("on", selMode);
+      btn.setAttribute("aria-pressed", selMode ? "true" : "false");
+    }
+    updateSelBar();
+    renderTree();
+  }
+  function applySelDelete() {
+    var ids = [];
+    for (var k in selSet) if (selSet[k]) ids.push(k);
+    if (!ids.length) return;
+    confirmBox({
+      title: T("mp_del_many_t").replace("{n}", String(ids.length)),
+      html: '<div class="cf-warn">' + esc(T("mp_del_many_b")) + "</div>",
+      danger: true,
+      okText: T("mp_del_many_ok")
+    }).then(function (yes) {
+      if (!yes) return;
+      MaribCloud.manpowerPost("delMany", { ids: ids }).then(function (r) {
+        toast(T("mp_deleted_n").replace("{n}", String(r && r.deleted != null ? r.deleted : ids.length)), "ok");
+        selSet = {};
+        updateSelBar();
+        return reload().then(function () { renderTree(); });
+      }).catch(function (e) {
+        toast(e && e.status === 403 ? T("mp_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
+  }
+  function applyArchDelete() {
+    var ids = [];
+    for (var k in archSel) if (archSel[k]) ids.push(k);
+    if (!ids.length) return;
+    confirmBox({
+      title: T("mp_arch_del_t").replace("{n}", String(ids.length)),
+      html: '<div class="cf-warn">' + esc(T("mp_arch_del_b")) + "</div>",
+      danger: true,
+      okText: T("mp_del_many_ok")
+    }).then(function (yes) {
+      if (!yes) return;
+      MaribCloud.manpowerPost("archDel", { ids: ids }).then(function () {
+        toast(T("mp_arch_del_done"), "ok");
+        archSel = {};
+        updateSelBar();
+        return reload().then(function () { renderArch(); });
+      }).catch(function (e) {
+        toast(e && e.status === 403 ? T("mp_need_admin") : T("toast_sync_err"), "err");
+      });
+    });
+  }
+
   /* ---------------- save helper ---------------- */
   function save(payload, okMsg, keepOpen) {
     return MaribCloud.manpowerPost(payload.action, payload).then(function (r) {
@@ -1084,6 +1679,7 @@ var MaribManpower = (function () {
                 else if (h.indexOf("ماكينة") >= 0) map.mach = c;   /* R40: الماكينة */
                 else if (h.indexOf("ملاحظات") >= 0) map.note = c;
                 else if (h.indexOf("التعيين") >= 0) map.hire = c;
+                else if (h.indexOf("حذف") >= 0) map.del = c;      /* R42: عمود الحذف */
               }
               if (map.code !== undefined && map.name !== undefined && map.dept !== undefined) {
                 var isNewFmt = map.sec !== undefined;
@@ -1122,7 +1718,8 @@ var MaribManpower = (function () {
                 String(get("note") == null ? "" : get("note")).trim().slice(0, 60),
                 xlsxDate(get("hire")),
                 vac,
-                String(get("mach") == null ? "" : get("mach")).trim().slice(0, 30)   /* R40 */
+                String(get("mach") == null ? "" : get("mach")).trim().slice(0, 30),  /* R40 */
+                String(get("del") == null ? "" : get("del")).trim().slice(0, 10)     /* R42: حذف؟ */
               ]);
             } else {
               var code = String(get("code") == null ? "" : get("code")).trim();
@@ -1135,15 +1732,67 @@ var MaribManpower = (function () {
             }
           }
           if (!rows.length) { toast(T("mp_search_none"), "err"); return; }
-          var msg = T("mp_confirm_import").replace("{r}", rows.length).replace("{f}", filled).replace("{v}", vacs);
-          if (!window.confirm(msg)) return;
-          save({ action: "import", rows: rows }, "", false).then(function (r) {
-            var bits = [T("mp_import_done") + " — " + (r ? r.total : rows.length)];
-            if (r && r.codeFilled) bits.push(T("mp_code_filled") + " " + r.codeFilled);
-            if (r && r.moved) bits.push(T("mp_moved_n") + " " + r.moved);
-            if (r && r.keptOut) bits.push(T("mp_kept_out") + " " + r.keptOut);
-            toast(bits.join(" · "), "ok");
-          }).catch(function () { });
+
+          /* R42: معاينة قبل التنفيذ — عدّ اللي هيحصل بالظبط من واقع
+             الداتا الحالية (جدد / تحديثات وظيفة / نقل / حذف) + أمثلة،
+             والتأكيد بقى مودال بثيم الموقع مش حوار المتصفح */
+          var colFlags = {
+            hireCol: best.map.hire !== undefined,
+            machCol: best.map.mach !== undefined,
+            noteCol: best.map.note !== undefined
+          };
+          var liveByCode = {};
+          var liveByName = {};
+          if (DATA) {
+            for (var li = 0; li < DATA.emps.length; li++) {
+              var le = DATA.emps[li];
+              if (le[1] && le[1] !== "جديد") liveByCode[le[1]] = le;
+              if (le[2]) liveByName[le[2]] = le;   /* صفوف «جديد» بيتطابقوا بالاسم سيرفر-side */
+            }
+          }
+          var pNew = 0, pJob = 0, pDel = 0, pKeep = 0;
+          var jobEx = [], delEx = [];
+          for (var pi = 0; pi < rows.length; pi++) {
+            var pr = rows[pi];
+            var pcode = String(pr[0] || "");
+            var pdelMark = norm(pr[10]);
+            var isDel = ["نعم", "yes", "x", "حذف", "1", "true"].indexOf(pdelMark) >= 0;
+            if (isDel && pcode && pcode !== "جديد") { pDel++; if (delEx.length < 5) delEx.push(pr[1]); continue; }
+            if (!pr[1]) continue; /* شاغر */
+            var live = liveByCode[pcode] || liveByName[pr[1]];
+            if (!live) { pNew++; continue; }
+            if (pr[5] && pr[5] !== (live[3] || "")) {
+              pJob++;
+              if (jobEx.length < 5) jobEx.push(pr[1] + ": " + (live[3] || "—") + " ← " + pr[5]);
+            } else pKeep++;
+          }
+          var pvHtml =
+            '<div class="pv-grid">' +
+            '<div class="pv-i"><b>' + rows.length + "</b><span>" + esc(T("mp_pv_rows")) + "</span></div>" +
+            '<div class="pv-i ok"><b>+' + pNew + "</b><span>" + esc(T("mp_pv_new")) + "</span></div>" +
+            '<div class="pv-i"><b>' + pJob + "</b><span>" + esc(T("mp_pv_jobs")) + "</span></div>" +
+            '<div class="pv-i"><b>' + vacs + "</b><span>" + esc(T("mp_pv_vacs")) + "</span></div>" +
+            (pDel ? '<div class="pv-i bad"><b>-' + pDel + "</b><span>" + esc(T("mp_pv_dels")) + "</span></div>" : "") +
+            "</div>" +
+            (jobEx.length ? '<div class="pv-ex"><b>' + esc(T("mp_pv_jobex")) + ":</b> " + jobEx.map(esc).join(" · ") + "</div>" : "") +
+            (delEx.length ? '<div class="pv-ex bad"><b>' + esc(T("mp_pv_delex")) + ":</b> " + delEx.map(esc).join(" · ") + "</div>" : "") +
+            '<div class="cf-warn">' + esc(T("mp_pv_note")) + "</div>";
+          confirmBox({
+            title: T("mp_confirm_import_t"),
+            html: pvHtml,
+            okText: T("mp_import_go")
+          }).then(function (yes) {
+            if (!yes) return;
+            save({ action: "import", rows: rows, hireCol: colFlags.hireCol, machCol: colFlags.machCol, noteCol: colFlags.noteCol }, "", false).then(function (r) {
+              var bits = [T("mp_import_done") + " — " + (r ? r.total : rows.length)];
+              if (r && r.codeFilled) bits.push(T("mp_code_filled") + " " + r.codeFilled);
+              if (r && r.moved) bits.push(T("mp_moved_n") + " " + r.moved);
+              if (r && r.keptOut) bits.push(T("mp_kept_out") + " " + r.keptOut);
+              if (r && r.deleted) bits.push(T("mp_pv_dels") + " " + r.deleted);
+              toast(bits.join(" · "), "ok");
+              if (cardMode) closeCards();
+            }).catch(function () { });
+          });
         } catch (e) {
           toast(T("toast_sync_err"), "err");
         }
@@ -1153,16 +1802,45 @@ var MaribManpower = (function () {
     }).catch(function () { toast(T("toast_sync_err"), "err"); });
   }
 
+  /* ---------------- R42: ترجمة تلقائية — مسح المصطلحات الناقصة ----------------
+     بعد كل تحميل: نجمع الأقسام والوظايف اللي ملهاش ترجمة (مش في
+     الجلوسار ولا في خريطة السيرفر) ونبعتها دفعة واحدة — السيرفر
+     بيرجّع الخريطة متحدثة وكل حاجة بترسم نفسها. صامتة تمامًا. */
+  function trScan() {
+    if (!DATA || !ADMIN) return;
+    var tr = DATA.tr || {};
+    var need = {};
+    var i;
+    for (i = 0; i < DATA.depts.length; i++) {
+      var nm = DATA.depts[i][1];
+      if (nm && !GLOSS[nm] && !tr[nm]) need[nm] = 1;
+    }
+    for (i = 0; i < DATA.emps.length; i++) {
+      var jb2 = DATA.emps[i][3];
+      if (jb2 && !GLOSS[jb2] && !tr[jb2]) need[jb2] = 1;
+    }
+    var terms = Object.keys(need);
+    if (!terms.length) return;
+    MaribCloud.manpowerPost("trSync", { terms: terms.slice(0, 40) }).then(function (r) {
+      if (r && r.tr && (r.tr.length || Object.keys(r.tr).length)) {
+        DATA.tr = r.tr;
+        buildTree();
+        renderAll();
+      }
+    }).catch(function () { });
+  }
+
   /* ---------------- reload ---------------- */
   function reload() {
     loading = true;
     renderTree();
     return MaribCloud.manpowerGet().then(function (r) {
-      DATA = { depts: r.depts || [], emps: r.emps || [], req: r.req || {}, transfers: r.transfers || [] };
+      DATA = { depts: r.depts || [], emps: r.emps || [], req: r.req || {}, transfers: r.transfers || [], root: r.root, tr: r.tr || {} };
       loaded = true;
       loading = false;
       buildTree();
       renderAll(true);
+      trScan();
     }).catch(function () {
       loading = false;
       renderTree();
@@ -1182,6 +1860,17 @@ var MaribManpower = (function () {
     if (imp) imp.style.display = ADMIN ? "" : "none";
     if (dad) dad.style.display = ADMIN ? "" : "none";
     if (exp) exp.style.display = "";   /* R39: التصدير متاح لكل المسجلين — قراءة بس */
+    /* R42: الأزرار الجديدة — عجز + تحديد + تيمبلت للأدمن، التبديل للكل */
+    var vac = $("mpVacBtn"), sel = $("mpSelBtn"), tpl = $("mpTmplBtn"), ordB = $("mpOrdBtn");
+    if (vac) vac.style.display = ADMIN ? "" : "none";
+    if (sel) sel.style.display = ADMIN ? "" : "none";
+    if (tpl) tpl.style.display = ADMIN ? "" : "none";
+    if (ordB) {
+      ordB.style.display = "";
+      syncOrdBtn();
+    }
+    updateSelBar();
+    mpTitle();
     if (!loaded && !loading) reload();
     else renderAll();
   }
@@ -1193,6 +1882,22 @@ var MaribManpower = (function () {
     closeReqPop();
     tipCurId = null;   /* R40: قفل التولتيب مع الشاشة نفسها */
     tipHide();
+    selMode = false;   /* R42: خروج من وضع التحديد كمان */
+    selSet = {};
+    archSel = {};
+    updateSelBar();
+  }
+
+  /* ---------------- R42: عنوان التاب في المتصفح ----------------
+     «المتصح من فوق بيقولي أنا فين» — العنوان بيتحدث مع كل انتقال:
+     الاتزان — الهيكل / الاتزان — أرشيف النقل / تفاصيل الكارت. */
+  function mpTitle() {
+    if (!on) return;
+    var brand = I18N.lang() === "ar" ? "\u0645\u0623\u0631\u0628" : "Marib";
+    var base = T("mg_mp");
+    var cardsT = $("mpCardsTitle");
+    var sub = view === "cards" ? ((cardsT && cardsT.textContent) || T("mp_card_open")) : T(view === "arch" ? "mp_archive" : "mp_tree_tab");
+    document.title = base + " — " + sub + " | " + brand;
   }
 
   /* ---------------- bindings ---------------- */
@@ -1245,6 +1950,82 @@ var MaribManpower = (function () {
     if (add) add.addEventListener("click", function () { openEmpModal(null, null); });
     var dad = $("mpDeptBtn");
     if (dad) dad.addEventListener("click", openDeptAdd);
+
+    /* ---------- R42: كل الأزرار الجديدة ---------- */
+    var vac2 = $("mpVacBtn");
+    if (vac2) vac2.addEventListener("click", openVacAdd);
+    var selB = $("mpSelBtn");
+    if (selB) selB.addEventListener("click", function () { toggleSelMode(); });
+    var ordB = $("mpOrdBtn");
+    if (ordB) ordB.addEventListener("click", function () {
+      ordMode = ordMode === "emp" ? "job" : "emp";
+      try { localStorage.setItem("marib_mp_ord", ordMode); } catch (e) { }
+      syncOrdBtn();
+      renderTree("__all__");
+    });
+    var tplB = $("mpTmplBtn");
+    if (tplB) tplB.addEventListener("click", function () {
+      tplB.disabled = true;
+      toast(T("mp_tmpl_going"), "");
+      fetch("/api/manpower/export?template=1", { credentials: "same-origin" })
+        .then(function (r) { if (!r.ok) throw new Error("t" + r.status); return r.blob(); })
+        .then(function (b) {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(b);
+          var d = new Date();
+          function p2(n) { return (n < 10 ? "0" : "") + n; }
+          a.download = "Manpower-Template-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + ".xlsx";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
+          toast(T("mp_tmpl_done"), "ok");
+        })
+        .catch(function () { toast(T("toast_sync_err"), "err"); })
+        .then(function () { tplB.disabled = false; });
+    });
+    /* شريط التحديد */
+    var selMove = $("mpSelMove"), selDel = $("mpSelDel"), selX = $("mpSelX");
+    if (selMove) selMove.addEventListener("click", function () {
+      var ids = [];
+      for (var k in selSet) if (selSet[k]) ids.push(k);
+      if (ids.length) openTransferMany(ids);
+    });
+    if (selDel) selDel.addEventListener("click", applySelDelete);
+    if (selX) selX.addEventListener("click", function () { toggleSelMode(false); });
+    /* شريط الأرشيف */
+    var archDel2 = $("mpArchDel"), archX = $("mpArchX");
+    if (archDel2) archDel2.addEventListener("click", applyArchDelete);
+    if (archX) archX.addEventListener("click", function () { archSel = {}; updateSelBar(); renderArch(); });
+    /* صفحة الكروت */
+    var cardsBack = $("mpCardsBack");
+    if (cardsBack) cardsBack.addEventListener("click", closeCards);
+    var cardsSearch = $("mpCardsSearch");
+    if (cardsSearch) {
+      var deb3 = null;
+      cardsSearch.addEventListener("input", function () {
+        clearTimeout(deb3);
+        deb3 = setTimeout(function () { cardQ = cardsSearch.value.trim(); renderCards(); }, 130);
+      });
+    }
+    /* أزرار الهيدر: الإعدادات + البيانات */
+    var mpSet = $("mpSetBtn");
+    if (mpSet) mpSet.addEventListener("click", function () {
+      if (window.App && App.openSettings) App.openSettings();
+    });
+    var mpData = $("mpDataBtn");
+    if (mpData) mpData.addEventListener("click", function () {
+      if (window.App && App.enterDash) App.enterDash("data");
+    });
+    /* تشيك بوكس الأرشيف (delegated) */
+    var archBox = $("mpArch");
+    if (archBox) archBox.addEventListener("click", function (e) {
+      var chk = e.target.closest ? e.target.closest("[data-achk]") : null;
+      if (!chk) return;
+      var id = chk.getAttribute("data-achk");
+      archSel[id] = !archSel[id];
+      updateSelBar();
+      renderArch();
+    });
     var imp = $("mpImportBtn");
     if (imp) imp.addEventListener("click", function () {
       var pick = $("mpXlsxPick");
@@ -1288,6 +2069,14 @@ var MaribManpower = (function () {
     var tree = $("mpTree");
     if (tree) tree.addEventListener("click", function (e) {
       var el = e.target;
+      /* R42: تعديل اسم الجذر (مأرب 3) — أول شرط: الزرار ده عليه class
+         mo rn فأي فحص تاني (dept edit / pen) بياخده ويسكت */
+      var rted = el.closest ? el.closest("[data-rootedit]") : null;
+      if (rted) {
+        e.stopPropagation();
+        openRootEdit();
+        return;
+      }
       var reqChipEl = el.closest ? el.closest(".mn.r") : null;
       if (reqChipEl && reqChipEl.classList.contains("ed")) {
         e.stopPropagation();
@@ -1305,8 +2094,10 @@ var MaribManpower = (function () {
       var vx = el.closest ? el.closest(".mo.vx") : null;
       if (vx) {
         e.stopPropagation();
-        if (!window.confirm(T("mp_confirm_vacdel"))) return;
-        save({ action: "vacDel", id: vx.getAttribute("data-vx") }, T("mp_vac_deleted"), true);
+        confirmBox({ title: T("mp_vac_del"), html: '<div class="cf-warn">' + esc(T("mp_confirm_vacdel")) + "</div>", danger: true, okText: T("mp_vac_del") })
+          .then(function (yes) {
+            if (yes) save({ action: "vacDel", id: vx.getAttribute("data-vx") }, T("mp_vac_deleted"), true);
+          });
         return;
       }
       /* R39: حذف موظف (زرار جوه كارت التفاصيل) */
@@ -1314,8 +2105,15 @@ var MaribManpower = (function () {
       if (del) {
         e.stopPropagation();
         var e3 = findEmp(del.getAttribute("data-del"));
-        if (e3 && window.confirm(T("mp_confirm_del").replace("{n}", e3[2]))) {
-          save({ action: "del", id: e3[0] }, T("mp_deleted"), true);
+        if (e3) {
+          confirmBox({
+            title: T("mp_del_emp"),
+            html: '<div class="cf-warn">' + esc(T("mp_confirm_del").replace("{n}", e3[2])) + "</div>",
+            danger: true,
+            okText: T("mp_del_emp")
+          }).then(function (yes) {
+            if (yes) save({ action: "del", id: e3[0] }, T("mp_deleted"), true);
+          });
         }
         return;
       }
@@ -1351,7 +2149,18 @@ var MaribManpower = (function () {
       var t = row.getAttribute("data-t");
       if (t === "emp") {
         var c = row.getAttribute("data-i");
+        if (selMode) {                       /* R42: وضع التحديد — الضغطة بتحدد */
+          selSet[c] = !selSet[c];
+          updateSelBar();
+          renderTree();
+          return;
+        }
         empOpen[c] = !empOpen[c];
+        renderTree();
+      } else if (t === "job") {
+        /* R42: صف الوظيفة — فتح/قفل العمال تحتها */
+        var jk = row.getAttribute("data-jk");
+        jobOpen[jk] = !jobOpen[jk];
         renderTree();
       } else if (t === "vac") {
         return;   /* vacancy rows act through their icons */
@@ -1368,6 +2177,40 @@ var MaribManpower = (function () {
        غير ما نربط حاجة لكل صف من الـ 828. */
     if (tree) {
       tree.addEventListener("mouseover", function (e) {
+        /* R42 (الطلب 9): مربع الفرق — التولتيب بيوضح الوظايف الناقصة
+           جوه الفرع اللي واقف عليه بالظبط (context-aware) */
+        var mv = e.target.closest ? e.target.closest(".mv[data-vk]") : null;
+        if (mv) {
+          var vk = mv.getAttribute("data-vk");
+          var vnode = null;
+          if (vk === "root") vnode = ROOT;
+          else if (String(vk).indexOf("j:") === 0) vnode = null;   /* صفوف الوظائف: مفيش وظايف ناقصة جواها */
+          else vnode = findByKey(vk);
+          if (vnode) {
+            var miss = missingOf(vnode);
+            var vval = vnode.tCount - vnode.eff;
+            var h = '<div class="tt-h"><span class="tt-ico">' + ICO_DEPT + "</span><b>" + esc(deptLabel(vnode) === "Marib 3" ? rootLabel() : deptLabel(vnode)) + "</b></div>";
+            h += '<div class="tt-r"><span>' + esc(T("mp_actual")) + '</span><b class="num">' + vnode.tCount + '</b></div>';
+            h += '<div class="tt-r"><span>' + esc(T("mp_required")) + '</span><b class="num">' + vnode.eff + '</b></div>';
+            h += '<div class="tt-r"><span>' + esc(T("mp_variance")) + '</span><b class="num" style="color:' + (vval < 0 ? "#F87C7C" : vval > 0 ? "#F0BE55" : "#4FD98D") + '">' + (vval > 0 ? "+" + vval : vval) + '</b></div>';
+            if (miss.length) {
+              h += '<div class="tt-div"></div>';
+              for (var mi = 0; mi < miss.length && mi < 12; mi++) {
+                h += '<div class="tt-r"><span>' + esc(TT(miss[mi].job)) + '</span><b class="tt-m num">' + (miss[mi].n > 1 ? "\u00d7" + miss[mi].n : "1") + "</b></div>";
+              }
+              if (miss.length > 12) h += '<div class="tt-r"><span>…</span><b class="num">+' + (miss.length - 12) + "</b></div>";
+            } else if (vval < 0) {
+              h += '<div class="tt-div"></div><div class="tt-r"><span>' + esc(T("mp_miss_override")) + "</span></div>";
+            }
+            var el2 = tipEl();
+            el2.innerHTML = h;
+            el2.classList.add("on");
+            tipOn = true;
+            tipCurId = "__mv";
+            tipMove(e);
+            return;
+          }
+        }
         var row = e.target.closest ? e.target.closest(".mpr.em") : null;
         if (!row) return;
         var id = row.getAttribute("data-i");
@@ -1380,6 +2223,13 @@ var MaribManpower = (function () {
         tipTimer = setTimeout(function () { tipShow(emp, e); }, 140);
       });
       tree.addEventListener("mouseout", function (e) {
+        var mv = e.target.closest ? e.target.closest(".mv[data-vk]") : null;
+        if (mv) {
+          var to0 = e.relatedTarget;
+          if (to0 && mv.contains(to0)) return;
+          if (tipCurId === "__mv") { tipCurId = null; tipHide(); }
+          return;
+        }
         var row = e.target.closest ? e.target.closest(".mpr.em") : null;
         if (!row) return;
         var to = e.relatedTarget;
@@ -1405,6 +2255,8 @@ var MaribManpower = (function () {
     /* re-render everything when the language flips (glossary included) */
     I18N.onChange(function () {
       if (!on) return;
+      syncOrdBtn();
+      mpTitle();
       if (DATA) { buildTree(); renderAll(); }
     });
 
@@ -1420,21 +2272,47 @@ var MaribManpower = (function () {
   function setView(v) {
     view = v;
     var t = $("mpTabTree"), a = $("mpTabArch");
-    if (t) t.classList.toggle("on", v === "tree");
+    if (t) t.classList.toggle("on", v === "tree" || v === "cards");
     if (a) a.classList.toggle("on", v === "arch");
-    var vt = $("mpViewTree"), va = $("mpViewArch");
+    var vt = $("mpViewTree"), va = $("mpViewArch"), vc = $("mpViewCards");
     if (vt) vt.classList.toggle("on", v === "tree");
     if (va) va.classList.toggle("on", v === "arch");
+    if (vc) vc.classList.toggle("on", v === "cards");
+    mpTitle();          /* R42: عنوان التاب بيتحدث مع كل انتقال */
+    updateSelBar();
   }
 
+  /* R42: زرار التبديل عامل↔وظيفة — نصه بيتحدث مع الحالة */
+  function syncOrdBtn() {
+    var b = $("mpOrdBtn");
+    if (!b) return;
+    var jobMode = ordMode === "job";
+    b.classList.toggle("on", jobMode);
+    b.setAttribute("aria-pressed", jobMode ? "true" : "false");
+    var lbl = b.querySelector("span");
+    if (lbl) lbl.textContent = T(jobMode ? "mp_ord_job" : "mp_ord_emp");
+    var thName = $("thName");
+    if (thName) thName.textContent = T(jobMode ? "mp_item_job" : "mp_item");
+  }
+
+  /* R42: الربط بعد الـ load — نفس سباق الـ hydration (اللي بربطه
+     app_main و app_auth): قبل كده React كان ممكن يبدل الشجرة ويمسح
+     كل الـ listeners بصمت. */
   document.addEventListener("DOMContentLoaded", function () {
-    expanded = { root: true };   /* Marib 3 starts open — departments visible immediately */
-    bind();
+    function start() {
+      expanded = { root: true };   /* Marib 3 starts open — departments visible immediately */
+      bind();
+      syncOrdBtn();                /* R42: زرار التبديل جاهز من أول لحظة */
+    }
+    if (document.readyState === "complete") setTimeout(start, 110);
+    else window.addEventListener("load", function () { setTimeout(start, 130); });
   });
 
-  return {
+  var __api42 = {
     show: show,
     hide: hide,
     reload: reload
   };
+  window.__maribMP42 = __api42;
+  return __api42;
 })();

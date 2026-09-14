@@ -11,6 +11,8 @@
    ============================================================ */
 var MaribAuth = (function () {
   "use strict";
+  /* R42: حماية من التحميل المزدوج (نفس تعليق app_manpower) */
+  if (window.__maribAuth42) return window.__maribAuth42;
   var T = I18N.t;
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
@@ -307,6 +309,7 @@ var MaribAuth = (function () {
   function showLogin() {
     me = null;
     closeAppModals();
+    document.title = I18N.t("brand_name");   /* R42: العنوان بيقول أنا فين */
     /* R37: leaving via logout also drops the الاتزان surface — the login
        screen must never sit on top of a hidden shell mode */
     if (window.MaribManpower && MaribManpower.hide) { try { MaribManpower.hide(); } catch (e) { } }
@@ -379,6 +382,7 @@ var MaribAuth = (function () {
       return;
     }
     mgEl.hidden = false;
+    document.title = I18N.t("th_gate_title") + " — " + I18N.t("brand_name");   /* R42 */
     /* entrance animation on the next frame so display→opacity transitions run */
     requestAnimationFrame(function () { mgEl.classList.add("on"); });
   }
@@ -862,6 +866,15 @@ var MaribAuth = (function () {
     if (v) v.classList.add("off");
   }
 
+  /* R42 — إصلاح سباق الـ hydration: القرار (دخول/بوابة/شاشة الدخول)
+     كان بيتم أحيانًا قبل ما React يخلص hydration فيمسح الكلاسات اللي
+     اتعدلت. التأجيل لما بعد load بيضمن إن أي تعديل DOM بيثبت.
+     (كان موجود من R23 لكن ظهر لما الـ API بقى أسرع من الـ hydration) */
+  function whenSettled(fn) {
+    if (document.readyState === "complete") setTimeout(fn, 120);
+    else window.addEventListener("load", function () { setTimeout(fn, 150); });
+  }
+
   /* ---------------- boot ---------------- */
   function boot() {
     loginEl = $("loginScreen");
@@ -917,9 +930,13 @@ var MaribAuth = (function () {
     });
   }
 
-  document.addEventListener("DOMContentLoaded", boot);
+  /* R42: البووت كله بعد ما الـ hydration يخلص — أي ربط أو تعديل DOM
+     قبل كده ممكن React يمسحه لو أعاد بناء الشجرة (السباق اللي كان
+     مخفي شاشة الدخول/البوابة أحيانًا — الـ API بيرجع أسرع من الـ
+     hydration في السيرفر السريع). */
+  document.addEventListener("DOMContentLoaded", function () { whenSettled(boot); });
 
-  return {
+  var __authApi42 = {
     login: showLogin,
     logout: function () {
       var done = function () { showLogin(); };
@@ -934,4 +951,6 @@ var MaribAuth = (function () {
     /* R37: both surfaces reopen the mode gate through this handle */
     showGate: showModeGate
   };
+  window.__maribAuth42 = __authApi42;
+  return __authApi42;
 })();

@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 
 const lg = logger("settings");
 
-const KEYS = ["targets", "groups", "storage_quota", "mhome"];
+const KEYS = ["targets", "groups", "storage_quota", "mhome", "theme"];
 
 async function loadSettings(): Promise<Record<string, unknown>> {
   const rows = await q("SELECT key, value FROM marib_setting");
@@ -46,6 +46,8 @@ export async function PUT(req: NextRequest) {
     if (!KEYS.includes(key)) return fail("key", 400);
     if (key === "storage_quota" || key === "mhome") {   /* R30: mhome = dev only */
       if (!isDev(me)) return fail("dev", 403);
+    } else if (key === "theme") {                        /* R42: الثيم الافتراضي للموقع — أدمن */
+      if (!isAdmin(me)) return fail("admin", 403);
     } else if (!isAdmin(me)) {
       return fail("admin", 403);
     }
@@ -76,6 +78,8 @@ export async function PUT(req: NextRequest) {
     } else if (key === "mhome") {
       const u = (value as { users?: unknown[] })?.users;
       summary = { people: Array.isArray(u) ? u.length : 0 };
+    } else if (key === "theme") {
+      summary = { theme: value };
     }
     await audit(me.username, "edit", "settings:" + key, key, { from: oldValue, to: summary ?? value });
     lg.info("setting saved", { key, by: me.username });

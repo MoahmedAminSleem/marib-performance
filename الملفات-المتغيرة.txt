@@ -1,31 +1,30 @@
-الجولة 41 — زرار مسح القسم + إصلاح الإضافة المتكررة (النسخ اللي كانت بتتعمل من كتر الضغط) (2026-09-14)
-شامل: سلة حمرا جنب كل قسم بمودال تأكيد (المليان مقفول 409 من السيرفر كمان) + زرار الحفظ بيتعطل فورًا «جاري الحفظ…» + فلاش ذهبي للقسم الجديد.
-الملفات دي هي كل اللي محتاج ترفعه على GitHub (Add file → Upload files → اسحبها).
-الـ ZIP تراكمي: شامل R28 → R41 — يشتغل حتى لو مرفعتش الجولات اللي فاتت.
-مفيش أي تغيير مطلوب في package.json · مفيش أي زرع جديد (بوابة 42 زي ما هي).
+الجولة 42 — الاتزان v4: الـ18 طلب كاملة (مأرب 3 + التحديد المتعدد + العجز المهيكل + البيفوت الحقيقي + التيمبلت + الترجمة التلقائية المجانية + 3 ثيمات + التولتيبات + الكروت + التبديل + البحث المطبع + العنوان + الثبات + البوابة العامة) + الاستيراد الذكي اللي بيحافظ على إعادة تنظيمك + المقارنة الكاملة مع الشيت (في دليل-الجولة-42.html)
+شامل: كل الجولات من R28 لـ R42 — الـ ZIP تراكمي، يشتغل حتى لو مرفعتش الجولات اللي فاتت.
+مفيش أي تغيير في package.json · مفيش أي مكتبات جديدة · مفيش زرع جديد (بوابة الإصدار 42 زي ما هي) · البناء الإنتاجي متاختبر ونضيف.
 
-عدد الملفات: 23
+عدد الملفات: 24
 
-91db8a07db9b4a66ea3a4ec59298ecb3  public/app/app_manpower.js
-18151bb22be3bcb96197f2c99c906b52  src/app/api/manpower/route.ts
-37d1a63de4ac66befe065a669232c6d8  public/app/i18n_dict.js
-96f4ce115659736a4d1faf72afa8759d  public/app/app.css
-7547e78dabe8d18d5fe363fe377bca04  سير-العمل.html
-f3d2ae7412b3bf45a53c89bb409c585d  README.md
-4fe4de8bb6c94d3c426f759fd75ead68  دليل-الجولة-41.html
-125a024dd7d8a522a427abe2391a28cc  src/app/api/manpower/export/route.ts
-40b2c82b9726282c55ff0e065c5b2fa4  src/server/seed/manpower-seed.ts
-3376bdccdb6eac5f1bd4fd5bcdb54f53  src/lib/marib/db.ts
-12a160b8a1152bd51f4dce0fb1fb93c6  src/app/skeleton.ts
-77bf4f77c37ca0f4f31fee3748353886  public/app/app_auth.js
-2dcb596d17e41fd8b062f73e67c75801  public/app/app_main.js
+b53afb872e4be788c5397abc2dcfbe02  public/app/app_manpower.js
+b3525e1b0dd6b81f098917797f6f07ad  public/app/app_main.js
+dceaaaed4e612053ac3316aa8781bc70  public/app/app_auth.js
+f591731dd3b9da6698b44f6186c7c9f9  public/app/app_charts.js
 3da2ddbd3fd8a4dd39f5399b7523fc9b  public/app/app_core.js
-8e4b5973de19ac58a5a27d61ae9da905  public/app/app_charts.js
 8a58dc5a1c55021307db117c972ad709  public/app/i18n_core.js
+fd685a432b93ada2a5252d73b6a6788e  public/app/i18n_dict.js
+c384b1e73b59fdf4d64feedd42c1589d  public/app/app.css
 110d2d0078d4bd382e535d07969a0c78  public/app/marib_cloud.js
 b3933a11b77d5047b4da5bb814771f4a  public/app/cursor_needle.png
 5f855c24771eed101fabb010aafd1672  public/app/cursor_needle_thread.png
+708aa5f9928899bb37e21b657d2c6b00  src/app/skeleton.ts
 836b9e254ecf392e2bb27a31f33b7cd4  src/app/page.tsx
-f242bf6056d98c235753e66e3690189d  شرح-رسومات-رئيسية-المدير.html
-4e5a36d5ddca6bc56e50349284de7f94  next.config.ts
+357e9e707a15af11d69b0082566b8abd  src/app/api/manpower/route.ts
+4185f6cbfa653add6889062ae73c847f  src/app/api/manpower/export/route.ts
+2e6631dbc906f7ab3138e0db5b305bce  src/app/api/settings/route.ts
+bddfd884be3d199ac50cb2000d0ee524  src/lib/marib/db.ts
 607ec597ae3676ad1f82976a857b6300  src/lib/marib/xlsx-writer.ts
+40b2c82b9726282c55ff0e065c5b2fa4  src/server/seed/manpower-seed.ts
+4e5a36d5ddca6bc56e50349284de7f94  next.config.ts
+836611942bab26c2661b415d409e840c  سير-العمل.html
+f242bf6056d98c235753e66e3690189d  شرح-رسومات-رئيسية-المدير.html
+929bef2d5692d3517961878492425ff4  README.md
+cf4002812966d36dcbe0248636ff8ead  دليل-الجولة-42.html

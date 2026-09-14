@@ -7,6 +7,8 @@
    ============================================================ */
 var App = (function () {
   "use strict";
+  /* R42: حماية من التحميل المزدوج (نفس تعليق app_manpower) */
+  if (window.__maribApp42) return window.__maribApp42;
   var U = MaribCore.utils;
   var C = MaribCharts;
   var TH = JSON.parse(JSON.stringify(MaribCore.DEFAULT_CONFIG.thresholds));
@@ -2620,10 +2622,70 @@ var App = (function () {
     return out;
   }
 
+  /* ============================================================
+     R42 — مدير الثيمات: الدنيم الكلاسيكي + 3 ثيمات جديدة.
+     التطبيق فوري على الموقع كله (الهيكل والاتزان والبوابة والدخول
+     والمودالات والرسومات) — الرسومات بتقرأ ألوانها من CSS vars
+     فبتتحدث مع أي ثيم. الحفظ: localStorage فورًا + السيرفر للأدمن
+     (يبقى الثيم الافتراضي للجميع).
+     ============================================================ */
+  var THEMES = ["denim", "energy", "growth", "creative"];
+  function applyTheme(id, silent) {
+    if (THEMES.indexOf(id) < 0) id = "denim";
+    var html = document.documentElement;
+    if (id === "denim") html.removeAttribute("data-theme");
+    else html.setAttribute("data-theme", id);
+    try { localStorage.setItem("marib_theme", id); } catch (e) { }
+    syncThemeCards();
+    if (!silent) toast(T("th_saved_local"), "ok");
+  }
+  function currentTheme() {
+    var v = (document.documentElement.getAttribute("data-theme") || "denim");
+    return THEMES.indexOf(v) >= 0 ? v : "denim";
+  }
+  function syncThemeCards() {
+    var cur = currentTheme();
+    document.querySelectorAll("#themeGrid .theme-card").forEach(function (c) {
+      c.classList.toggle("on", c.getAttribute("data-theme-id") === cur);
+    });
+  }
+  function bootTheme() {
+    var saved = null;
+    try { saved = localStorage.getItem("marib_theme"); } catch (e) { }
+    if (saved && THEMES.indexOf(saved) >= 0) applyTheme(saved, true);
+    /* localStorage فاضي؟ هنستنى إعدادات السيرفر (الثيم الافتراضي) —
+       applySettings بتعمل بقية الشغل */
+  }
+  function bindTheme() {
+    bootTheme();
+    var grid = $("themeGrid");
+    if (!grid || grid._bound42) return;
+    grid._bound42 = true;
+    grid.addEventListener("click", function (e) {
+      var card = e.target.closest ? e.target.closest(".theme-card") : null;
+      if (!card) return;
+      var id = card.getAttribute("data-theme-id") || "denim";
+      applyTheme(id);
+      /* الأدمن بيحفظ الثيم افتراضيًا للموقع كله */
+      if (MaribAuth.isAdmin && MaribAuth.isAdmin() && window.MaribCloud) {
+        MaribCloud.settingsPut("theme", id).then(function () {
+          toast(T("th_saved"), "ok");
+        }).catch(function () { });
+      }
+    });
+  }
+
   function applySettings(s) {
     if (s && s.targets) state.targetsMeta = s.targets;
     if (s && s.groups) state.groups = s.groups;
     state.mhome = (s && s.mhome) || null;   /* R30: { users: [id, ...] } — dev-picked viewers of the manager home */
+    /* R42: ثيم الموقع الافتراضي (من السيرفر) — بس لو المستخدم مختارش
+       واحد على جهازه */
+    if (s && s.theme) {
+      var local = null;
+      try { local = localStorage.getItem("marib_theme"); } catch (e) { }
+      if (!local && THEMES.indexOf(s.theme) >= 0) applyTheme(s.theme, true);
+    }
   }
 
   /* R36: the no-data box has two faces — LOADING (صلي علي النبي) while
@@ -2725,6 +2787,7 @@ var App = (function () {
      section's settings + a back button. Inner IDs unchanged.
      ============================================================ */
   var SET_VIEWS = {
+    theme: "set_theme",
     targets: "set_targets",
     groups: "set_groups",
     audit: "set_audit",
@@ -2785,9 +2848,11 @@ var App = (function () {
     var bx = document.querySelectorAll("#setHome .set-box");
     bx.forEach(function (b) {
       var v = b.getAttribute("data-view");
-      var show = v === "targets" ? admin : (v === "groups" ? true : dev);
+      /* R42: الثيمات متاحة للكل — الحفظ العام للأدمن بس */
+      var show = v === "targets" ? admin : (v === "groups" || v === "theme" ? true : dev);
       b.style.display = show ? "" : "none";
     });
+    syncThemeCards();
     var cs = $("clsSave"); if (cs) cs.disabled = !admin;
     goSettingsHome();
     tgFill();
@@ -3316,6 +3381,13 @@ var App = (function () {
     /* logo (static file — no EMBED) */
     $("brandLogo").src = "/app/logo.png";
 
+    /* R42: الثيمات — تفعيل المحفوظ قبل أي رسم + ربط كروت الثيمات
+       + زراير البوابة (إعدادات / بيانات) من غير دخول تحليل الأداء */
+    bindTheme();
+    var mgS = $("mgSettings"), mgD = $("mgData");
+    if (mgS) mgS.addEventListener("click", function () { openSettings(); });
+    if (mgD) mgD.addEventListener("click", function () { enterDash("data"); });
+
     /* language switcher */
     document.querySelectorAll("#langSw .sw-btn").forEach(function (b) {
       b.addEventListener("click", function () { I18N.setLang(b.getAttribute("data-lang")); });
@@ -3603,15 +3675,25 @@ var App = (function () {
     ndSet(true);   /* R36: the loading face (صلي علي النبي) until the data lands */
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  /* R42: init بعد ما الـ hydration يخلص — نفس سباق app_auth: أي ربط
+     قبل كده React ممكن يمسحه لو أعاد بناء الشجرة (كل الأزرار كانت
+     بتموت بصمت). */
+  document.addEventListener("DOMContentLoaded", function () {
+    if (document.readyState === "complete") setTimeout(init, 100);
+    else window.addEventListener("load", function () { setTimeout(init, 120); });
+  });
 
   /* R37 — enter the dashboard surface (from the mode gate / الاتزان).
      Same flow the old enterApp ran: fetch the server months once per
      session, then only re-use them (server stays light on every swap). */
-  function enterDash() {
+  function enterDash(page) {
     if (window.MaribManpower && MaribManpower.hide) { try { MaribManpower.hide(); } catch (e) { } }
     updateTitle();
     var loaded = !!(state.model && state.model.dates && state.model.dates.length);
+    if (page && $("page-" + page)) {
+      goToPage(page);
+      return;
+    }
     if (!loaded) {
       cloudLoad().then(function () {
         if (!(state.model && state.model.dates && state.model.dates.length)) {
@@ -3624,12 +3706,13 @@ var App = (function () {
     }
   }
 
-  return {
+  var __appApi42 = {
     state: state, render: render, goToPage: goToPage, openDrill: openDrill, applyQP: applyQP,
     scopedModel: scopedModel,
     hasData: function () { return !!(state.model && state.model.dates && state.model.dates.length); },
     cloudLoad: cloudLoad,
     enterDash: enterDash,
+    openSettings: openSettings,   /* R42: زراير الإعدادات في البوابة والاتزان */
     updateTitle: updateTitle,
     promptData: function () {
       var nd = $("noData");
@@ -3638,4 +3721,6 @@ var App = (function () {
       goToPage("data");
     }
   };
+  window.__maribApp42 = __appApi42;
+  return __appApi42;
 })();

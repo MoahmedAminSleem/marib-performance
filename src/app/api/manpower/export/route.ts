@@ -42,6 +42,7 @@ const C = {
   amber: "FFB7791F",
   amberFill: "FFFBF3E2",
   txt: "FF1E2A3C",
+  faint: "FF8A97A8",
 };
 
 type Node = {
@@ -92,6 +93,107 @@ export async function GET(req: NextRequest) {
   try {
     const g = await requireUser(req, "manpower", "EXPORT");
     if (g.res) return g.res;
+
+    /* ---------- R42: ?template=1 — تيمبلت الرفع بالداتا الحالية ----------
+       نفس أعمدة Database بتاعة ملف Manpower + عمود «حذف؟» — ينزل
+       مليان بالموظفين الحاليين عشان اللي بيحب يشتغل على الإكسل يعدّل
+       ويرفع. التعليمات شيت جوه الملف نفسه. */
+    if (new URL(req.url).searchParams.get("template") === "1") {
+      const deptRows = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
+      const empRows = await q(
+        "SELECT code, name, job, dept_id, hire, vac, mach, note FROM marib_emp ORDER BY ord ASC"
+      );
+      const pById = new Map<string, { name: string; parent: string }>();
+      for (const d of deptRows) pById.set(d.id as string, { name: d.name as string, parent: (d.parent_id as string) || "" });
+      const chainOf = (id: string | null): [string, string, string] => {
+        const parts: string[] = [];
+        let cur = id ? pById.get(id) : undefined;
+        let guard = 0;
+        while (cur && guard++ < 10) { parts.unshift(cur.name); cur = cur.parent ? pById.get(cur.parent) : undefined; }
+        return [parts[0] || "", parts[1] || "", parts.slice(2).join(" - ")];
+      };
+      const twb = new XBook();
+      const db = twb.sheet("Database", { rtl: true, freezeRows: 1, widths: [5, 10, 34, 17, 15, 17, 22, 10, 18, 7], defaultRowHeight: 18 });
+      const th = ["p", "الكود", "الأسم", "الادارة", "القسم", "القسم الداخلي", "الوظيفة", "الماكينة", "ملاحظات", "حذف؟"];
+      th.forEach((h, i) => {
+        db.cell(1, i + 1, h, {
+          font: { size: 11, bold: true, color: "FFFFFFFF" },
+          fill: C.denim2,
+          align: { h: i === 2 || i === 6 || i === 8 ? "right" : "center", v: "middle" },
+          border: C.line,
+        });
+      });
+      db.row(1, { height: 22 });
+      db.filter("A1:J1");
+      let tr = 2;
+      let p = 0;
+      for (const e of empRows) {
+        const [a, b, c] = chainOf(e.dept_id as string | null);
+        const vac = !!e.vac;
+        const band = p % 2 === 1 ? C.band : "";
+        const st = (font?: Partial<XStyle["font"]>): XStyle => ({
+          align: { h: "center", v: "middle" }, font: { size: 10.5, color: C.txt, ...font }, border: C.line,
+          ...(band ? { fill: band } : {}),
+        });
+        const stR = (font?: Partial<XStyle["font"]>): XStyle => ({
+          align: { h: "right", v: "middle" }, font: { size: 10.5, color: C.txt, ...font }, border: C.line,
+          ...(band ? { fill: band } : {}),
+        });
+        p++;
+        db.cell(tr, 1, p, st());
+        db.cell(tr, 2, vac ? "" : ((e.code as string) || ""), st(vac ? { color: C.faint } : undefined));
+        db.cell(tr, 3, vac ? "" : ((e.name as string) || ""), stR(vac ? { color: C.faint } : undefined));
+        db.cell(tr, 4, a, stR());
+        db.cell(tr, 5, b, stR());
+        db.cell(tr, 6, c, stR());
+        db.cell(tr, 7, (e.job as string) || "", stR());
+        db.cell(tr, 8, (e.mach as string) || "", st());
+        db.cell(tr, 9, (e.note as string) || "", stR());
+        db.cell(tr, 10, "", st());
+        if (vac) {
+          db.cell(tr, 3, "", st({ italic: true, color: C.red, bold: true }));
+          db.cell(tr, 7, (e.job as string) || "", stR({ italic: true, color: C.red, bold: true }));
+        }
+        tr++;
+      }
+      /* التعليمات — شيت جوه الملف نفسه */
+      const ins = twb.sheet("التعليمات", { rtl: true, widths: [110], defaultRowHeight: 20 });
+      const nowT = new Date();
+      const stampT = `${nowT.getFullYear()}-${String(nowT.getMonth() + 1).padStart(2, "0")}-${String(nowT.getDate()).padStart(2, "0")}`;
+      const lines: [string, boolean][] = [
+        [`تيمبلت الاتزان — ${stampT} · ${empRows.length} صف`, true],
+        ["الملف ده نسخة كاملة من الموقع. عدّل اللي عايزه وارفعه من زرار «رفع شيت Manpower» في صفحة الاتزان.", false],
+        ["", false],
+        ["إضافة موظف: صف جديد — اكتب الكود والاسم والوظيفة والإدارة/القسم. (الكود ممكن يفضل فاضي — هيطلع في الموقع «جديد»)", false],
+        ["تعديل موظف: دور على كوده وغيّر أي خانة (الاسم/الوظيفة/القسم/الماكينة/ملاحظات).", false],
+        ["نقل موظف: غيّر الادارة/القسم/القسم الداخلي في صفه — النقل هيتسجل في الأرشيف تلقائيًا.", false],
+        ["شاغر (وظيفة مطلوبة من غير حد): سيب خانة «الأسم» فاضي واكتب الوظيفة — الموقع هيحطه «شاغر» مكانه.", false],
+        ["حذف موظف: اكتب «نعم» في عمود «حذف؟» في صفه — الحذف هيتسجل في الأرشيف كخروج.", false],
+        ["", false],
+        ["ملاحظات مهمة:", true],
+        ["· تواريخ التعيين محفوظة على الموقع ومش بتتأثر بالملف (العمود مش موجود هنا أصلًا).", false],
+        ["· الأقسام بتتفهم بالذكاء: لو غيّرت اسم قسم في الموقع، الشيت بيلقاه بأي اسم قديم أو جديد.", false],
+        ["· الموظف اللي مش موجود في الملف بيفضل زي ما هو على الموقع — مبيتمسحش غير لو معلّم «نعم».", false],
+        ["· عمود p مجرد ترقيم — متغيّرهش.", false],
+      ];
+      lines.forEach(([txt, bold], i) => {
+        ins.cell(i + 1, 1, txt, {
+          align: { h: "right", v: "middle" },
+          font: { size: bold ? 13 : 11.5, bold, color: bold ? C.gold : C.txt },
+          ...(bold ? { fill: C.denim } : {}),
+        });
+        ins.row(i + 1, { height: bold ? 26 : 20 });
+      });
+      const tBytes = twb.build();
+      return new NextResponse(tBytes as unknown as BodyInit, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="Manpower-Template-${stampT.replace(/-/g, "")}.xlsx"`,
+          "Cache-Control": "no-store",
+        },
+      });
+    }
 
     /* ---------- data → tree (client math, replicated) ---------- */
     const deptRows = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
@@ -154,12 +256,18 @@ export async function GET(req: NextRequest) {
     const wb = new XBook();
 
     /* ============================================================
-       SHEET 1 — Pivot الاتزان (groups + subtotals + grand total)
+       SHEET 1 — Manpower (R42: بيفوت بالظبط زي ملف المالك)
+       جدول مسطح: كل صف = قسم فيه موظفين مباشرين، والأرقام في
+       الخلايا نفسها (الحالي/المطلوب/الفرق/الحالة) + عمود «النواقص»
+       بيوضح الوظايف الناقصة في القسم — زي عمود Section عنده بالظبط.
+       وجنب الجدول: «الملخص بالإدارات» زي Summary by Line بتاعه.
+       مفيش صفوف مجوعة ولا إجماليات في وسط الجدول — الأرقام كلها
+       في خلاياها والملخص على جنب.
        ============================================================ */
-    const pv = wb.sheet("Pivot الاتزان", {
+    const pv = wb.sheet("Manpower", {
       rtl: true,
       freezeRows: 4,
-      widths: [24, 19, 31, 10, 11, 10, 12],
+      widths: [17, 26, 10, 11, 10, 12, 34, 3, 17, 10, 11, 10],
       defaultRowHeight: 19,
     });
 
@@ -182,73 +290,135 @@ export async function GET(req: NextRequest) {
     pv.row(3, { height: 6 });
 
     /* header */
-    const heads = ["الإدارة", "القسم", "القسم الداخلي", "الحالي", "المطلوب", "الفرق", "الحالة"];
+    const heads = ["الإدارة", "القسم", "الحالي", "المطلوب", "الفرق", "الحالة", "النواقص (وظايف مطلوبة)"];
     heads.forEach((h, i) => {
       pv.cell(4, i + 1, h, {
         font: { size: 11, bold: true, color: "FFFFFFFF" },
         fill: C.denim2,
-        align: { h: i >= 3 ? "center" : "right", v: "middle" },
+        align: { h: i >= 2 && i <= 5 ? "center" : "right", v: "middle" },
         border: C.line,
       });
     });
     pv.row(4, { height: 22 });
 
-    /* recursive pivot rows — depth 1 = group, depth 2 = section group,
-       depth 3+ = leaf (deeper paths land in the 3rd column) */
-    let rIdx = 5;
-    function pivotRow(n: Node, depth: number, label: string) {
-      const v = n.count - n.eff;
-      const isGroup = n.kids.length > 0;
-      /* group rows carry a uniform fill across all 7 cells (same as
-         the exceljs version: it painted the whole row AFTER the status
-         cell, so group/section rows show colored status TEXT only,
-         while leaf rows keep their colored status fill) */
-      const gFill = depth === 1 ? C.group : isGroup ? C.group2 : "";
-      const col = Math.min(depth, 3);
-      pv.cell(rIdx, col, label, {
-        font: { size: 11, bold: depth === 1, color: depth === 1 ? C.denim2 : C.txt },
-        align: { h: "right", v: "middle", indent: col - 1 },
-        border: C.line,
-        ...(gFill ? { fill: gFill } : {}),
-      });
-      numCell(pv, rIdx, 4, n.count, false, gFill);
-      numCell(pv, rIdx, 5, n.eff, false, gFill);
-      numCell(pv, rIdx, 6, v, true, gFill);
-      statusCell(pv, rIdx, 7, v, gFill);
-      for (let i = 1; i < col; i++) pv.blank(rIdx, i, { border: C.line, ...(gFill ? { fill: gFill } : {}) });
-      for (let i = col + 1; i <= 3; i++) pv.blank(rIdx, i, { border: C.line, ...(gFill ? { fill: gFill } : {}) });
-      pv.row(rIdx, { outline: Math.min(depth - 1, 4) }); /* Excel-native collapse */
-      rIdx++;
-    }
-    function walkPivot(n: Node, depth: number) {
-      for (const k of n.kids) {
-        pivotRow(k, depth, dispName(k));
-        if (k.kids.length) walkPivot(k, depth + 1);
+    /* الوظايف الناقصة المباشرة في العقدة (مش المجموع الفرعي — عشان
+       مفيش صف بيعّد مرتين) */
+    function missingJobs(n: Node): string {
+      if (!n.vacs.length) return "";
+      const byJob = new Map<string, number>();
+      for (const v of n.vacs) {
+        const j = v.job || "بدون وظيفة";
+        byJob.set(j, (byJob.get(j) || 0) + 1);
       }
-    }
-    for (const top of root.kids) {
-      pivotRow(top, 1, top.name);
-      walkPivot(top, 2);
+      return Array.from(byJob.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([j, c]) => (c > 1 ? `${j} ×${c}` : j))
+        .join(" و ");
     }
 
-    /* grand total = Marib 3 */
+    /* صفوف الجدول: كل قسم فيه صفوف مباشرة (موظفين أو شواغر) */
+    let rIdx = 5;
+    function topOf(n: Node): Node {
+      let cur = n;
+      while (cur.parent && byId.get(cur.parent)) cur = byId.get(cur.parent)!;
+      return cur;
+    }
+    function labelBelowTop(n: Node): string {
+      const parts: string[] = [];
+      let cur = n;
+      let guard = 0;
+      while (cur && cur.parent && byId.get(cur.parent) && guard++ < 10) {
+        parts.unshift(dispName(cur));
+        cur = byId.get(cur.parent)!;
+      }
+      return parts.join(" - ") || dispName(n);
+    }
+    function pivotRow(n: Node) {
+      const v = n.count - n.eff;
+      const top = topOf(n);
+      const band = rIdx % 2 === 1 ? C.band : "";
+      const f = (extra?: Partial<XStyle["font"]>): XStyle["font"] => ({ size: 11, color: C.txt, ...extra });
+      const cellSt = (align: "center" | "right", font: XStyle["font"]): XStyle => ({
+        align: { h: align, v: "middle" }, font, border: C.line, ...(band ? { fill: band } : {}),
+      });
+      pv.cell(rIdx, 1, dispName(top), cellSt("right", f({ bold: true, color: C.denim2 })));
+      pv.cell(rIdx, 2, labelBelowTop(n), cellSt("right", f()));
+      numCell(pv, rIdx, 3, n.count, false, band);
+      numCell(pv, rIdx, 4, n.eff, false, band);
+      numCell(pv, rIdx, 5, v, true, band);
+      statusCell(pv, rIdx, 6, v, band);
+      const miss = missingJobs(n);
+      pv.cell(rIdx, 7, miss, miss
+        ? cellSt("right", { size: 10.5, color: C.red })
+        : cellSt("right", f({ color: C.faint })));
+      rIdx++;
+    }
+    (function walkPivot(n: Node) {
+      for (const k of n.kids) {
+        if (k.emps.length || k.vacs.length) pivotRow(k);
+        walkPivot(k);
+      }
+    })(root);
+    /* الموظفين المعلقين على الجذر نفسه ( لو في ) */
+    if (root.emps.length || root.vacs.length) pivotRow(root);
+
+    /* الإجمالي — آخر صف */
     const tv = root.count - root.eff;
     const totFont = { size: 12, bold: true, color: "FFFFFFFF" };
-    pv.cell(rIdx, 1, "Marib 3 — الإجمالي", {
+    pv.cell(rIdx, 1, "الإجمالي", {
       font: totFont, fill: C.total, align: { h: "right", v: "middle" }, border: C.line,
     });
     pv.blank(rIdx, 2, { fill: C.total, border: C.line });
-    pv.blank(rIdx, 3, { fill: C.total, border: C.line });
-    pv.cell(rIdx, 4, root.count, { font: totFont, fill: C.total, align: { h: "center", v: "middle" }, border: C.line });
-    pv.cell(rIdx, 5, root.eff, { font: totFont, fill: C.total, align: { h: "center", v: "middle" }, border: C.line });
-    pv.cell(rIdx, 6, tv, {
+    pv.cell(rIdx, 3, root.count, { font: totFont, fill: C.total, align: { h: "center", v: "middle" }, border: C.line });
+    pv.cell(rIdx, 4, root.eff, { font: totFont, fill: C.total, align: { h: "center", v: "middle" }, border: C.line });
+    pv.cell(rIdx, 5, tv, {
       font: { size: 12, bold: true, color: tv < 0 ? "FFFFB3AD" : tv > 0 ? "FFF4D489" : "FFA9E5C2" },
       fill: C.total, align: { h: "center", v: "middle" }, border: C.line, fmt: "+0;-0;0",
     });
-    pv.cell(rIdx, 7, statusOf(tv).label, {
+    pv.cell(rIdx, 6, statusOf(tv).label, {
       font: totFont, fill: C.total, align: { h: "center", v: "middle" }, border: C.line,
     });
+    pv.blank(rIdx, 7, { fill: C.total, border: C.line });
     pv.row(rIdx, { height: 24 });
+
+    /* ---- الملخص بالإدارات — على جنب (زي Summary by Line) ---- */
+    const sRow0 = 4;
+    pv.merge(`I${sRow0}:L${sRow0}`);
+    pv.cell(sRow0, 9, "الملخص بالإدارات", {
+      font: { size: 11.5, bold: true, color: "FFFFFFFF" },
+      fill: C.denim2,
+      align: { h: "center", v: "middle" },
+      border: C.line,
+    });
+    ["الإدارة", "الحالي", "المطلوب", "الفرق"].forEach((h, i) => {
+      pv.cell(sRow0 + 1, 9 + i, h, {
+        font: { size: 10.5, bold: true, color: C.gold },
+        fill: C.group,
+        align: { h: i === 0 ? "right" : "center", v: "middle" },
+        border: C.line,
+      });
+    });
+    let sR = sRow0 + 2;
+    for (const top of root.kids) {
+      const v = top.count - top.eff;
+      pv.cell(sR, 9, dispName(top), {
+        font: { size: 10.5, bold: true, color: C.denim2 },
+        align: { h: "right", v: "middle" }, border: C.line, fill: C.group2,
+      });
+      numCell(pv, sR, 10, top.count, false, C.group2);
+      numCell(pv, sR, 11, top.eff, false, C.group2);
+      numCell(pv, sR, 12, v, true, C.group2);
+      sR++;
+    }
+    pv.cell(sR, 9, "الإجمالي", {
+      font: totFont, fill: C.total, align: { h: "right", v: "middle" }, border: C.line,
+    });
+    pv.cell(sR, 10, root.count, { font: totFont, fill: C.total, align: { h: "center", v: "middle" }, border: C.line });
+    pv.cell(sR, 11, root.eff, { font: totFont, fill: C.total, align: { h: "center", v: "middle" }, border: C.line });
+    pv.cell(sR, 12, tv, {
+      font: { size: 11, bold: true, color: tv < 0 ? "FFFFB3AD" : tv > 0 ? "FFF4D489" : "FFA9E5C2" },
+      fill: C.total, align: { h: "center", v: "middle" }, border: C.line, fmt: "+0;-0;0",
+    });
 
     /* ============================================================
        SHEET 2 — الهيكل (full tree, collapsible outline)
