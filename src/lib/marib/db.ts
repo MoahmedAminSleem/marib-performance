@@ -181,6 +181,9 @@ const BOOT_SQL: string[] = [
   )`,
   `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS dept_id TEXT`,
   `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS note TEXT`,
+  /* R40 — الماكينة: the machine the employee runs (H.L / S.N / D.N / O.L.3…).
+     Shown in the Power-BI-style hover tooltip on the employee name. */
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS mach TEXT`,
   `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS vac BOOLEAN NOT NULL DEFAULT false`,
   `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS ord INT NOT NULL DEFAULT 0`,
   `ALTER TABLE marib_emp ALTER COLUMN code DROP NOT NULL`,
@@ -215,15 +218,15 @@ export async function ensureBoot(): Promise<void> {
     if ((a[0]?.n as number) === 0) {
       await audit("Amin", "create", "site", null, null);
     }
-    // R39 — seed الاتزان from the owner's latest Manpower.xlsx "Database"
-    // sheet (2026-09-14: adds the الماكينة column + the PRO. - SEWING
-    // FOLLOW UP dept, job renames like تركيب جيب خلفى). Version-gated: the
-    // R38 snapshot is replaced exactly once, then the gate key
-    // marib_meta.mp_seed_ver=41 keeps this block idle on every boot.
+    // R40 — seed الاتزان from the owner's latest Manpower.xlsx "Database"
+    // sheet (2026-09-14: adds the الماكينة column so names can show their
+    // machine in a hover tooltip, like the owner asked). Version-gated:
+    // the R39 snapshot is replaced exactly once, then the gate key
+    // marib_meta.mp_seed_ver=42 keeps this block idle on every boot.
     // Users / months / settings / audit are NEVER touched.
     try {
       const ver = await q("SELECT value FROM marib_meta WHERE key = 'mp_seed_ver'");
-      if ((ver[0]?.value as string) !== "41") {
+      if ((ver[0]?.value as string) !== "42") {
         const { MANPOWER_DEPTS, MANPOWER_EMPS } = await import("../../server/seed/manpower-seed");
         await q("BEGIN");
         try {
@@ -242,8 +245,8 @@ export async function ensureBoot(): Promise<void> {
           for (let i = 0; i < MANPOWER_EMPS.length; i += 500) {
             const ch = MANPOWER_EMPS.slice(i, i + 500);
             await q(
-              `INSERT INTO marib_emp (code, name, job, dept_id, hire, vac, note, ord)
-               SELECT c, n, j, d, h, v, no, o FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::bool[], $7::text[], $8::int[]) AS t(c, n, j, d, h, v, no, o)`,
+              `INSERT INTO marib_emp (code, name, job, dept_id, hire, vac, note, ord, mach)
+               SELECT c, n, j, d, h, v, no, o, ma FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::bool[], $7::text[], $8::int[], $9::text[]) AS t(c, n, j, d, h, v, no, o, ma)`,
               [
                 ch.map((r) => r[0] || null),
                 ch.map((r) => r[1] || ""),
@@ -253,12 +256,13 @@ export async function ensureBoot(): Promise<void> {
                 ch.map((r) => !!r[5]),
                 ch.map((r) => r[6] || ""),
                 ch.map((r) => r[7] || 0),
+                ch.map((r) => r[8] || ""),
               ]
             );
           }
           await q(
-            `INSERT INTO marib_meta (key, value) VALUES ('mp_seed_ver', '41')
-             ON CONFLICT (key) DO UPDATE SET value = '41'`
+            `INSERT INTO marib_meta (key, value) VALUES ('mp_seed_ver', '42')
+             ON CONFLICT (key) DO UPDATE SET value = '42'`
           );
           await q("COMMIT");
         } catch (e) {

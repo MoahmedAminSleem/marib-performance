@@ -10,7 +10,8 @@
      2. "الهيكل"        — the full tree, one row per node, real Excel
                            outline levels (collapse/expand like the site)
      3. "الموظفين"      — every position: code, name, job, dept chain,
-                           hire, status (موظف / جديد / شاغر) + autofilter
+                           machine (الماكينة), notes (ملاحظات), hire,
+                           status (موظف / جديد / شاغر) + autofilter
      4. "الأرشيف"       — the transfer archive (incl. خروج rows)
    Same math as the client: actual = filled rows, required = manual
    override if set else all rows beneath, variance = actual − required.
@@ -48,7 +49,7 @@ type Node = {
   kids: Node[]; emps: Emp[]; vacs: Emp[];
   count: number; rows: number; own: number | null; eff: number;
 };
-type Emp = { code: string; name: string; job: string; hire: string; vac: boolean };
+type Emp = { code: string; name: string; job: string; hire: string; vac: boolean; mach: string; note: string };
 
 /* SEWING's numeric lines display as "خط N" on the site — same here */
 function dispName(n: Node): string {
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
 
     /* ---------- data → tree (client math, replicated) ---------- */
     const deptRows = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
-    const empRows = await q("SELECT code, name, job, dept_id, hire, vac FROM marib_emp ORDER BY ord ASC");
+    const empRows = await q("SELECT code, name, job, dept_id, hire, vac, mach, note FROM marib_emp ORDER BY ord ASC");
     const reqRows = await q("SELECT node_key, required FROM marib_req");
 
     const reqMap = new Map<string, number>();
@@ -116,6 +117,7 @@ export async function GET(req: NextRequest) {
       const emp: Emp = {
         code: (e.code as string) || "", name: (e.name as string) || "",
         job: (e.job as string) || "", hire: (e.hire as string) || "", vac: !!e.vac,
+        mach: (e.mach as string) || "", note: (e.note as string) || "",
       };
       const n = e.dept_id ? byId.get(e.dept_id as string) : undefined;
       if (!n) { (emp.vac ? root.vacs : root.emps).push(emp); continue; }
@@ -291,10 +293,10 @@ export async function GET(req: NextRequest) {
     const es = wb.sheet("الموظفين", {
       rtl: true,
       freezeRows: 1,
-      widths: [6, 11, 34, 26, 19, 15, 27, 12, 10],
+      widths: [6, 11, 34, 26, 19, 15, 27, 11, 24, 12, 10],
       defaultRowHeight: 18,
     });
-    ["م", "الكود", "الاسم", "الوظيفة", "الإدارة", "القسم", "القسم الداخلي", "التعيين", "الحالة"].forEach((h, i) => {
+    ["م", "الكود", "الاسم", "الوظيفة", "الإدارة", "القسم", "القسم الداخلي", "الماكينة", "ملاحظات", "التعيين", "الحالة"].forEach((h, i) => {
       es.cell(1, i + 1, h, {
         font: { size: 11, bold: true, color: "FFFFFFFF" },
         fill: C.denim2,
@@ -303,7 +305,7 @@ export async function GET(req: NextRequest) {
       });
     });
     es.row(1, { height: 22 });
-    es.filter("A1:I1");
+    es.filter("A1:K1");
 
     /* dept id → [top, sec, sub] chain */
     function chainOf(id: string): [string, string, string] {
@@ -334,8 +336,14 @@ export async function GET(req: NextRequest) {
         es.cell(r3, 5, a0, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
         es.cell(r3, 6, b0, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
         es.cell(r3, 7, c0, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
-        es.cell(r3, 8, e.hire || "", { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
-        es.cell(r3, 9, isNew ? "جديد" : "موظف", {
+        es.cell(r3, 8, e.mach || "", {
+          align: { h: "center", v: "middle" },
+          font: e.mach ? f({ bold: true, color: C.amber }) : f(),
+          border: C.line, ...(band ? { fill: band } : {}),
+        });
+        es.cell(r3, 9, e.note || "", { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
+        es.cell(r3, 10, e.hire || "", { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
+        es.cell(r3, 11, isNew ? "جديد" : "موظف", {
           align: { h: "center", v: "middle" },
           font: isNew ? f({ bold: true, color: C.amber }) : f({ color: C.green }),
           border: C.line, ...(band ? { fill: band } : {}),
@@ -372,11 +380,19 @@ export async function GET(req: NextRequest) {
           align: { h: "right", v: "middle" },
           font: { size: 10.5, color: C.red, italic: true }, fill: C.redFill, border: C.line,
         });
-        es.cell(r3, 8, "", {
+        es.cell(r3, 8, e.mach || "", {
+          align: { h: "center", v: "middle" },
+          font: { size: 10.5, color: C.red, italic: true }, fill: C.redFill, border: C.line,
+        });
+        es.cell(r3, 9, e.note || "", {
           align: { h: "right", v: "middle" },
           font: { size: 10.5, color: C.red, italic: true }, fill: C.redFill, border: C.line,
         });
-        es.cell(r3, 9, "شاغر", {
+        es.cell(r3, 10, "", {
+          align: { h: "right", v: "middle" },
+          font: { size: 10.5, color: C.red, italic: true }, fill: C.redFill, border: C.line,
+        });
+        es.cell(r3, 11, "شاغر", {
           align: { h: "center", v: "middle" },
           font: { size: 10.5, color: C.red, italic: true }, fill: C.redFill, border: C.line,
         });

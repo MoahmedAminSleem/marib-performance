@@ -1,8 +1,31 @@
-الجولة 39.1 — إصلاح عطب Vercel (تصدير Excel بدون مكتبات خارجية) (2026-09-14)
-الملفين دول هما كل اللي محتاج ترفعهم على GitHub لإصلاح البيلد (Add file → Upload files → اسحبهم).
-مفيش أي تغيير في package.json — النسخة اللي عندك صح زي ما هي.
+الجولة 40 — تولتيب الماكينة والملاحظات: كارت بينط جنب الماوس على اسم الموظف من غير ضغط (زي الباور بي أي) (2026-09-14)
+شامل: عمود الماكينة الجديد (527 قيمة) + الملاحظات + تولتيب hover + صفوف كارت التفاصيل + 11 عمود في التصدير.
+الملفات دي هي كل اللي محتاج ترفعه على GitHub (Add file → Upload files → اسحبها).
+الـ ZIP تراكمي: شامل R28 → R40 — يشتغل حتى لو مرفعتش الجولات اللي فاتت.
+مفيش أي تغيير مطلوب في package.json.
 
-عدد الملفات: 2
+عدد الملفات: 23
 
-0985215e344b846d320b4519d7a553ac  src/app/api/manpower/export/route.ts
+a49768c894dbacd9179d0bdebc1fdc12  public/app/app_manpower.js
+4298d40992ea8db28aea7846d71dc4a3  src/app/api/manpower/route.ts
+125a024dd7d8a522a427abe2391a28cc  src/app/api/manpower/export/route.ts
+40b2c82b9726282c55ff0e065c5b2fa4  src/server/seed/manpower-seed.ts
+3376bdccdb6eac5f1bd4fd5bcdb54f53  src/lib/marib/db.ts
+1232efbb82c1fa48bec33edd0961ef20  public/app/i18n_dict.js
+4d567804cdebe5d01334fcfe1ef7ae9b  public/app/app.css
+0a83c48c61a84480d073061294866fac  سير-العمل.html
+6f5711a180dd8f101d74344f6404fe40  README.md
+f580398c5709799bf53d6e51da21260e  دليل-الجولة-40.html
+12a160b8a1152bd51f4dce0fb1fb93c6  src/app/skeleton.ts
+77bf4f77c37ca0f4f31fee3748353886  public/app/app_auth.js
+2dcb596d17e41fd8b062f73e67c75801  public/app/app_main.js
+3da2ddbd3fd8a4dd39f5399b7523fc9b  public/app/app_core.js
+8e4b5973de19ac58a5a27d61ae9da905  public/app/app_charts.js
+8a58dc5a1c55021307db117c972ad709  public/app/i18n_core.js
+110d2d0078d4bd382e535d07969a0c78  public/app/marib_cloud.js
+b3933a11b77d5047b4da5bb814771f4a  public/app/cursor_needle.png
+5f855c24771eed101fabb010aafd1672  public/app/cursor_needle_thread.png
+836b9e254ecf392e2bb27a31f33b7cd4  src/app/page.tsx
+f242bf6056d98c235753e66e3690189d  شرح-رسومات-رئيسية-المدير.html
+4e5a36d5ddca6bc56e50349284de7f94  next.config.ts
 607ec597ae3676ad1f82976a857b6300  src/lib/marib/xlsx-writer.ts

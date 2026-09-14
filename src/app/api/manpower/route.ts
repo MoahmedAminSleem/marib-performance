@@ -1,7 +1,7 @@
 /* /api/manpower — R38 الاتزان v2 (Marib 3 structure)
    GET  (any signed-in user) → one small snapshot per session:
          { depts:[[id,name,parent,ord]…],
-           emps: [[code,name,job,deptId,hire,vac,note,ord]…],
+           emps: [[id,code,name,job,deptId,hire,vac,note,mach]…],
            req:  {nodeKey: required},          (manual overrides only)
            transfers: [[at,actor,code,name,fromDept,fromJob,toDept,toJob,kind,note]…] }
          All tree/variance math stays client-side — the server never
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
 
     const depts = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
     const emps = await q(
-      `SELECT id, code, name, job, dept_id, hire, vac, note FROM marib_emp
+      `SELECT id, code, name, job, dept_id, hire, vac, note, mach FROM marib_emp
        ORDER BY ord ASC`
     );
     const reqRows = await q("SELECT node_key, required FROM marib_req");
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
     );
     return NextResponse.json({
       depts: depts.map((r) => [r.id, r.name, r.parent_id || "", r.ord]),
-      emps: emps.map((r) => [r.id, r.code || "", r.name || "", r.job || "", r.dept_id || "", r.hire || "", r.vac ? 1 : 0, r.note || ""]),
+      emps: emps.map((r) => [r.id, r.code || "", r.name || "", r.job || "", r.dept_id || "", r.hire || "", r.vac ? 1 : 0, r.note || "", r.mach || ""]),
       req: reqRows.reduce<Record<string, number>>((acc, r) => {
         acc[r.node_key as string] = r.required as number;
         return acc;
@@ -337,13 +337,15 @@ export async function POST(req: NextRequest) {
     }
 
     /* ---------- import: full sync from the Manpower sheet ----------
-       New Database format rows: [code, name, dept, sec, sub, job, note, hire, vac]
+       New Database format rows: [code, name, dept, sec, sub, job, note, hire, vac, mach]
        Old Employees-DB format rows: [code, name, job, deptPath, hire]
        - dept chains are resolved/created by (name, parent)
        - numeric codes match by code; 'جديد'/blank rows match by NAME so the
          code the owner typed into the updated sheet lands on the right row
        - vacancies are fully replaced by the sheet's
-       - employees NOT in the sheet are kept (never deleted) and reported */
+       - employees NOT in the sheet are kept (never deleted) and reported
+       - R40: mach (الماكينة) rides at index 9 and syncs like any other
+         field — a machine typed into the sheet lands on the employee */
     if (action === "import") {
       const rows = Array.isArray(body.rows) ? (body.rows as unknown[]) : [];
       if (!rows.length || rows.length > 6000) return fail("rows", 400);
@@ -373,8 +375,8 @@ export async function POST(req: NextRequest) {
         return parent;
       }
 
-      /* normalize both formats → {code,name,chain,job,note,hire,vac} */
-      const clean: { code: string; name: string; chain: string[]; job: string; note: string; hire: string; vac: boolean }[] = [];
+      /* normalize both formats → {code,name,chain,job,note,hire,vac,mach} */
+      const clean: { code: string; name: string; chain: string[]; job: string; note: string; hire: string; vac: boolean; mach: string }[] = [];
       for (const r0 of rows) {
         const r = Array.isArray(r0) ? (r0 as unknown[]) : [];
         if (r.length >= 8) {
@@ -388,7 +390,7 @@ export async function POST(req: NextRequest) {
           if (!name && !cleanStr(r[5], 90)) continue; /* garbage row */
           let hire = cleanStr(r[7], 10);
           if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) hire = "";
-          clean.push({ code: normCode(r[0]), name, chain, job: cleanStr(r[5], 90), note: cleanStr(r[6], 60), hire, vac: vac || !name });
+          clean.push({ code: normCode(r[0]), name, chain, job: cleanStr(r[5], 90), note: cleanStr(r[6], 60), hire, vac: vac || !name, mach: cleanStr(r[9], 30) });
         } else {
           /* old format: [code, name, job, deptPath, hire] */
           const code = normCode(r[0]);
@@ -398,7 +400,7 @@ export async function POST(req: NextRequest) {
           if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) hire = "";
           const chain = cleanStr(r[3], 190).split(" - ").map((x) => x.trim()).filter(Boolean);
           if (!chain.length) continue;
-          clean.push({ code, name, chain, job: cleanStr(r[2], 90), note: "", hire, vac: false });
+          clean.push({ code, name, chain, job: cleanStr(r[2], 90), note: "", hire, vac: false, mach: "" });
         }
       }
       if (!clean.length) return fail("rows", 400);
@@ -425,9 +427,9 @@ export async function POST(req: NextRequest) {
             const deptId = await ensureChain(c.chain);
             const ord = await q("SELECT COALESCE(MAX(ord),0)+1 AS n FROM marib_emp");
             await q(
-              `INSERT INTO marib_emp (code, name, job, dept_id, note, hire, vac, ord)
-               VALUES (NULL, '', $1, $2, $3, $4, true, $5)`,
-              [c.job, deptId, c.note, c.hire, ord[0]?.n ?? 1]
+              `INSERT INTO marib_emp (code, name, job, dept_id, note, hire, vac, ord, mach)
+               VALUES (NULL, '', $1, $2, $3, $4, true, $5, $6)`,
+              [c.job, deptId, c.note, c.hire, ord[0]?.n ?? 1, c.mach]
             );
             inserted++;
             continue;
@@ -443,9 +445,9 @@ export async function POST(req: NextRequest) {
           }
           if (!old) {
             await q(
-              `INSERT INTO marib_emp (code, name, job, dept_id, note, hire, vac, ord)
-               VALUES ($1, $2, $3, $4, $5, $6, false, $7)`,
-              [c.code || "جديد", c.name, c.job, deptId, c.note, c.hire, clean.indexOf(c) + 1]
+              `INSERT INTO marib_emp (code, name, job, dept_id, note, hire, vac, ord, mach)
+               VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)`,
+              [c.code || "جديد", c.name, c.job, deptId, c.note, c.hire, clean.indexOf(c) + 1, c.mach]
             );
             inserted++;
           } else {
@@ -454,11 +456,11 @@ export async function POST(req: NextRequest) {
             const newPath = await deptPath(deptId);
             const hadNoCode = !old.code || old.code === "جديد";
             await q(
-              `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, note=$6, hire=$7, vac=false, updated_at=now() WHERE id=$1`,
+              `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, note=$6, hire=$7, vac=false, mach=$8, updated_at=now() WHERE id=$1`,
               [
                 old.id,
                 c.code && c.code !== "جديد" ? c.code : (old.code as string) || "جديد",
-                c.name, c.job, deptId, c.note, c.hire,
+                c.name, c.job, deptId, c.note, c.hire, c.mach,
               ]
             );
             if (hadNoCode && c.code && c.code !== "جديد") codeFilled++;

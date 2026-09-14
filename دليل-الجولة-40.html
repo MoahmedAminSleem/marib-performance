@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل الجولة 40 — تولتيب الماكينة والملاحظات (زي الباور بي أي)</title>
+<style>:root{--bg:#0A101C;--bg2:#101a2b;--card:#131f33;--line:#26364f;--txt:#DCE5EF;--dim:#A9B7C7;--gold:#C49A6C;--gold2:#E9C68A;--blue:#7FB3E8;--green:#4FD98D;--red:#F87171}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.9;padding:26px 16px}
+.wrap{max-width:880px;margin:0 auto}
+h1{color:var(--gold2);font-size:23px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+h2{color:var(--gold2);font-size:17px;margin:26px 0 10px;border-inline-start:4px solid var(--gold);padding-inline-start:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0}
+.step{display:flex;gap:12px;margin:12px 0;align-items:flex-start}
+.n{background:var(--gold);color:#141B26;font-weight:800;min-width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+.path{background:rgba(196,154,108,.14);color:var(--gold2);padding:2px 8px;border-radius:7px;font-size:12.5px;font-family:Consolas,monospace;direction:ltr;display:inline-block}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{padding:8px 10px;border:1px solid var(--line);text-align:start}
+th{color:var(--gold2);background:rgba(196,154,108,.07);font-size:12px}
+td{color:var(--txt)}
+.small{font-size:12px;color:var(--dim)}
+ul{padding-inline-start:22px}
+li{margin:7px 0}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11.5px;font-weight:700;margin-inline-end:6px}
+.tag.new{background:rgba(79,217,141,.13);color:var(--green)}
+.tag.mod{background:rgba(127,179,232,.13);color:var(--blue)}
+b.g{color:var(--green)} b.r{color:var(--red)} b.y{color:var(--gold2)}</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>دليل الجولة 40 — تولتيب الماكينة والملاحظات: وقوف الماوس على الاسم من غير ضغط</h1>
+<p class="sub">عمود «الماكينة» و«ملاحظات» من شيت Manpower بقوا كارت صغير بينط جنب الماوس — زي حوار الباور بي أي بالظبط</p>
+
+<div class="card">
+<h2>اللي اتعمل في الجولة دي</h2>
+<ul>
+<li><b>التولتيب الجديدة (زي الباور بي أي):</b> لما الماوس يقف على صف أي موظف — <b>من غير أي ضغط</b> — كارت صغير داكن بحواف مدورة بيقفز جنب الماوس: <b>اسم الموظف + الكود فوق</b>، وتحت صف <b>«الماكينة»</b> (كود الماكينة زي H.L · D.N · O/L4 بخلفية ذهبية) وصف <b>«ملاحظات»</b> (زي «مرضي» · «زيادة»).</li>
+<li><b>الكارت عاقل:</b> بيستنى وقفة قصيرة (140ms) عشان مش بينطط وانت بتمسح الشجرة · <b>بيتحرك مع الماوس</b> · بيبصّل فوق أو على جنب لو الشاشة ضيقة · بيختفي فورًا أول ما الماوس يخرج من الصف · ومبيعطلش الضغط (مفيش أي حاجة بتتأثر بالكليك).</li>
+<li><b>اللي ملوش بيانات ملوش كارت:</b> الموظف اللي الخليتين فاضيين عنده في الشيت مش بيطلعله حاجة (298 من 810). اللي عنده بيانات بياخد <b>أيقونة ماكينة صغيرة</b> جنب الكود بتولّع بالذهبي لما تقف على صفه — عشان تعرف فين تلمس.</li>
+<li><b>نفس المعلومة في كل مكان:</b> كارت تفاصيل الموظف (بعد الضغط على الاسم) بقى فيه صف «الماكينة» وصف «الملاحظات» — فالموبايل اللي ملوش ماوس بيشوف نفس الكلام · التولتيب بتتبدل لغتها مع الموقع (الماكينة / Machine / Makine).</li>
+<li><b>التصدير اتوسع:</b> شيت «الموظفين» في ملف Excel بقى <b>11 عمود</b> — زاد <b>الماكينة</b> (بخط ذهبي عريض) و<b>ملاحظات</b> بعد القسم الداخلي.</li>
+<li><b>رفع الشيت بيزامنهم:</b> لو كتبت ماكينة أو ملاحظة جديدة في ملف Manpower ورفعته، بتوصل للموظف بتاعها زي أي حقل تاني (بالكود أو بالاسم زي صفوف «جديد»).</li>
+<li><b>الداتا:</b> من نفس ملف Manpower.xlsx — <b>527 موظف بماكينة</b> · <b>4 بملاحظات</b> (زيادة ×2 · مرضي · «المفروض مكانه تشطيب خارجي») · عمود marib_emp.mach جديد بمهاجرة تراكمية + بوابة إصدار 42 بتزرع مرة واحدة.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>خطوات التسليم (3 دقايق)</h2>
+<div class="step"><div class="n">1</div><div>حمّل الـ ZIP وفكّه، وارفع <b>كل الملفات اللي جواه</b> على GitHub (Add file ← Upload files ← اسحبها كلها). الـ ZIP تراكمي — يشتغل حتى لو آخر جولة رفعتها قبل كده.</div></div>
+<div class="step"><div class="n">2</div><div>افتح الموقع وسجّل دخول. أول طلب هيعمل زرع نظيف ببوابة الإصدار 42 (ثواني، مرة واحدة) — <b>مش بيلمس المستخدمين ولا الشهور ولا الإعدادات ولا الأرشيف</b>.</div></div>
+<div class="step"><div class="n">3</div><div>دوس <b>«الاتزان»</b> ← افتح أي قسم فيه أسماء ← <b>قف بالماوس على أي اسم من غير ضغط</b> — الكارت هينط بعد لحظة. جرّب كمان «تصدير Excel» وشوف عمودي الماكينة/ملاحظات في شيت الموظفين.</div></div>
+</div>
+
+<div class="card">
+<h2>الملفات المتغيرة (23 ملف)</h2>
+<table>
+<tr><th>الملف</th><th>النوع</th><th>اللي فيه</th></tr>
+<tr><td><span class="path">public/app/app_manpower.js</span></td><td><span class="tag mod">تعديل جوهري</span></td><td>محرك التولتيب (tipShow/tipMove/tipHide + delegated hover listeners) · أيقونة الماكينة في الصف · صفوف الماكينة/الملاحظات في كارت التفاصيل · قراءة عمود الماكينة في رفع الشيت (index 9)</td></tr>
+<tr><td><span class="path">src/lib/marib/db.ts</span></td><td><span class="tag mod">تعديل</span></td><td>عمود <b>mach</b> جديد (مهاجرة تراكمية) + بوابة إصدار الزرع mp_seed_ver=42</td></tr>
+<tr><td><span class="path">src/server/seed/manpower-seed.ts</span></td><td><span class="tag mod">تعديل</span></td><td>الزرع بقى 9 حقول — التاسع = الماكينة (527 قيمة من الشيت)</td></tr>
+<tr><td><span class="path">src/app/api/manpower/route.ts</span></td><td><span class="tag mod">تعديل</span></td><td>GET بيرجّع mach في كل صف · فعل import بيزامن الماكينة (insert/update/vacancy)</td></tr>
+<tr><td><span class="path">src/app/api/manpower/export/route.ts</span></td><td><span class="tag mod">تعديل</span></td><td>شيت الموظفين بقى 11 عمود (+الماكينة بخط ذهبي · +ملاحظات) للصفوف والشواغر</td></tr>
+<tr><td><span class="path">public/app/i18n_dict.js</span></td><td><span class="tag mod">تعديل</span></td><td>+2 مفتاح ×3 لغات (mp_mach · mp_note)</td></tr>
+<tr><td><span class="path">public/app/app.css</span></td><td><span class="tag mod">تعديل</span></td><td>ستايل التولتيب (كارت داكن + ذهبي + حركة fade/scale) · أيقونة الماكينة · صفوف الكارت</td></tr>
+<tr><td><span class="path">سير-العمل.html</span> · <span class="path">README.md</span> · <span class="path">دليل-الجولة-40.html</span> · <span class="path">الملفات-المتغيرة.txt</span></td><td><span class="tag new">مستندات</span></td><td>سجل الجولات والمرجع والتوجيه</td></tr>
+<tr><td colspan="3" class="small">+ الباقي ملفات الجولات اللي فاتت (الـ ZIP تراكمي R28→R40): app_auth · app_main · app_core · app_charts · i18n_core · marib_cloud · page.tsx · xlsx-writer · الثيمات…</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>7 فحوصات سريعة بعد الرفع</h2>
+<ul>
+<li>«الاتزان» ← Marib 3 فوق بتوعي <b>810 / 828 / <span class="r">-18</span></b> زي ما هي — مفيش أي رقم اتغير.</li>
+<li>افتتح الخياطة ← خط 1 ← التحضيرات ← <b>قف بالماوس على «طارق حسن إبراهيم عبيدوا»</b> (أول اسم): الكارت يطلع فيه <b>«الماكينة: D.N»</b>.</li>
+<li>ابحث «رانيا محسن» ← قف على اسمها: كارت فيه <b>«الملاحظات: مرضي»</b> بس (ملهاش ماكينة فمفيش صف ماكينة).</li>
+<li>قف على اسم مشغّل عادي من غير بيانات (مثلًا من الإدارة): <b>مفيش كارت</b> ومفيش أيقونة جنب كوده.</li>
+<li>حرّك الماوس جوه الصف: الكارت بيتحرك معاك · اخرج بره الصف: بيختفي فورًا · الضغط على الصف لسه بيفتح كارت التفاصيل عادي.</li>
+<li>دوس على اسم طارق: كارت التفاصيل فيه <b>«الماكينة | D.N»</b> بعد الوظيفة · بدّل EN: الكارت والتولتيب يبقوا <b>Machine</b>.</li>
+<li>«تصدير Excel» ← شيت الموظفين: الأعمدة بقت <b>11</b> — الماكينة وملاحظات بعد القسم الداخلي (527 صف بماكينة).</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>أسئلة متوقعة</h2>
+<ul>
+<li><b>ليه مش شايف الكارت على اسم معين؟</b> لأن الخليتين فاضيين عنده في الشيت (مفيش ماكينة ولا ملاحظة مكتوبة) — والقاعدة دي مقصودة: «الخلايا المكتوبة» بس اللي بتظهر. ابحث باسم غيره من مشغلي الماكينات أو شوف أيقونة الماكينة الصغيرة جنب الكود.</li>
+<li><b>الماوس مش موجود على الموبايل — أعمل إيه؟</b> اضغط على اسم الموظف عادي — كارت التفاصيل فيه نفس صفوف الماكينة والملاحظات.</li>
+<li><b>عايز أعدّل الماكينة من الموقع؟</b> حاليًا الماكينة بتتزامن من شيت Manpower لما ترفعه (زي شيت الداتا بيس) — أي تعديل في العمود بيوصله بيها. التعديل اليدوي من الموقع ممكن يتضاف في جولة جاية لو اتطلب.</li>
+<li><b>الكارت بيغطي على حاجة؟</b> لأ — مالوش pointer-events فالضغط بيعدي من تحته عادي، وبيختفي أول ما تحرك الماوس بره الصف.</li>
+<li><b>هل الزرع الجديد بيمسح حاجة؟</b> لأ — بوابة الإصدار 42 بتمسح جداول الاتزان بس (اللي بتتعاد من الشيت) وتزرعها تاني. المستخدمين والشهور والإعدادات والأرشيف مش بيتلمسوا.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>لو حصلت مشكلة</h2>
+<ul>
+<li><b>الكارت مش بينط خالص:</b> اتأكد إنك واقف على صف موظف (مش قسم) وعنده أيقونة الماكينة الصغيرة — وانتظر ربع ثانية (التأخير مقصود عشان مش ينطط مع المسح السريع).</li>
+<li><b>أرقام غلط في التولتيب:</b> ارفع ملف Manpower.xlsx آخر نسخة من زرار «رفع شيت Manpower» — الاستيراد بيزامن الماكينة والملاحظات مع الكود/الاسم.</li>
+<li><b>التصدير من غير الأعمدة الجديدة:</b> يعني النسخة القديمة لسه شغالة — اتأكد إن <span class="path">src/app/api/manpower/export/route.ts</span> اترفع على GitHub.</li>
+</ul>
+</div>
+
+</div>
+</body>
+</html>

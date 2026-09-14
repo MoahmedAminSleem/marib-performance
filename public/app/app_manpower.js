@@ -41,6 +41,9 @@ var MaribManpower = (function () {
   var ICO_GHOST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a7 7 0 0 0-7 7v9l2.3-2 2.2 2 2.5-2 2.5 2 2.2-2 2.3 2v-9a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="11" r=".8"/><circle cx="14.5" cy="11" r=".8"/></svg>';
   var ICO_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>';
   var ICO_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  /* R40 — مؤشر الماكينة: علامة صغيرة جنب الكود تعرّف إن في تولتيب
+     (الماكينة/الملاحظات) بتيجي بالماوس من غير ضغط */
+  var ICO_MACH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M7 8h4M7 12h6"/><path d="M17.5 8.5v2M9 17l-1.5 4M15 17l1.5 4"/></svg>';
 
   /* ---------------- garment glossary (jeans industry wording) ----------
      Base = the term as written in the sheet. Display goes through TT():
@@ -397,7 +400,10 @@ var MaribManpower = (function () {
     var codeChip = isNew
       ? '<i class="mlc newc">' + esc(T("mp_code_new")) + "</i>"
       : '<i class="mlc num">' + hl(code, needle) + "</i>";
-    var label = '<span class="ml"><b class="mln">' + hl(name, needle) + "</b>" + codeChip + "</span>";
+    var label = '<span class="ml"><b class="mln">' + hl(name, needle) + "</b>" + codeChip +
+      /* R40: مؤشر صغير — الوقوف على الصف بيطلع الماكينة والملاحظات
+         (من غير title عشان ميتعملش تولتيبين فوق بعض) */
+      ((e[8] || e[7]) ? '<i class="mtag" aria-hidden="true">' + ICO_MACH + "</i>" : "") + "</span>";
     var pen = ADMIN ? '<span class="mo" role="button" tabindex="0" title="' + esc(T("mp_edit")) + '" data-ei="' + esc(id) + '">' + ICO_PEN + "</span>" : "";
     var style = "--d:" + (depthOf(e[4]) + 1) + (delay !== undefined ? ";animation-delay:" + delay + "ms" : "");
     /* R39: class "em" (NOT "en") — the dashboard's single-language rule
@@ -443,9 +449,12 @@ var MaribManpower = (function () {
         (t[9] ? '<span class="dtn">' + esc(t[9]) + "</span>" : "") + "</div>";
     }
     /* R39: الكود أول حاجة بعد الاسم — الوظيفة بعدها (الاسم هو عنوان الصف) */
+    /* R40: الماكينة والملاحظات ليهم صفين هنا كمان (للموبايل مفيش hover) */
     return '<div class="mpr-det">' +
       '<div class="drow"><span>' + esc(T("mp_code")) + '</span><b class="num">' + (isNew ? esc(T("mp_code_new")) : esc(code)) + "</b></div>" +
       '<div class="drow job"><span>' + esc(T("mp_job")) + "</span><b>" + esc(job ? TT(job) : T("mp_no_job")) + "</b></div>" +
+      (e[8] ? '<div class="drow mach"><span>' + esc(T("mp_mach")) + '</span><b class="num">' + esc(e[8]) + "</b></div>" : "") +
+      (e[7] ? '<div class="drow note"><span>' + esc(T("mp_note")) + '</span><b>' + esc(e[7]) + "</b></div>" : "") +
       '<div class="drow"><span>' + esc(T("mp_hire")) + '</span><b class="num">' + esc(e[5] || "—") + "</b></div>" +
       '<div class="drow"><span>' + esc(T("mp_dept")) + "</span><b>" + esc(node ? nodePathTT(node) : "—") + "</b></div>" +
       (trs.length ? '<div class="dth">' + esc(T("mp_emp_transfers")) + " (" + trs.length + ')</div><div class="dtrs">' + rows + "</div>" : "") +
@@ -474,9 +483,63 @@ var MaribManpower = (function () {
     return out;
   }
 
+  /* ---------------- R40: Power-BI-style hover tooltip ----------------
+     زي حوار الباور بي أي بالظبط: لما الماوس يقف على صف الموظف — من غير
+     أي ضغط — كارت صغير بيطلع جنب الماوس فيه الماكينة والملاحظات
+     (الخلايا المكتوبة في العمودين في شيت Manpower). الموظف اللي ملوش
+     حاجة مكتوبة في العمودين مش بيطلعله كارت. الكارت بيتحرك مع
+     الماوس وبيختفي أول ما الماوس يخرج من الصف. */
+  var tip = null, tipTimer = null, tipCurId = null, tipOn = false;
+
+  function tipEl() {
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.className = "mp-tip";
+      tip.setAttribute("role", "tooltip");
+      document.body.appendChild(tip);
+    }
+    return tip;
+  }
+  function tipBuild(emp) {
+    var mach = String(emp[8] || "").trim();
+    var note = String(emp[7] || "").trim();
+    var isNew = !emp[1] || emp[1] === "جديد";
+    var h = '<div class="tt-h">' +
+      '<span class="tt-ico">' + ICO_EMP + "</span><b>" + esc(emp[2]) + "</b>" +
+      (isNew ? '<i class="tt-new">' + esc(T("mp_code_new")) + "</i>" : '<i class="num">' + esc(emp[1]) + "</i>") +
+      "</div>";
+    if (mach) h += '<div class="tt-r"><span>' + esc(T("mp_mach")) + '</span><b class="tt-m num">' + esc(mach) + "</b></div>";
+    if (note) h += '<div class="tt-r"><span>' + esc(T("mp_note")) + '</span><b class="tt-n">' + esc(note) + "</b></div>";
+    return h;
+  }
+  function tipShow(emp, e) {
+    var el = tipEl();
+    el.innerHTML = tipBuild(emp);
+    el.classList.add("on");
+    tipOn = true;
+    tipMove(e);
+  }
+  function tipMove(e) {
+    if (!tip || !tipOn) return;
+    var w = tip.offsetWidth || 200, h = tip.offsetHeight || 70;
+    var x = e.clientX + 16, y = e.clientY + 18;
+    if (x + w > window.innerWidth - 10) x = e.clientX - w - 14;   /* flip left */
+    if (x < 10) x = 10;
+    if (y + h > window.innerHeight - 10) y = e.clientY - h - 14;  /* flip up */
+    if (y < 10) y = 10;
+    tip.style.left = x + "px";
+    tip.style.top = y + "px";
+  }
+  function tipHide() {
+    clearTimeout(tipTimer);
+    if (tip) tip.classList.remove("on");
+    tipOn = false;
+  }
+
   function renderTree(animKey) {
     var box = $("mpTree");
     if (!box) return;
+    tipHide();   /* R40: الصفوف بتتبدل — التولتيب القديمة مالهاش لازمة */
     var ld = $("mpLoading"), em = $("mpEmpty");
     if (loading && !DATA) {
       box.innerHTML = "";
@@ -912,6 +975,7 @@ var MaribManpower = (function () {
                 else if (h.indexOf("القسم الداخلي") >= 0) map.sub = c;
                 else if (h.indexOf("القسم") >= 0) map.sec = c;
                 else if (h.indexOf("الوظيفة") >= 0) map.job = c;
+                else if (h.indexOf("ماكينة") >= 0) map.mach = c;   /* R40: الماكينة */
                 else if (h.indexOf("ملاحظات") >= 0) map.note = c;
                 else if (h.indexOf("التعيين") >= 0) map.hire = c;
               }
@@ -951,7 +1015,8 @@ var MaribManpower = (function () {
                 job.slice(0, 90),
                 String(get("note") == null ? "" : get("note")).trim().slice(0, 60),
                 xlsxDate(get("hire")),
-                vac
+                vac,
+                String(get("mach") == null ? "" : get("mach")).trim().slice(0, 30)   /* R40 */
               ]);
             } else {
               var code = String(get("code") == null ? "" : get("code")).trim();
@@ -1020,6 +1085,8 @@ var MaribManpower = (function () {
     var w = $("mpWrap");
     if (w) w.hidden = true;
     closeReqPop();
+    tipCurId = null;   /* R40: قفل التولتيب مع الشاشة نفسها */
+    tipHide();
   }
 
   /* ---------------- bindings ---------------- */
@@ -1181,6 +1248,40 @@ var MaribManpower = (function () {
         renderTree(opening ? k : null);
       }
     });
+
+    /* R40 — تولتيب الماكينة/الملاحظات: hover على صف الموظف من غير ضغط.
+       Delegated listeners واحدة على الشجرة كلها — الـ DOM بيتغلط من
+       غير ما نربط حاجة لكل صف من الـ 828. */
+    if (tree) {
+      tree.addEventListener("mouseover", function (e) {
+        var row = e.target.closest ? e.target.closest(".mpr.em") : null;
+        if (!row) return;
+        var id = row.getAttribute("data-i");
+        if (id === tipCurId && tipOn) return;   /* نفس الصف — سيبها */
+        tipCurId = id;
+        clearTimeout(tipTimer);
+        tipHide();
+        var emp = findEmp(id);
+        if (!emp || (!emp[8] && !emp[7])) return;  /* ملوش ماكينة ولا ملاحظة */
+        tipTimer = setTimeout(function () { tipShow(emp, e); }, 140);
+      });
+      tree.addEventListener("mouseout", function (e) {
+        var row = e.target.closest ? e.target.closest(".mpr.em") : null;
+        if (!row) return;
+        var to = e.relatedTarget;
+        if (to && row.contains(to)) return;      /* لسه جوه نفس الصف */
+        if (row.getAttribute("data-i") !== tipCurId) return;
+        tipCurId = null;
+        tipHide();
+      });
+      tree.addEventListener("mousemove", function (e) {
+        if (tipOn) tipMove(e);                   /* الكارت بيتحرك مع الماوس */
+      });
+      tree.addEventListener("mouseleave", function () {
+        tipCurId = null;
+        tipHide();
+      });
+    }
 
     /* language switch (the shell's one is hidden in mp mode) */
     document.querySelectorAll("#mpLang .sw-btn").forEach(function (b) {

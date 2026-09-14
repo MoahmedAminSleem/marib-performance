@@ -2490,6 +2490,64 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
 .mp-reqpop .rp-x{background:transparent;border:1px solid var(--brd-soft);color:var(--muted)}
 .mp-reqpop .rp-ok{background:rgba(217,168,107,.16);border:1px solid rgba(217,168,107,.35);color:var(--accent-2)}
 
+/* ---------- R40: Power-BI-style hover tooltip (الماكينة / الملاحظات) ----------
+   زي حوار الباور بي أي: كارت صغير جنب الماوس من غير ضغط — اسم الموظف
+   فوق، وتحت الماكينة والملاحظات (اللي مكتوبين بس). بيتحرك مع الماوس
+   وبيختفي فور خروجه من الصف. pointer-events:none فمبيعطلش الضغط. */
+.mp-tip{
+  position:fixed;top:0;left:0;z-index:420;
+  min-width:190px;max-width:330px;pointer-events:none;
+  padding:11px 14px 10px;border-radius:13px;
+  background:linear-gradient(160deg,#1B2C47 0%,#101B2E 72%,#0D1626 100%);
+  border:1px solid rgba(217,168,107,.4);
+  box-shadow:0 16px 44px rgba(3,7,14,.64),0 2px 10px rgba(3,7,14,.42);
+  opacity:0;transform:scale(.96) translateY(-3px);
+  transition:opacity .14s ease,transform .14s ease;
+}
+.mp-tip.on{opacity:1;transform:none}
+.mp-tip .tt-h{
+  display:flex;align-items:center;gap:8px;
+  padding-bottom:8px;margin-bottom:7px;
+  border-bottom:1px dashed rgba(217,168,107,.32);
+}
+.mp-tip .tt-ico{
+  display:flex;align-items:center;justify-content:center;flex:none;
+  width:22px;height:22px;border-radius:7px;
+  background:rgba(217,168,107,.12);color:#D9A86B;
+}
+.mp-tip .tt-ico svg{width:13px;height:13px}
+.mp-tip .tt-h b{font-size:13px;font-weight:800;color:#F2EBDD;line-height:1.25;word-break:break-word}
+.mp-tip .tt-h i{font-style:normal;font-size:10.5px;font-weight:700;color:#A9B7C7;letter-spacing:.4px;flex:none}
+.mp-tip .tt-h i.tt-new{
+  color:#F1D9A8;background:rgba(217,168,107,.14);
+  padding:2px 8px;border-radius:7px;
+}
+.mp-tip .tt-r{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  font-size:12px;line-height:1.75;
+}
+.mp-tip .tt-r span{color:#A9B7C7;font-weight:700;flex:none}
+.mp-tip .tt-r b{font-weight:800;color:#F2EBDD;text-align:start;word-break:break-word}
+.mp-tip .tt-r b.tt-m{
+  direction:ltr;color:#F1D9A8;letter-spacing:.5px;
+  background:rgba(217,168,107,.13);border:1px solid rgba(217,168,107,.22);
+  padding:1px 9px;border-radius:8px;
+}
+.mp-tip .tt-r b.tt-n{color:#FFE3B8}
+
+/* R40: مؤشر الماكينة الصغير جنب الكود — بيعرّف إن في تولتيب */
+.mpr .mtag{
+  display:inline-flex;align-items:center;flex:none;
+  width:15px;height:15px;margin-inline-start:2px;
+  color:#7E92A8;opacity:.7;transition:color .18s,opacity .18s;
+}
+.mpr .mtag svg{width:13px;height:13px}
+.mpr:hover .mtag{color:#D9A86B;opacity:1}
+
+/* R40: صفوف الماكينة/الملاحظات في كارت تفاصيل الموظف (للموبايل) */
+.mpr-det .drow.mach b{color:#F1D9A8}
+.mpr-det .drow.note b{color:#FFE3B8}
+
 /* ---------- add / edit modal ---------- */
 .mp-modal{
   position:fixed;inset:0;z-index:350;

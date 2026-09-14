@@ -692,6 +692,8 @@ mp_code:     { ar: "الكود", en: "Code", tr: "Kod" },
 mp_job:      { ar: "الوظيفة", en: "Job", tr: "İş" },
 mp_dept:     { ar: "الإدارة", en: "Department", tr: "Bölüm" },
 mp_hire:     { ar: "تاريخ التعيين", en: "Hire date", tr: "İşe giriş" },
+mp_mach:     { ar: "الماكينة", en: "Machine", tr: "Makine" },           /* R40: hover tooltip */
+mp_note:     { ar: "الملاحظات", en: "Notes", tr: "Notlar" },            /* R40: hover tooltip */
 mp_req_edit: { ar: "العدد المطلوب", en: "Required count", tr: "Gerekli sayı" },
 mp_clear:    { ar: "مسح", en: "Clear", tr: "Temizle" },
 mp_no_req:   { ar: "غير محدد", en: "Not set", tr: "Belirsiz" },
