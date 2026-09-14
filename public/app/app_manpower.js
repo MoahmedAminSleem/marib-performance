@@ -44,6 +44,8 @@ var MaribManpower = (function () {
   /* R40 — مؤشر الماكينة: علامة صغيرة جنب الكود تعرّف إن في تولتيب
      (الماكينة/الملاحظات) بتيجي بالماوس من غير ضغط */
   var ICO_MACH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M7 8h4M7 12h6"/><path d="M17.5 8.5v2M9 17l-1.5 4M15 17l1.5 4"/></svg>';
+  /* R41 — سلة المسح: زرار أحمر صغير جنب كل قسم (للأقسام الفاضية) */
+  var ICO_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2"/><path d="M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12"/><path d="M10 11.5v5.5M14 11.5v5.5"/></svg>';
 
   /* ---------------- garment glossary (jeans industry wording) ----------
      Base = the term as written in the sheet. Display goes through TT():
@@ -382,8 +384,12 @@ var MaribManpower = (function () {
     var ico = '<span class="mi dept">' + ICO_DEPT + "</span>";
     var label = '<span class="ml">' + hl(deptLabel(n), needle) +
       (n.own !== null ? '<i class="mls ov" title="' + esc(T("mp_req_own")) + '">✎</i>' : "") + "</span>";
-    /* R39: زرار واحد بس — نفس المودال بيعمل التسمية والنقل مع بعض */
-    var adm = ADMIN ? '<span class="mo rn" role="button" tabindex="0" title="' + esc(T("mp_dept_edit")) + '" data-rn="' + esc(n.id) + '">' + ICO_PEN + "</span>" : "";
+    /* R39: زرار واحد بس — نفس المودال بيعمل التسمية والنقل مع بعض
+       R41: + سلة حمرا لمسح القسم الفاضي (نسخ الإضافة المتكررة) */
+    var adm = ADMIN
+      ? '<span class="mo rn" role="button" tabindex="0" title="' + esc(T("mp_dept_edit")) + '" data-rn="' + esc(n.id) + '">' + ICO_PEN + "</span>" +
+        '<span class="mo dx" role="button" tabindex="0" title="' + esc(T("mp_dept_del")) + '" data-dx="' + esc(n.id) + '">' + ICO_TRASH + "</span>"
+      : "";
     var style = "--d:" + n.depth + (delay !== undefined ? ";animation-delay:" + delay + "ms" : "");
     return '<div class="mpr dn' + (anim ? " in" : "") + '" style="' + style + '" data-k="' + esc(n.key) + '" data-t="dept">' +
       tw + ico + label + bar(n) + badgeHTML(n) + adm + "</div>";
@@ -618,12 +624,13 @@ var MaribManpower = (function () {
       if (needle && hayS.indexOf(needle) < 0) continue;
       var kind = t[8] === "dept" || t[8] === "dept-move" ? "mp_kind_deptmove"
         : t[8] === "dept-rename" ? "mp_kind_rename"
+        : t[8] === "dept-del" ? "mp_kind_deptdel"    /* R41: مسح قسم */
         : t[8] === "fill" ? "mp_kind_fill"
         : t[8] === "out" ? "mp_kind_out"          /* R39: حذف/خروج */
         : t[8] === "dept" ? "mp_kind_dept"
         : t[8] === "job" ? "mp_kind_job"
         : "mp_kind_move";
-      var isDeptOp = t[8] === "dept-move" || t[8] === "dept-rename";
+      var isDeptOp = t[8] === "dept-move" || t[8] === "dept-rename" || t[8] === "dept-del";
       html.push('<div class="mpr ar in" style="--d:0">' +
         '<span class="arw num"><bdi>' + esc(fmtWhen(t[0])) + "</bdi></span>" +
         '<span class="ara">' + esc(t[1]) + "</span>" +
@@ -702,6 +709,47 @@ var MaribManpower = (function () {
     return trail.length ? trail[trail.length - 1] : "";
   }
 
+  /* ---------------- R41: modal button helpers ----------------
+     زرار الحفظ بيتعطّل أول ما يتداس + الكلمة بتتحول «جاري الحفظ…» —
+     ده اللي كان ناقص: الضغط السريع كان بيعمل أقسام مكررة قبل ما
+     الرد يوصل من السيرفر. */
+  function btnBusy(btn) {
+    if (!btn) return;
+    btn.disabled = true;
+    btn._t41 = btn.textContent;
+    btn.textContent = T("mp_saving");
+  }
+  function btnIdle(btn) {
+    if (!btn) return;
+    btn.disabled = false;
+    if (btn._t41) { btn.textContent = btn._t41; btn._t41 = null; }
+  }
+
+  /* فتح سلسلة الآباء لغاية القسم + فلاش ذهبي عليه — أوضح رسالة إنه اتضاف */
+  function expandToDept(id) {
+    var n = findByKey("d:" + id);
+    expanded["root"] = true;
+    var guard = 0;
+    while (n && n !== ROOT && guard++ < 40) { expanded[n.key] = true; n = parentOf(n); }
+  }
+  function flashDept(id) {
+    var rows = document.querySelectorAll("#mpTree .mpr");
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute("data-k") === "d:" + id) {
+        var r = rows[i];
+        r.classList.add("newflash");
+        try { r.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) { }
+        setTimeout(function () { r.classList.remove("newflash"); }, 2600);
+        return;
+      }
+    }
+  }
+  function clearSearch() {
+    q = "";
+    var s = $("mpSearch");
+    if (s) s.value = "";
+  }
+
   /* ---------------- generic modal shell ---------------- */
   function modalOpen(cls, inner) {
     var m = document.createElement("div");
@@ -734,7 +782,9 @@ var MaribManpower = (function () {
     while (cur && cur !== ROOT && guard++ < 30) { trail.unshift(cur.id); cur = parentOf(cur); }
     cascadeBuild($("mdMove"), trail.slice());
     m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); });
+    var okBtn = m.querySelector(".mpm-ok"), modalBusy = false;
     m.querySelector(".mpm-ok").addEventListener("click", function () {
+      if (modalBusy) return;   /* R41: مفيش حفظ تاني والطلب الأول لسه ماشي */
       var newName = $("mdName").value.trim();
       var newParent = trailToId($("mdMove")._trail || []);
       if (!newName) { toast(T("mp_fill"), "err"); return; }
@@ -744,6 +794,7 @@ var MaribManpower = (function () {
       /* guard: can't move a node inside itself */
       var t = $("mdMove")._trail || [];
       if (t.indexOf(node.id) >= 0) { toast(T("mp_cycle"), "err"); return; }
+      modalBusy = true; btnBusy(okBtn);   /* R41 */
       var chain = Promise.resolve();
       if (renamed) {
         chain = chain.then(function () {
@@ -760,6 +811,7 @@ var MaribManpower = (function () {
         m.remove();
         return reload();
       }).catch(function (e) {
+        modalBusy = false; btnIdle(okBtn);   /* R41: رجّع الزرار عشان يعدّل تاني */
         toast(e && e.status === 403 ? T("mp_need_admin") : T("toast_sync_err"), "err");
       });
     });
@@ -779,19 +831,73 @@ var MaribManpower = (function () {
       "</div>");
     cascadeBuild($("mdMove"), []);
     m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); });
+    var okBtn = m.querySelector(".mpm-ok"), modalBusy = false;
     m.querySelector(".mpm-ok").addEventListener("click", function () {
+      if (modalBusy) return;   /* R41: الضغطات الزيادة بتتجاهل خالص */
       var name = $("mdName").value.trim();
       if (!name) { toast(T("mp_fill"), "err"); return; }
       var parentId = trailToId($("mdMove")._trail || []);
-      MaribCloud.manpowerPost("deptAdd", { name: name, parentId: parentId }).then(function () {
+      modalBusy = true; btnBusy(okBtn);   /* R41: الزرار بيتعطّل فورًا + «جاري الحفظ…» */
+      MaribCloud.manpowerPost("deptAdd", { name: name, parentId: parentId }).then(function (r) {
         toast(T("mp_dept_added") + " — " + name, "ok");
         m.remove();
-        return reload();
+        clearSearch();               /* R41: مفيش فلتر يخبي القسم الجديد */
+        var newId = r && r.id ? String(r.id) : "";
+        return reload().then(function () {
+          if (!newId) return;
+          expandToDept(newId);       /* افتح الأب + الشجرة توريه */
+          renderTree();
+          flashDept(newId);         /* فلاش ذهبي + سكرول ليه */
+        });
       }).catch(function (e) {
+        modalBusy = false; btnIdle(okBtn);   /* R41: فشل؟ رجّع الزرار تاني */
         toast(e && e.status === 403 ? T("mp_need_admin") : T("toast_sync_err"), "err");
       });
     });
     setTimeout(function () { try { $("mdName").focus(); } catch (e) { } }, 60);
+  }
+
+  /* ---------------- DELETE-DEPT confirm (R41) ----------------
+     سلة صغيرة جنب كل قسم → مودال تأكيد بيوري المسار والمحتوى:
+     القسم الفاضي بيتمسح بضغطة، واللي فيه حاجة الزرار الأحمر بيفضل
+     مقفول مع رسالة توضيحية — عشان رأس مال البشر ميتمسحش بالغلط. */
+  function openDeptDel(node) {
+    if (!ADMIN) { toast(T("mp_need_admin"), "err"); return; }
+    var kids = node.kids.length, emps = node.emps.length, vacs = node.vacs.length;
+    var empty = !kids && !emps && !vacs;
+    var cnt = "<b>" + esc(String(kids)) + "</b> " + esc(T("mp_subsections")) +
+      " · <b>" + esc(String(emps)) + "</b> " + esc(T("mp_employees")) +
+      " · <b>" + esc(String(vacs)) + "</b> " + esc(T("mp_vac"));
+    var m = modalOpen("mpm-dept mpm-del-card",
+      '<h3 class="del-h">' + esc(T("mp_dept_del")) + ": " + esc(deptLabel(node)) + "</h3>" +
+      '<div class="drow delpath"><span>' + esc(T("mp_dept")) + "</span><b>" + esc(nodePathTT(node) || "Marib 3") + "</b></div>" +
+      '<div class="mpm-warn">' +
+      '<div class="w-l">' + esc(T("mp_dept_contains")) + ": " + cnt + "</div>" +
+      (empty
+        ? '<div class="w-ok">✓ ' + esc(T("mp_dept_empty_ok")) + "</div>"
+        : '<div class="w-bad">✗ ' + esc(T("mp_dept_notempty")) + "</div>") +
+      "</div>" +
+      '<div class="mpm-btns">' +
+      '<button type="button" class="mpm-x">' + esc(T("mp_cancel")) + "</button>" +
+      '<button type="button" class="mpm-del"' + (empty ? "" : " disabled") + ">" + esc(T("mp_dept_del")) + "</button>" +
+      "</div>");
+    m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); });
+    var delBtn = m.querySelector(".mpm-del"), modalBusy = false;
+    m.querySelector(".mpm-del").addEventListener("click", function () {
+      if (modalBusy || delBtn.disabled) return;   /* R41: نفس حكاية الضغط السريع */
+      modalBusy = true; btnBusy(delBtn);
+      MaribCloud.manpowerPost("deptDelete", { id: node.id }).then(function () {
+        toast(T("mp_dept_deleted") + " — " + deptLabel(node), "ok");
+        m.remove();
+        return reload();
+      }).catch(function (e) {
+        modalBusy = false; btnIdle(delBtn);
+        if (e && e.status === 403) toast(T("mp_need_admin"), "err");
+        else if (e && (e.message === "notEmpty" || e.status === 409)) toast(T("mp_dept_notempty"), "err");
+        else toast(T("toast_sync_err"), "err");
+      });
+    });
+    setTimeout(function () { try { if (delBtn && !delBtn.disabled) delBtn.focus(); } catch (e) { } }, 60);
   }
 
   /* ---------------- EMPLOYEE modal (add / edit) ---------------- */
@@ -1219,6 +1325,14 @@ var MaribManpower = (function () {
         e.stopPropagation();
         var nn = findByKey("d:" + rn.getAttribute("data-rn"));
         if (nn) openDeptModal(nn);
+        return;
+      }
+      /* R41: مسح القسم (سلة حمرا) — قبل الـ pen العام عشان الـ class متشالش */
+      var dx = el.closest ? el.closest(".mo.dx") : null;
+      if (dx) {
+        e.stopPropagation();
+        var nd = findByKey("d:" + dx.getAttribute("data-dx"));
+        if (nd) openDeptDel(nd);
         return;
       }
       /* employee edit */

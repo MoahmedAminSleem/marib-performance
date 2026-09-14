@@ -8,7 +8,7 @@
          gets heavy (828 rows is lighter than R37's 2005).
    POST (admin+) → one tiny action at a time:
          add / edit / fill / vacAdd / vacDel / deptAdd / deptRename /
-         deptMove / req / import.
+         deptMove / deptDelete / req / import.
          Actual/required rule (the owner's): every row = one required
          position; a row with an empty name = a vacancy (missing).
          required(node) = rows, actual(node) = filled rows, the manual
@@ -313,6 +313,29 @@ export async function POST(req: NextRequest) {
       const n = await q("SELECT COUNT(*)::int AS n FROM marib_emp WHERE dept_id = $1", [id]);
       await logTransfer(actor, "—", cur[0].name as string, oldPath, null, newPath, null, "dept-move", (n[0]?.n ?? 0) + " موظف");
       await audit(actor, "edit", "manpower-dept", cur[0].name as string, { from: oldPath, to: newPath, employees: n[0]?.n ?? 0 });
+      return NextResponse.json({ ok: true });
+    }
+
+    /* ---------- delete a dept node (R41 — مسح الأقسام الفاضية ----------
+       Only an EMPTY node can go: no sub-sections, no employees, no
+       vacancies. That is exactly the "I clicked add five times and got
+       five copies" case — duplicates are empty by definition. Anything
+       with content refuses with 409 notEmpty so headcount can never
+       disappear by accident. The deletion is written to the archive. */
+    if (action === "deptDelete") {
+      const id = cleanStr(body.id, 40);
+      if (!id) return fail("id", 400);
+      const cur = await q("SELECT id, name, parent_id FROM marib_dept WHERE id = $1 LIMIT 1", [id]);
+      if (!cur.length) return fail("none", 404);
+      const kids = await q("SELECT COUNT(*)::int AS n FROM marib_dept WHERE parent_id = $1", [id]);
+      const rows = await q("SELECT COUNT(*)::int AS n FROM marib_emp WHERE dept_id = $1", [id]);
+      if (Number(kids[0]?.n ?? 0) > 0 || Number(rows[0]?.n ?? 0) > 0) return fail("notEmpty", 409);
+      const p = await deptPath(id);
+      await q("DELETE FROM marib_dept WHERE id = $1", [id]);
+      await q("DELETE FROM marib_req WHERE node_key = $1", ["d:" + id]); /* orphan override cleanup */
+      await logTransfer(actor, "—", cur[0].name as string, p, "—", "—", "—", "dept-del");
+      await audit(actor, "delete", "manpower-dept", cur[0].name as string, { path: p });
+      lg.info("dept removed", { actor, name: cur[0].name, path: p });
       return NextResponse.json({ ok: true });
     }
 

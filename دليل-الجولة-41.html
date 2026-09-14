@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل الجولة 41 — زرار مسح القسم + إصلاح الإضافة المتكررة</title>
+<style>:root{--bg:#0A101C;--bg2:#101a2b;--card:#131f33;--line:#26364f;--txt:#DCE5EF;--dim:#A9B7C7;--gold:#C49A6C;--gold2:#E9C68A;--blue:#7FB3E8;--green:#4FD98D;--red:#F87171}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.9;padding:26px 16px}
+.wrap{max-width:880px;margin:0 auto}
+h1{color:var(--gold2);font-size:23px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+h2{color:var(--gold2);font-size:17px;margin:26px 0 10px;border-inline-start:4px solid var(--gold);padding-inline-start:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0}
+.step{display:flex;gap:12px;margin:12px 0;align-items:flex-start}
+.n{background:var(--gold);color:#141B26;font-weight:800;min-width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+.path{background:rgba(196,154,108,.14);color:var(--gold2);padding:2px 8px;border-radius:7px;font-size:12.5px;font-family:Consolas,monospace;direction:ltr;display:inline-block}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{padding:8px 10px;border:1px solid var(--line);text-align:start}
+th{color:var(--gold2);background:rgba(196,154,108,.07);font-size:12px}
+td{color:var(--txt)}
+.small{font-size:12px;color:var(--dim)}
+ul{padding-inline-start:22px}
+li{margin:7px 0}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11.5px;font-weight:700;margin-inline-end:6px}
+.tag.new{background:rgba(79,217,141,.13);color:var(--green)}
+.tag.mod{background:rgba(127,179,232,.13);color:var(--blue)}
+b.g{color:var(--green)} b.r{color:var(--red)} b.y{color:var(--gold2)}</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>دليل الجولة 41 — زرار مسح القسم + إصلاح الإضافة المتكررة</h1>
+<p class="sub">النسخ المتكررة اللي كانت بتتعمل من كتر الضغط على «حفظ» خلصت — والزيادة منها دلوقتي بتتمسح بسلة حمرا</p>
+
+<div class="card">
+<h2>اللي اتعمل في الجولة دي</h2>
+<ul>
+<li><b>المشكلة اللي اتبلغت:</b> إضافة قسم في الاتزان مكانتش بتدي أي إشارة إنها حصلت — فبتضغط «حفظ» كذا مرة، وكل ضغطة كانت بتعمل <b>قسم متكرر جديد</b>. ومفيش أي طريقة كانت موجودة لمسح النسخ الزيادة.</li>
+<li><b>زرار الحفظ بقى عاقل:</b> أول ما تداس «حفظ» <b>بتتعطل فورًا</b> والكلمة بتتحول <b>«جاري الحفظ…»</b> — الضغطات اللي بعدها بتتتجاهل خالص، ومستحيل قسم يتكرر تاني. لو الطلب فشل، الزرار بيرجع يشتغل تاني عشان تعدّل.</li>
+<li><b>إشارة النجاح واضحة:</b> بعد الإضافة بتظهر رسالة <b>«اتضاف القسم — فلان»</b> + الشجرة بتفتح لغاية القسم الجديد و<b>بيلمع فلاش ذهبي</b> مع سكرول ليه — حتى لو كان جوه قسم مقفول أو البحث كان فاضي شغال (بيتشال تلقائيًا).</li>
+<li><b>زرار مسح القسم (الجديد):</b> <b>سلة حمرا صغيرة جنب كل قسم</b> بجانب قلم التعديل. بتفتح مودال تأكيد بيوري <b>مسار القسم + محتواه بالعدد</b> (أقسام فرعية · موظفين · شاغر).</li>
+<li><b>الأمان بطبقتين:</b> القسم <b>الفاضي</b> بس اللي بيتسح (بعلامة خضرا «مسحه آمن») — اللي فيه أي حاجة الزرار الأحمر بيفضل <b>مقفول</b> مع تحذير واضح. والسيرفر نفسه بيرفض كمان (409) لو حد بعت طلب المسح يدوي من غير الواجهة — <b>موظف واحد ميتمسحش بالغلط أبدًا</b>.</li>
+<li><b>المسح مسجّل:</b> كل مسح قسم بيتكتب في <b>أرشيف النقل</b> (نوع «مسح قسم» — مين مسح وأنهي قسم ومساره) وفي سجل التدقيق، وتنضف معاه أي قيمة «مطلوب يدوي» كانت متعلقة بيه.</li>
+<li><b>الفيور (المطالع بس):</b> مش شايف السلة ولا القلم ولا زرار الإضافة خالص — والـ API بيرفضه بـ 403. التصدير لسه متاح له زي ما هو.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>خطوات التسليم (3 دقايق)</h2>
+<div class="step"><div class="n">1</div><div>حمّل الـ ZIP وفكّه، وارفع <b>كل الملفات اللي جواه</b> على GitHub (Add file ← Upload files ← اسحبها كلها). الـ ZIP تراكمي — يشتغل حتى لو آخر جولة رفعتها قبل كده.</div></div>
+<div class="step"><div class="n">2</div><div>افتح الموقع وسجّل دخول — <b>مفيش أي زرع جديد ولا إصدار قاعدة جديد</b> (بوابة 42 زي ما هي)، البيانات كلها زي ما هي.</div></div>
+<div class="step"><div class="n">3</div><div>دوس <b>«الاتزان»</b> ← جنب كل قسم هتلاقي <b>سلة حمرا</b> ← دوس على سلة أي قسم متكرر فاضي ← شوف العلامة الخضرا «مسحه آمن» ← <b>«مسح القسم»</b>. كررها لكل النسخ الزيادة.</div></div>
+</div>
+
+<div class="card">
+<h2>الملفات المتغيرة (4 ملفات أساسية)</h2>
+<table>
+<tr><th>الملف</th><th>النوع</th><th>اللي فيه</th></tr>
+<tr><td><span class="path">public/app/app_manpower.js</span></td><td><span class="tag mod">تعديل جوهري</span></td><td>تعطيل زرار الحفظ فورًا + «جاري الحفظ…» (btnBusy/btnIdle) · فتح الشجرة والفلاش الذهبي للقسم الجديد (expandToDept/flashDept) · مودال تأكيد المسح openDeptDel · السلة الحمرا في صف القسم · حماية الضغط السريع في الإضافة والتعديل والمسح · نوع الأرشيف «مسح قسم»</td></tr>
+<tr><td><span class="path">src/app/api/manpower/route.ts</span></td><td><span class="tag mod">تعديل</span></td><td>فعل <b>deptDelete</b> جديد: أدمن بس · يرفض القسم المليان بـ 409 notEmpty · بيسجل في الأرشيف والتدقيق · بينضف قيمة «مطلوب يدوي» اليتيمة</td></tr>
+<tr><td><span class="path">public/app/i18n_dict.js</span></td><td><span class="tag mod">تعديل</span></td><td>+10 مفاتيح ×3 لغات (مسح القسم · المحتوى · أقسام فرعية · جاري الحفظ… · النوع في الأرشيف…)</td></tr>
+<tr><td><span class="path">public/app/app.css</span></td><td><span class="tag mod">تعديل</span></td><td>السلة الحمرا · الزرار الأحمر وحالة المقفول · مودال التحذير (أخضر فاضي / أحمر مليان) · الفلاش الذهبي · حالة «جاري الحفظ…»</td></tr>
+<tr><td><span class="path">سير-العمل.html</span> · <span class="path">README.md</span> · <span class="path">دليل-الجولة-41.html</span> · <span class="path">الملفات-المتغيرة.txt</span></td><td><span class="tag new">مستندات</span></td><td>سجل الجولات والمرجع والتوجيه</td></tr>
+<tr><td colspan="3" class="small">+ الباقي ملفات الجولات اللي فاتت (الـ ZIP تراكمي R28→R41): app_auth · app_main · app_core · app_charts · i18n_core · marib_cloud · page.tsx · xlsx-writer · الثيمات…</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>6 فحوصات سريعة بعد الرفع</h2>
+<ul>
+<li>«الاتزان» ← جنب أي قسم <b>سلة حمرا</b> + قلم تعديل — والفيور مش شايف ولا واحد فيهم.</li>
+<li>دوس «إضافة قسم» ← اكتب اسم ← دوس «حفظ» <b>بسرعة كذا مرة</b>: بيتم حفظ واحد بس — الزرار بيتقفل ويكتب «جاري الحفظ…» وبعدها رسالة «اتضاف القسم» + <b>القسم الجديد بيلمع فلاش ذهبي</b>.</li>
+<li>دوس سلة القسم اللي لسه مضيفه: المودال بيقول <b>«0 أقسام فرعية · 0 موظفين · 0 شاغر ✓ مسحه آمن»</b> ← «مسح القسم» ← بيختفي + رسالة «القسم اتمسح واتسجل في الأرشيف».</li>
+<li>«أرشيف النقل» ← آخر صف: <b>«مسح قسم»</b> باسمك واسم القسم والمسار.</li>
+<li>دوس سلة قسم مليان (زي الخياطة): بيقول <b>«✗ القسم مش فاضي — انقل أو امسح اللي جواه الأول»</b> والزرار الأحمر <b>مقفول</b> — مستحيل يتحرك.</li>
+<li>بدّل EN: نفس المودال بالإنجليزي («Delete section: Sewing — isn't empty») — والتركي كمان.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>أسئلة متوقعة</h2>
+<ul>
+<li><b>عندي نسخ متكررة كتير من قبل — أمسحها إزاي؟</b> افتح الاتزان ← لكل نسخة زيادة: دوس السلة الحمرا جنبها ← «مسح القسم». لو النسخة فاضية بتمسح على طول. لو كنت خليت فيها موظفين، انقلهم الأول (قلم التعديل على الموظف ← غيّر القسم) وبعدين امسحها.</li>
+<li><b>ليه مش بيمسح القسم اللي فيه موظفين؟</b> ده مقصود — عشان رأس مال البشر ميتمسحش بضغطة غلط. انقل الموظفين أو امسحهم واحد واحد (ولهم أرشيف خروج خاص بيهم) وبعدين القسم هيتسح عادي.</li>
+<li><b>القسم اللي فيه أقسام فرعية بس؟</b> نفس القاعدة — امسح الأقسام الفرعية الفاضية من تحت لفوق، وبعدين الأب يبقى فاضي ويتسح.</li>
+<li><b>«جاري الحفظ…» واقفة كتير؟</b> دي معناها الطلب لسه رايح للسيرفر — ثانية على الأكثر. لو وقفت أكتر من كده يبقى في مشكلة نت، والزرار هيرجع يشتغل لو الطلب فشل.</li>
+<li><b>المسح بيتسجل فين؟</b> في «أرشيف النقل» (تاب الأرشيف في الاتزان) بنوع «مسح قسم» + في سجل التدقيق الداخلي — مين وأنهي قسم وأنهي وقت.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>لو حصلت مشكلة</h2>
+<ul>
+<li><b>السلة مش ظاهرة:</b> اتأكد إنك داخل بحساب أدمن — الفيور مش بيشوف أزرار التعديل خالص (وده طبيعي).</li>
+<li><b>«اتضاف القسم» ظهرت بس مش شايف القسم:</b> اضغط «فتح الكل» فوق — القسم الجديد بيتفتح له الشجرة تلقائيًا، بس لو قفلتها بإيدك بعدها هيختفي من العرض (لسه موجود في القاعدة).</li>
+<li><b>زرار المسح مقفول على قسم فاضي؟</b> اتأكد إنه فاضي فعلًا — افتحه وشوف مفيش تحته أقسام فرعية أو شواغر (الشواغر بتتحسب محتوى كمان). امسح اللي جواه الأول.</li>
+<li><b>رسالة «مش فاضي» على قسم شكله فاضي:</b> غالبًا فيه شاغر جواه — افتح القسم وشوف صفوف «شاغر — مطلوب» وامسحها بزرار X الصغير بتاعها، وبعدين امسح القسم.</li>
+</ul>
+</div>
+
+</div>
+</body>
+</html>
