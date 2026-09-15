@@ -1,4 +1,4 @@
-/* Marib Performance i18n — engine
+/* Marib Performance i18n — engine (R44: Arabic removed — EN + TR only)
    - t(key) / ta(key) dictionary access
    - locale number & percent formatting (tr: 210.161 / %82,83 — en/ar: 210,161 / 82.83%)
    - localized weekday names, count phrases, drill titles, KPI sub-lines
@@ -6,23 +6,20 @@
 var I18N = (function () {
   "use strict";
   var LS_KEY = "marib_lang";
-  var cur = "ar";
+  var cur = "en";   /* R44: Arabic removed — EN+TR only */
   var D = window.MARIB_I18N_DICT || {};
   var listeners = [];
 
   var DAYS_FULL = {
-    ar: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
     en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
     tr: ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"]
   };
   var DAYS_SHORT = {
-    ar: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
     en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     tr: ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"]
   };
   /* heat map rows run Saturday-first (regional week) */
   var HEAT_DAYS = {
-    ar: ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"],
     en: ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"],
     tr: ["Cmt", "Paz", "Pzt", "Sal", "Çar", "Per", "Cum"]
   };
@@ -31,8 +28,8 @@ var I18N = (function () {
   function t(key) {
     var e = D[key];
     if (!e) return key;
-    var v = (e[cur] != null) ? e[cur] : e.ar;
-    return (v == null) ? e.ar : v;
+    var v = (e[cur] != null) ? e[cur] : e.en;   /* R44: fallback English */
+    return (v == null) ? e.en : v;
   }
   /* pair/triple access: ta('c_x')[0] title, [1] sub, [2] badge */
   function ta(key) { var v = t(key); return Array.isArray(v) ? v : [v, v, v]; }
@@ -40,8 +37,8 @@ var I18N = (function () {
   function ts(key) { return ta(key)[1]; }   /* small sub-caption */
   function tb(key) { return ta(key)[2]; }   /* badge chip */
   function is(l) { return cur === l; }
-  function dir() { return cur === "ar" ? "rtl" : "ltr"; }
-  function listSep() { return cur === "ar" ? "، " : ", "; }
+  function dir() { return "ltr"; }   /* R44: EN+TR — always LTR */
+  function listSep() { return ", "; }
   function num(n) { return '<span class="num">' + n + "</span>"; }
 
   /* ---------- locale number formatting ---------- */
@@ -74,178 +71,157 @@ var I18N = (function () {
 
   /* ---------- count phrases (proper plurals; TR uses no plural after numerals) ---------- */
   var COUNTS = {
-    line:  { ar: "خط", en: ["line", "lines"], tr: "hat" },
-    sup:   { ar: "مشرف", en: ["supervisor", "supervisors"], tr: "şef" },
-    sec:   { ar: "قسم", en: ["section", "sections"], tr: "bölüm" },
-    mach:  { ar: "ماكينة", en: ["machine", "machines"], tr: "makine" },
-    day:   { ar: "يوم", en: ["day", "days"], tr: "gün" },
-    rec:   { ar: "سجل", en: ["record", "records"], tr: "kayıt" },
-    worker:{ ar: "عامل", en: ["worker", "workers"], tr: "işçi" }
+    line:  { en: ["line", "lines"], tr: "hat" },
+    sup:   { en: ["supervisor", "supervisors"], tr: "şef" },
+    sec:   { en: ["section", "sections"], tr: "bölüm" },
+    mach:  { en: ["machine", "machines"], tr: "makine" },
+    day:   { en: ["day", "days"], tr: "gün" },
+    rec:   { en: ["record", "records"], tr: "kayıt" },
+    worker:{ en: ["worker", "workers"], tr: "işçi" }
   };
   function count(n, kind) {
     var e = COUNTS[kind] || kind;
     var word;
-    if (cur === "en" && Array.isArray(e.en)) word = (n == 1 ? e.en[0] : e.en[1]);
-    else if (cur === "en") word = e;
-    else word = (cur === "tr") ? e.tr : e.ar;
+    if (cur === "tr") word = e.tr;
+    else if (Array.isArray(e.en)) word = (n == 1 ? e.en[0] : e.en[1]);
+    else word = e.en;
     return fmtInt(n) + " " + word;
   }
 
   /* ---------- entity prefixes ---------- */
-  function lineN(n) { return cur === "ar" ? "خط " + n : (cur === "tr" ? "Hat " + n : "Line " + n); }
+  function lineN(n) { return cur === "tr" ? "Hat " + n : "Line " + n; }
   /* localized section names (round 8): Turkish garment-sector terms
      (Ön / Arka / Montaj / Hazırlık …) + Arabic shop-floor terms;
      unknown sections fall back to the raw name from the data */
   var SECTION_MAP = {
-    Front:       { ar: "صدر",  tr: "Ön" },  /* round 12: garment term — bodice front */
-    Back:        { ar: "ظهر",  tr: "Arka" },
-    Assembly:    { ar: "تجميع", tr: "Montaj" },
-    Preparation: { ar: "تحضير", tr: "Hazırlık" },
-    Sleeve:      { ar: "أكمام", tr: "Kol" },
-    Pocket:      { ar: "جيوب",  tr: "Cep" },
-    Collar:      { ar: "ياقات", tr: "Yaka" },
-    Cuff:        { ar: "أساور", tr: "Manşet" },
-    Cutting:     { ar: "قص",    tr: "Kesim" },
-    Ironing:     { ar: "كي",    tr: "Ütü" },
-    Quality:     { ar: "جودة",  tr: "Kalite" },
-    Packing:     { ar: "تغليف", tr: "Paketleme" }
+    Front:       { tr: "Ön" },  /* round 12: garment term — bodice front */
+    Back:        { tr: "Arka" },
+    Assembly:    { tr: "Montaj" },
+    Preparation: { tr: "Hazırlık" },
+    Sleeve:      { tr: "Kol" },
+    Pocket:      { tr: "Cep" },
+    Collar:      { tr: "Yaka" },
+    Cuff:        { tr: "Manşet" },
+    Cutting:     { tr: "Kesim" },
+    Ironing:     { tr: "Ütü" },
+    Quality:     { tr: "Kalite" },
+    Packing:     { tr: "Paketleme" }
   };
   function sectionName(n) {
     var s = String(n == null ? "" : n).trim();
     var e = SECTION_MAP[s];
     if (!e) return s;
-    var v = cur === "tr" ? e.tr : (cur === "en" ? s : e.ar);
-    return v == null ? s : v;
+    return cur === "tr" ? e.tr : s;
   }
   function sectionN(n) {
     var nm = sectionName(n);
-    if (cur === "ar") return "قسم " + nm;
     if (cur === "tr") return SECTION_MAP[String(n == null ? "" : n).trim()] ? nm : (n + " Bölümü");
     return "Section " + nm;
   }
-  function machN(n) { return cur === "ar" ? "ماكينة " + n : (cur === "tr" ? "Cep Makinesi " + n : "Pocket Machine " + n); }
+  function machN(n) { return cur === "tr" ? "Cep Makinesi " + n : "Pocket Machine " + n; }
   function dayTitle(wdName, dateShort) { return wdName + " " + dateShort; }
-  function drTitleSec(v) { return cur === "ar" ? sectionN(v) : (cur === "tr" ? sectionN(v) : "Section: " + sectionName(v)); }
+  function drTitleSec(v) { return cur === "tr" ? sectionN(v) : "Section: " + sectionName(v); }
   function drTitleLine(v) { return lineN(v); }
   function drTitlePm(v) { return machN(v); }
-  function drTitlePmLine(v) { return cur === "ar" ? "ماكينات خط " + v : (cur === "tr" ? "Hat " + v + " Makineleri" : "Machines — Line " + v); }
+  function drTitlePmLine(v) { return cur === "tr" ? "Hat " + v + " Makineleri" : "Machines — Line " + v; }
 
   /* ---------- KPI sub-lines (numbered templates) ---------- */
   function subTargetPcs(n) {
     return cur === "tr" ? "Hedef: " + num(fmtInt(n)) + " adet"
-         : cur === "en" ? "Target: " + num(fmtInt(n)) + " pcs"
-         : 'الهدف: ' + num(fmtInt(n)) + " قطعة";
+         : "Target: " + num(fmtInt(n)) + " pcs";
   }
   function subActualOf(n, m) {
     return cur === "tr" ? "Gerçekleşen " + num(fmtInt(n)) + " / " + num(fmtInt(m))
-         : cur === "en" ? "Actual " + num(fmtInt(n)) + " of " + num(fmtInt(m))
-         : 'الفعلي ' + num(fmtInt(n)) + " من " + num(fmtInt(m));
+         : "Actual " + num(fmtInt(n)) + " of " + num(fmtInt(m));
   }
   function subOtOf(n, m) {
     return cur === "tr" ? num(fmtInt(n)) + " dk FM — " + num(fmtInt(m)) + " dk kullanılabilir"
-         : cur === "en" ? num(fmtInt(n)) + " OT min of " + num(fmtInt(m)) + " available"
-         : num(fmtInt(n)) + " دقيقة أوفر من " + num(fmtInt(m)) + " متاحة";
+         : num(fmtInt(n)) + " OT min of " + num(fmtInt(m)) + " available";
   }
   /* R34: overtime told in worker counts — the owner records basic-time
      workers in Daily Data and overtime workers in the OT sheet */
   function subOtWrk(n, m) {
     return cur === "tr" ? num(fmtInt(n)) + " FM işçisi / " + num(fmtInt(m)) + " işçi"
-         : cur === "en" ? num(fmtInt(n)) + " OT workers of " + num(fmtInt(m))
-         : num(fmtInt(n)) + " عامل أوفر من " + num(fmtInt(m)) + " عامل";
+         : num(fmtInt(n)) + " OT workers of " + num(fmtInt(m));
   }
   function subWrkTot(n, days) {
     return cur === "tr" ? "toplam " + num(fmtInt(n)) + " — " + num(fmtInt(days)) + " gün"
-         : cur === "en" ? "total " + num(fmtInt(n)) + " over " + num(fmtInt(days)) + " days"
-         : "إجمالي " + num(fmtInt(n)) + " على " + num(fmtInt(days)) + " أيام";
+         : "total " + num(fmtInt(n)) + " over " + num(fmtInt(days)) + " days";
   }
   /* R34: overtime told in worker counts — the owner records basic-time
      workers in Daily Data and overtime workers in the OT sheet */
   function subOtWrk(n, m) {
     return cur === "tr" ? num(fmtInt(n)) + " FM işçisi / " + num(fmtInt(m)) + " işçi"
-         : cur === "en" ? num(fmtInt(n)) + " OT workers of " + num(fmtInt(m))
-         : num(fmtInt(n)) + " عامل أوفر من " + num(fmtInt(m)) + " عامل";
+         : num(fmtInt(n)) + " OT workers of " + num(fmtInt(m));
   }
   function subWrkTot(n, days) {
     return cur === "tr" ? "toplam " + num(fmtInt(n)) + " — " + num(fmtInt(days)) + " gün"
-         : cur === "en" ? "total " + num(fmtInt(n)) + " over " + num(fmtInt(days)) + " days"
-         : "إجمالي " + num(fmtInt(n)) + " على " + num(fmtInt(days)) + " أيام";
+         : "total " + num(fmtInt(n)) + " over " + num(fmtInt(days)) + " days";
   }
   function subAbsentWorkers(n) {
     return cur === "tr" ? num(fmtInt(n)) + " işçi devamsız"
-         : cur === "en" ? num(fmtInt(n)) + " workers absent"
-         : 'غياب ' + num(fmtInt(n)) + " عامل";
+         : num(fmtInt(n)) + " workers absent";
   }
   function subBestLine(line, actual) {
     return cur === "tr" ? "Hat " + num(line) + " · gerçekleşen " + num(fmtInt(actual))
-         : cur === "en" ? "Line " + num(line) + " · actual " + num(fmtInt(actual))
-         : 'خط ' + num(line) + " · فعلي " + num(fmtInt(actual));
+         : "Line " + num(line) + " · actual " + num(fmtInt(actual));
   }
   /* round 12: sub-line for the "best machine by efficiency" KPI —
      machine number + its produced/available minutes */
   function subBestMachine(mach, mp, cap) {
     return cur === "tr" ? "Makine " + num(mach) + " · " + num(fmtInt(mp)) + " / " + num(fmtInt(cap)) + " dk"
-         : cur === "en" ? "Machine " + num(mach) + " · " + num(fmtInt(mp)) + " / " + num(fmtInt(cap)) + " min"
-         : 'ماكينة ' + num(mach) + " · " + num(fmtInt(mp)) + " من " + num(fmtInt(cap)) + " دقيقة";
+         : "Machine " + num(mach) + " · " + num(fmtInt(mp)) + " / " + num(fmtInt(cap)) + " min";
   }
   function subOfAvail(n) {
     return cur === "tr" ? num(fmtInt(n)) + " dk kapasiteden"
-         : cur === "en" ? "out of " + num(fmtInt(n)) + " available"
-         : 'من أصل ' + num(fmtInt(n)) + " متاحة";
+         : "out of " + num(fmtInt(n)) + " available";
   }
   function subSecOutput(n) {
     return cur === "tr" ? "Bölüm üretimi " + num(fmtInt(n)) + " adet"
-         : cur === "en" ? "Sections output " + num(fmtInt(n)) + " pcs"
-         : 'إنتاج الأقسام ' + num(fmtInt(n)) + " قطعة";
+         : "Sections output " + num(fmtInt(n)) + " pcs";
   }
   function subInclOtPcs(n) {
     return cur === "tr" ? num(fmtInt(n)) + " adet FM üretimi içerir"
-         : cur === "en" ? "includes " + num(fmtInt(n)) + " OT pieces"
-         : 'يشمل ' + num(fmtInt(n)) + " قطعة أوفر تايم";
+         : "includes " + num(fmtInt(n)) + " OT pieces";
   }
   function subProducedOf(n, m) {
     return cur === "tr" ? num(fmtInt(m)) + " dk içinden " + num(fmtInt(n)) + " dk üretildi"
-         : cur === "en" ? num(fmtInt(n)) + " produced of " + num(fmtInt(m)) + " available"
-         : num(fmtInt(n)) + " منتجة من " + num(fmtInt(m)) + " متاحة";
+         : num(fmtInt(n)) + " produced of " + num(fmtInt(m)) + " available";
   }
   function subOtSplit(a, b) {
     return cur === "tr" ? num(fmtInt(a)) + " dk FM çizelgeleri + " + num(fmtInt(b)) + " dk cep makineleri"
-         : cur === "en" ? "incl. " + num(fmtInt(a)) + " from OT sheets + " + num(fmtInt(b)) + " from pocket machines"
-         : 'تشمل ' + num(fmtInt(a)) + " أوفر شيتات + " + num(fmtInt(b)) + " ماكينات جيوب";
+         : "incl. " + num(fmtInt(a)) + " from OT sheets + " + num(fmtInt(b)) + " from pocket machines";
   }
   function subMinOf(n, m) {
     return cur === "tr" ? num(fmtInt(n)) + " dk / " + num(fmtInt(m)) + " dk kapasite"
-         : cur === "en" ? num(fmtInt(n)) + " minutes of " + num(fmtInt(m)) + " available"
-         : num(fmtInt(n)) + " دقيقة من " + num(fmtInt(m)) + " متاحة";
+         : num(fmtInt(n)) + " minutes of " + num(fmtInt(m)) + " available";
   }
   /* efficiency as a sub-line under a plain-minutes KPI (percentage stays separate) */
   function subEffOf(eff) {
     if (eff == null || !isFinite(eff)) return "";
     var p = pctV(eff * 100, 1);
     return cur === "tr" ? "Verim " + num(p)
-         : cur === "en" ? "Efficiency " + num(p)
-         : "الكفاءة " + num(p);
+         : "Efficiency " + num(p);
   }
   function subPeakDay(wdName, dateShort) {
-    return cur === "ar" ? "يوم " + wdName + " " + num(dateShort) : wdName + " " + num(dateShort);
+    return wdName + " " + num(dateShort);
   }
-  function subOtMin(n) { return fmtInt(n) + (cur === "tr" ? " dk FM" : (cur === "en" ? " OT minutes" : " دقيقة أوفر")); }
-  function subMinRec(n) { return fmtInt(n) + (cur === "tr" ? " dk" : (cur === "en" ? " min" : " دقيقة")); }
+  function subOtMin(n) { return fmtInt(n) + (cur === "tr" ? " dk FM" : " OT minutes"); }
+  function subMinRec(n) { return fmtInt(n) + (cur === "tr" ? " dk" : " min"); }
   function heroChip(total, days) {
     return cur === "tr" ? "Toplam gerçek <b>" + fmtInt(total) + "</b> · " + days + " gün"
-         : cur === "en" ? "Total actual <b>" + fmtInt(total) + "</b> · " + days + " days"
-         : 'إجمالي الفعلي <b>' + fmtInt(total) + "</b> · " + days + " يوم";
+         : "Total actual <b>" + fmtInt(total) + "</b> · " + days + " days";
   }
   function dateChip(days) {
-    return cur === "tr" ? " · " + days + " gün" : (cur === "en" ? " · " + days + " days" : " · " + days + " يوم");
+    return cur === "tr" ? " · " + days + " gün" : " · " + days + " days";
   }
 
   /* ---------- toast templates ---------- */
-  function toastCsv(name) { return cur === "tr" ? name + " dışa aktarıldı" : (cur === "en" ? "Exported " + name : "تم تصدير " + name); }
-  function toastReadErr(n) { return cur === "tr" ? n + " dosya okunamadı" : (cur === "en" ? "Couldn't read " + n + " file(s)" : "تعذر قراءة " + n + " ملف"); }
+  function toastCsv(name) { return cur === "tr" ? name + " dışa aktarıldı" : "Exported " + name; }
+  function toastReadErr(n) { return cur === "tr" ? n + " dosya okunamadı" : "Couldn't read " + n + " file(s)"; }
   function toastParsed(n) {
     return cur === "tr" ? n + " dosya analiz edildi — veriler güncel"
-         : cur === "en" ? "Analyzed " + n + " file(s) — data is now up to date"
-         : "تم تحليل " + n + " ملف — البيانات محدثة الآن";
+         : "Analyzed " + n + " file(s) — data is now up to date";
   }
 
   /* ---------- DOM translation (data-i18n, data-i18n-title, optional :0/:1/:2 index) ---------- */
@@ -285,13 +261,14 @@ var I18N = (function () {
   /* ---------- language switching ---------- */
   function onChange(fn) { listeners.push(fn); }
   function setLang(l, silent) {
-    if (l !== "ar" && l !== "en" && l !== "tr") l = "ar";
+    /* R44: Arabic removed — EN + TR only */
+    if (l !== "en" && l !== "tr") l = "en";
     if (l === cur) { applyDOM(); return; }
     cur = l;
     try { localStorage.setItem(LS_KEY, l); } catch (e) { }
     var de = document.documentElement;
     de.setAttribute("lang", l);
-    de.setAttribute("dir", dir());
+    de.setAttribute("dir", "ltr");   /* R44: EN+TR — always LTR */
     document.title = t("doc_title");
     if (window.MaribCore && MaribCore.utils) {
       MaribCore.utils.fmtInt = function (n) { return fmtInt(n); };
@@ -306,7 +283,8 @@ var I18N = (function () {
     var saved = null;
     try { saved = localStorage.getItem(LS_KEY); } catch (e) { }
     if (saved === cur) { applyDOM(); return; }
-    if (saved === "en" || saved === "tr") setLang(saved, true); else applyDOM();
+    /* R44: legacy "ar" (or anything else) migrates to English */
+    setLang(saved === "tr" ? "tr" : "en", true);
   }
 
   /* auto-restore at load (scripts sit at end of <body>, DOM already parsed) */

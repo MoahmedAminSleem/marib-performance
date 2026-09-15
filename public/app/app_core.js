@@ -142,7 +142,19 @@ var MaribCore = (function () {
   function isoDayOfWeek(iso) { return isoToDate(iso).getUTCDay(); } // 0=Sun
   var AR_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
   var AR_DAYS = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
-  function isoMonthLabel(iso) { return AR_MONTHS[+iso.slice(5, 7) - 1] + " " + iso.slice(0, 4); }
+  /* R44: UI months follow the site language — AR_MONTHS stays for parsing only */
+  var EN_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var EN_DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  function langMonthName(m) {
+    var key = "m_" + (m < 10 ? "0" + m : "" + m);
+    if (window.I18N) { var v = null; try { v = I18N.t(key); } catch (e) { } if (v && v !== key) return v; }
+    return EN_MONTHS[m - 1];
+  }
+  function langDayName(dw) {
+    if (window.I18N && I18N.dayShort) { try { return I18N.dayShort(dw); } catch (e) { } }
+    return EN_DAYS[dw];
+  }
+  function isoMonthLabel(iso) { return langMonthName(+iso.slice(5, 7)) + " " + iso.slice(0, 4); }
   function isoShort(iso) { return (+iso.slice(8, 10)) + "/" + (+iso.slice(5, 7)); }
   function weekStartISO(iso) { // Saturday-start week (regional convention)
     var dow = isoDayOfWeek(iso); // 0 Sun .. 6 Sat
@@ -218,7 +230,7 @@ var MaribCore = (function () {
     var tables = { dd: [], ot: [], pm: [], att: [], lo: [] };
     var wb;
     try { wb = XLSX.read(data, { type: "array", cellDates: false, cellText: false }); }
-    catch (e) { report.errors.push("تعذر فتح الملف كملف إكسل: " + e.message); return tables; }
+    catch (e) { report.errors.push("Couldn't open the file as an Excel workbook: " + e.message); return tables; }
 
     var sheetTargets = [
       { key: "dd", names: cfg.sheets.daily,  amap: aliasMap(cfg.columns.daily) },
@@ -236,9 +248,9 @@ var MaribCore = (function () {
       if (sheetName == null) { report.sheetsMissing.push(t.key); return; }
       var ws = wb.Sheets[sheetName];
       var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
-      if (!rows.length) { report.warnings.push("شيت \"" + sheetName + "\" فارغ."); return; }
+      if (!rows.length) { report.warnings.push("Sheet \"" + sheetName + "\" is empty."); return; }
       var hIdx = findHeader(rows, t.amap);
-      if (hIdx < 0) { report.warnings.push("لم أجد صف العناوين في شيت \"" + sheetName + "\"."); return; }
+      if (hIdx < 0) { report.warnings.push("Header row not found in sheet \"" + sheetName + "\"."); return; }
       var header = rows[hIdx];
 
       if (t.key === "lo") { parseLineOutput(rows, hIdx, tables.lo, cfg, report); return; }
@@ -269,7 +281,7 @@ var MaribCore = (function () {
       else if (/^\d+$/.test(k)) lineCols.push({ j: j, line: k });
       else { var m = k.match(/^target(\d+)$/); if (m) targetCols.push({ j: j, line: m[1] }); }
     }
-    if (dateCol < 0) { report.warnings.push("شيت Line Output بدون عمود تاريخ."); return; }
+    if (dateCol < 0) { report.warnings.push("Line Output sheet has no date column."); return; }
     var tgtByLine = {};
     targetCols.forEach(function (tc) { tgtByLine[tc.line] = tc.j; });
     for (var ri = hIdx + 1; ri < rows.length; ri++) {
@@ -454,7 +466,7 @@ var MaribCore = (function () {
       var s = daily[d];
       var tot = s.ddMinAvail + s.otAvail + s.pmMinAvail;
       return {
-        date: d, label: isoShort(d), weekday: AR_DAYS[isoDayOfWeek(d)],
+        date: d, label: isoShort(d), weekday: langDayName(isoDayOfWeek(d)),
         achv: s.loT ? s.loA / s.loT : null,
         loA: s.loA, loT: s.loT,
         otPct: (s.ddAttW + s.otAttW) ? s.otAttW / (s.ddAttW + s.otAttW) : null, /* R34: OT workers / total workers */
@@ -672,7 +684,7 @@ var MaribCore = (function () {
     });
     k.pmDaily = Object.keys(pmDaily).sort().map(function (d) {
       var s = pmDaily[d], cap = s.minAvail + s.otMin;
-      return { date: d, label: isoShort(d), weekday: AR_DAYS[isoDayOfWeek(d)], target: s.target,
+      return { date: d, label: isoShort(d), weekday: langDayName(isoDayOfWeek(d)), target: s.target,
         actual: s.actual + s.otProd, minAvail: s.minAvail, otMin: s.otMin, minProd: s.minProd,
         cap: cap, eff: cap ? s.minProd / cap : null, rows: s.rows };
     });
@@ -720,7 +732,7 @@ var MaribCore = (function () {
     });
     k.byDow = Object.keys(byDow).map(function (dw) {
       var b = byDow[dw];
-      return { name: AR_DAYS[dw], order: +dw, pct: b.count ? b.score / b.count : null, count: b.count };
+      return { name: langDayName(dw), order: +dw, pct: b.count ? b.score / b.count : null, count: b.count };
     }).sort(function (a, b) { return a.order - b.order; });
 
     var heat = {};
@@ -731,7 +743,7 @@ var MaribCore = (function () {
     });
     k.heatmap = Object.keys(heat).map(function (key) {
       var h = heat[key];
-      return { week: h.week, dw: h.dw, label: AR_DAYS[h.dw], pct: h.count ? h.score / h.count : null, count: h.count };
+      return { week: h.week, dw: h.dw, label: langDayName(h.dw), pct: h.count ? h.score / h.count : null, count: h.count };
     });
     k.weeks = Object.keys(heat).map(function (key) { return heat[key].week; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort();
 

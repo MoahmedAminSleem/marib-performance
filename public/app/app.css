@@ -2120,6 +2120,29 @@ body.pg-mhome .fgroup[data-fg="dates"]{display:none !important}
   transform:translateY(-1px);
 }
 
+
+/* ============ R44: لوجوهات سريعة جنب زرار الصفحة الرئيسية ============
+   إعدادات / بيانات / مستخدمين — بيظهروا في الصفحة الرئيسية بس
+   (body.pg-home من goToPage). شريط العنوان غامق فالأيقونات فاتحة. */
+.tb-utils{display:none;align-items:center;gap:7px}
+body.pg-home .tb-utils{display:flex}
+.tb-mini{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:10px;padding:0;
+  background:rgba(217,168,107,.08);border:1px solid rgba(217,168,107,.28);
+  color:#D9A86B;transition:.2s;
+}
+.tb-mini svg{width:17px;height:17px}
+.tb-mini:hover{background:rgba(217,168,107,.2);border-color:rgba(217,168,107,.6);color:#F1D9A8;transform:translateY(-1px)}
+.tb-mini:active{transform:scale(.95)}
+@media (max-width:640px){ .tb-utils{gap:5px} .tb-mini{width:31px;height:31px} }
+
+/* ============ R44: أوفرلاي البيانات (من البوابة / الاتزان) ============ */
+.dp-data-panel{width:min(560px,94vw)}
+.dp-data-panel .dp-body{display:flex;flex-direction:column;gap:16px}
+.dp-data-panel .dp-months h4{font-size:13.5px;font-weight:800;margin-bottom:8px}
+.dp-data-panel .card-head{margin:0 0 8px;padding:9px 12px 8px;border-radius:10px 10px 0 0}
+
 /* ---------- 1) mode gate — تحليل الأداء / الاتزان ---------- */
 .mgate{
   position:fixed;inset:0;z-index:340;
@@ -2309,18 +2332,25 @@ body.mp-on .shell{display:none}
 .mp-thead .th-num:last-child{width:76px}
 
 /* ---------- tree rows ---------- */
-.mp-tree{display:flex;flex-direction:column;gap:3px}
+.mp-tree{display:flex;flex-direction:column;gap:5px}
 .mpr{
   display:flex;align-items:center;gap:8px;
   padding:7px 12px 7px 10px;border-radius:11px;
   background:rgba(255,255,255,.022);
   border:1px solid transparent;
-  padding-inline-start:calc(var(--d,0) * 24px + 12px);
+  padding-inline-start:calc(var(--d,0) * 34px + 12px);   /* R44: مسافة أعمق لكل مستوى */
   transition:background .18s,border-color .18s;
   user-select:none;
 }
 .mpr:hover{background:rgba(217,168,107,.05);border-color:rgba(217,168,107,.16)}
 .mpr.in{animation:mpRow .3s cubic-bezier(.2,.8,.3,1) backwards}
+/* R44: فاصل بين الأب وأبنائه — بلوك الأبناء بينزل تحت شوية وخط ذهبي رفيع
+   يوصّل الأب بأول ابن (العين تفرقهم من أول نظرة) */
+.mp-gap{
+  height:11px;flex:none;pointer-events:none;
+  margin-inline-start:calc(var(--d,0) * 34px + 20px);
+  border-inline-start:2px solid rgba(217,168,107,.22);
+}
 @keyframes mpRow{from{opacity:0;transform:translateY(7px)}to{opacity:1}}
 
 /* chevron */
@@ -2414,7 +2444,7 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
 
 /* employee detail card */
 .mpr-det{
-  margin-inline-start:calc(var(--d,0) * 24px + 46px);
+  margin-inline-start:calc(var(--d,0) * 34px + 46px);
   margin-block:2px 8px;
   background:rgba(255,255,255,.025);
   border:1px solid var(--brd-soft);border-radius:var(--r-sm);
@@ -2634,8 +2664,8 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
   .mp-thead .th-num{width:56px}
   .mpr .mn{width:56px}
   .mpr .mv{width:64px}
-  .mpr-det{margin-inline-start:calc(var(--d,0) * 18px + 40px)}
-  .mpr{padding-inline-start:calc(var(--d,0) * 18px + 10px)}
+  .mpr-det{margin-inline-start:calc(var(--d,0) * 26px + 40px)}
+  .mpr{padding-inline-start:calc(var(--d,0) * 26px + 10px)}
 }
 
 /* ============================================================
@@ -2769,589 +2799,269 @@ html[dir="rtl"] .mpr .tw.open svg{transform:rotate(180deg)}
 .mpr.vn .mo{width:30px;height:30px}
 
 /* ============================================================
-   R42 — THEME: النشاط الموثوق (Professional Energy)
-   الأساسي #1E3A8A · الحيوي #FF6B35 · الخلفية #F8FAFC · النص #0F172A
+   R44 — THEME: Light (الفاتح)
+   الأشرطة والعناوين غامقة (#14213D) والكلام عليها فاتح ·
+   الخلفية فاتحة (#F2F4F8) والنص غامق (#1F2937) · اللوجو الأبيض
+   باين على الشريط الغامق. ثيم فاتح واحد بدل التلاتة اللي فاتت.
    ============================================================ */
-html[data-theme="energy"]{
-  --bg:#F8FAFC;
-  --shell:rgba(255,255,255,.9);
-  --card:linear-gradient(160deg,#FFFFFF 0%,#F1F5F9 100%);
+html[data-theme="light"]{
+  --bg:#F2F4F8;
+  --shell:rgba(255,255,255,.94);
+  --card:linear-gradient(160deg,#FFFFFF 0%,#F7F9FC 100%);
   --card-solid:#FFFFFF;
-  --brd:rgba(30,58,138,.20);
-  --brd-soft:rgba(15,23,42,.09);
-  --brd-hov:rgba(255,107,53,.50);
-  --txt:#0F172A;
-  --muted:#475569;
-  --faint:#64748B;
-  --accent:#1E3A8A;
-  --accent-2:#FF6B35;
-  --accent-soft:rgba(255,107,53,.10);
-  --accent-glow:rgba(30,58,138,.16);
-  --good:#059669;  --good-soft:rgba(5,150,105,.10);
-  --warn:#D97706;  --warn-soft:rgba(217,119,6,.12);
-  --bad:#DC2626;   --bad-soft:rgba(220,38,38,.10);
+  --brd:rgba(20,33,61,.24);
+  --brd-soft:rgba(15,23,42,.13);
+  --brd-hov:rgba(176,126,63,.75);
+  --txt:#1F2937;
+  --muted:#3D4A5C;
+  --faint:#5B6472;
+  --accent:#1D3A5F;
+  --accent-2:#A66B24;
+  --accent-soft:rgba(217,168,107,.16);
+  --accent-glow:rgba(20,33,61,.13);
+  --good:#0B7A4B;  --good-soft:rgba(11,122,75,.11);
+  --warn:#B45309;  --warn-soft:rgba(180,83,9,.12);
+  --bad:#C0321F;   --bad-soft:rgba(192,50,31,.10);
   --r-lg:22px; --r-md:16px; --r-sm:11px;
   --sh:0 14px 40px rgba(15,23,42,.10);
-  --sh-hov:0 20px 50px rgba(15,23,42,.14), 0 0 0 1px var(--brd-hov), 0 8px 34px var(--accent-glow);
-  --chart-muted:#475569; --chart-faint:#64748B; --chart-txt:#0F172A;
-  --chart-grid:rgba(30,58,138,.10); --chart-halo:#FFFFFF; --chart-ink:#F8FAFC;
-  --chart-1:#1E3A8A; --chart-2:#FF6B35; --chart-3:#3B82F6; --chart-4:#059669;
-  --chart-5:#F59E0B; --chart-6:#8B5CF6; --chart-7:#0EA5E9; --chart-8:#EC4899;
-  --lg-bg:#EEF2F8; --lg-denim:#FFFFFF; --lg-denim2:#F1F5F9;
-  --lg-input:#FFFFFF; --lg-input2:#F8FAFC;
-  --lg-tan:#1E3A8A; --lg-tan2:#FF6B35; --lg-tan3:#1E40AF;
-  --lg-cream:#0F172A; --lg-gold:#1E3A8A; --lg-thread:#FF6B35;
-  --lg-txt:#0F172A; --lg-dim:#64748B;
+  --sh-hov:0 20px 50px rgba(15,23,42,.15), 0 0 0 1px var(--brd-hov), 0 8px 34px var(--accent-glow);
+  --chart-muted:#3D4A5C; --chart-faint:#5B6472; --chart-txt:#1F2937;
+  --chart-grid:rgba(20,33,61,.12); --chart-halo:#FFFFFF; --chart-ink:#F2F4F8;
+  --chart-1:#1D3A5F; --chart-2:#B07E3F; --chart-3:#2E6E8E; --chart-4:#0B7A4B;
+  --chart-5:#8A5A2B; --chart-6:#5B4E8C; --chart-7:#23677F; --chart-8:#A34A2E;
+  /* شاشة الدخولتفضل دنيم كلاسيك — مفيش --lg-* overrides */
 }
-html[data-theme="energy"] body{
-  background:
-    radial-gradient(1050px 520px at 88% -12%, rgba(255,107,53,.07), transparent 58%),
-    radial-gradient(880px 460px at 6% 108%, rgba(30,58,138,.06), transparent 55%),
-    #F8FAFC;
-  background-attachment:fixed;
-}
-html[data-theme="energy"] ::selection{background:rgba(255,107,53,.30)}
-html[data-theme="energy"] .bg-fx::before{background:radial-gradient(circle,rgba(30,58,138,.06),transparent 62%)}
-html[data-theme="energy"] .bg-fx::after{background:radial-gradient(circle,rgba(255,107,53,.05),transparent 60%)}
-html[data-theme="energy"] .shell{border:1px solid rgba(30,58,138,.16);box-shadow:var(--sh)}
-html[data-theme="energy"] .shell::before{background:none}
-html[data-theme="energy"] .topbar{
-  background:linear-gradient(180deg,#FFFFFF,#F8FAFC);
-  border-bottom:1px solid rgba(30,58,138,.16);
-}
-html[data-theme="energy"] .brand .logo{filter:drop-shadow(0 4px 14px rgba(30,58,138,.18))}
-html[data-theme="energy"] .live{border-color:rgba(30,58,138,.22)}
-html[data-theme="energy"] .live i{background:#FF6B35}
-html[data-theme="energy"] .lang-sw .sw-btn.on{
-  color:#FFFFFF;background:linear-gradient(175deg,#1E3A8A,#16276B);
-}
-html[data-theme="energy"] .lang-sw .sw-btn:hover{color:var(--accent);background:rgba(30,58,138,.08)}
-html[data-theme="energy"] .card::before{background:linear-gradient(160deg,rgba(30,58,138,.05),transparent 40%)}
-html[data-theme="energy"] .card:hover::after{background:radial-gradient(420px 180px at var(--mx,50%) var(--my,50%),rgba(255,107,53,.10),transparent 60%)}
-html[data-theme="energy"] .kpi::before{background:linear-gradient(180deg,rgba(30,58,138,.07),transparent)}
-html[data-theme="energy"] #tip{background:#FFFFFF;border:1px solid rgba(30,58,138,.18);color:#0F172A;box-shadow:0 16px 40px rgba(15,23,42,.16)}
-html[data-theme="energy"] #tip .drill-hint{color:#FF6B35}
-html[data-theme="energy"] #toast{background:#0F172A;color:#F8FAFC;border:1px solid rgba(255,107,53,.4)}
-html[data-theme="energy"] #bootVeil{background:#F8FAFC}
-html[data-theme="energy"] #bootVeil .bv-spin{border-color:rgba(30,58,138,.2);border-top-color:#1E3A8A}
-html[data-theme="energy"] .content::-webkit-scrollbar-thumb{background:rgba(30,58,138,.22)}
-html[data-theme="energy"] .content::-webkit-scrollbar-thumb:hover{background:rgba(30,58,138,.38)}
-html[data-theme="energy"] .nav a.on{background:rgba(30,58,138,.10);color:#1E3A8A}
-html[data-theme="energy"] .nav a:hover{background:rgba(30,58,138,.06)}
-html[data-theme="energy"] .mpm-card{background:#FFFFFF;border:1px solid rgba(30,58,138,.2)}
-html[data-theme="energy"] .mpm-ok{background:linear-gradient(175deg,#1E3A8A,#16276B);color:#fff}
-html[data-theme="energy"] .mp-top{background:linear-gradient(180deg,#FFFFFF,#F8FAFC);border-bottom:1px solid rgba(30,58,138,.16)}
-html[data-theme="energy"] .mph-card{background:#FFFFFF;border:1px solid rgba(30,58,138,.14)}
-html[data-theme="energy"] .mph-card:hover{border-color:rgba(255,107,53,.5)}
-html[data-theme="energy"] .mg-card{background:#FFFFFF;border:1px solid rgba(30,58,138,.18)}
-html[data-theme="energy"] .mg-in h2{color:#0F172A}
-html[data-theme="energy"] .mp-tip{background:#0F172A;color:#F8FAFC;border:1px solid rgba(255,107,53,.35)}
-html[data-theme="energy"] .mp-search:focus{border-color:#1E3A8A}
-html[data-theme="energy"] .mp-tab.on{background:#1E3A8A;color:#fff}
-html[data-theme="energy"] .mp-act{background:#1E3A8A;color:#fff;border-color:#1E3A8A}
-html[data-theme="energy"] .mp-act:hover{background:#16276B}
-html[data-theme="energy"] .dp-panel,.drill-panel{background:#FFFFFF;border:1px solid rgba(30,58,138,.2)}
-html[data-theme="energy"] .dt-btn:hover,.data-btn:hover{border-color:#FF6B35;color:#1E3A8A}
-html[data-theme="energy"] .att-tab.on{background:#1E3A8A;color:#fff}
-html[data-theme="energy"] .set-pop .set-panel{background:#FFFFFF}
 
-/* ============================================================
-   R42 — THEME: الإيجابية والنمو (Modern & Friendly)
-   الأساسي #0D9488 · الحيوي #F59E0B · الخلفية #FAFAFA · النص #18181B
-   ============================================================ */
-html[data-theme="growth"]{
-  --bg:#FAFAFA;
-  --shell:rgba(255,255,255,.9);
-  --card:linear-gradient(160deg,#FFFFFF 0%,#F7F7F8 100%);
-  --card-solid:#FFFFFF;
-  --brd:rgba(13,148,136,.22);
-  --brd-soft:rgba(24,24,27,.09);
-  --brd-hov:rgba(245,158,11,.50);
-  --txt:#18181B;
-  --muted:#52525B;
-  --faint:#71717A;
-  --accent:#0D9488;
-  --accent-2:#F59E0B;
-  --accent-soft:rgba(245,158,11,.10);
-  --accent-glow:rgba(13,148,136,.15);
-  --good:#059669;  --good-soft:rgba(5,150,105,.10);
-  --warn:#D97706;  --warn-soft:rgba(217,119,6,.12);
-  --bad:#DC2626;   --bad-soft:rgba(220,38,38,.10);
-  --r-lg:22px; --r-md:16px; --r-sm:11px;
-  --sh:0 14px 40px rgba(24,24,27,.09);
-  --sh-hov:0 20px 50px rgba(24,24,27,.13), 0 0 0 1px var(--brd-hov), 0 8px 34px var(--accent-glow);
-  --chart-muted:#52525B; --chart-faint:#71717A; --chart-txt:#18181B;
-  --chart-grid:rgba(13,148,136,.11); --chart-halo:#FFFFFF; --chart-ink:#FAFAFA;
-  --chart-1:#0D9488; --chart-2:#F59E0B; --chart-3:#14B8A6; --chart-4:#65A30D;
-  --chart-5:#F97316; --chart-6:#8B5CF6; --chart-7:#0EA5E9; --chart-8:#EC4899;
-  --lg-bg:#EDF7F6; --lg-denim:#FFFFFF; --lg-denim2:#F2FAF9;
-  --lg-input:#FFFFFF; --lg-input2:#FAFAFA;
-  --lg-tan:#0D9488; --lg-tan2:#F59E0B; --lg-tan3:#0F766E;
-  --lg-cream:#18181B; --lg-gold:#0D9488; --lg-thread:#F59E0B;
-  --lg-txt:#18181B; --lg-dim:#71717A;
-}
-html[data-theme="growth"] body{
-  background:
-    radial-gradient(1050px 520px at 88% -12%, rgba(13,148,136,.07), transparent 58%),
-    radial-gradient(880px 460px at 6% 108%, rgba(245,158,11,.05), transparent 55%),
-    #FAFAFA;
-  background-attachment:fixed;
-}
-html[data-theme="growth"] ::selection{background:rgba(13,148,136,.28)}
-html[data-theme="growth"] .bg-fx::before{background:radial-gradient(circle,rgba(13,148,136,.06),transparent 62%)}
-html[data-theme="growth"] .bg-fx::after{background:radial-gradient(circle,rgba(245,158,11,.05),transparent 60%)}
-html[data-theme="growth"] .shell{border:1px solid rgba(13,148,136,.16);box-shadow:var(--sh)}
-html[data-theme="growth"] .shell::before{background:none}
-html[data-theme="growth"] .topbar{
-  background:linear-gradient(180deg,#FFFFFF,#FAFAFA);
-  border-bottom:1px solid rgba(13,148,136,.18);
-}
-html[data-theme="growth"] .brand .logo{filter:drop-shadow(0 4px 14px rgba(13,148,136,.18))}
-html[data-theme="growth"] .live{border-color:rgba(13,148,136,.24)}
-html[data-theme="growth"] .live i{background:#F59E0B}
-html[data-theme="growth"] .lang-sw .sw-btn.on{
-  color:#FFFFFF;background:linear-gradient(175deg,#0D9488,#0B7C72);
-}
-html[data-theme="growth"] .lang-sw .sw-btn:hover{color:var(--accent);background:rgba(13,148,136,.08)}
-html[data-theme="growth"] .card::before{background:linear-gradient(160deg,rgba(13,148,136,.05),transparent 40%)}
-html[data-theme="growth"] .card:hover::after{background:radial-gradient(420px 180px at var(--mx,50%) var(--my,50%),rgba(245,158,11,.10),transparent 60%)}
-html[data-theme="growth"] .kpi::before{background:linear-gradient(180deg,rgba(13,148,136,.07),transparent)}
-html[data-theme="growth"] #tip{background:#FFFFFF;border:1px solid rgba(13,148,136,.2);color:#18181B;box-shadow:0 16px 40px rgba(24,24,27,.14)}
-html[data-theme="growth"] #tip .drill-hint{color:#B45309}
-html[data-theme="growth"] #toast{background:#18181B;color:#FAFAFA;border:1px solid rgba(245,158,11,.4)}
-html[data-theme="growth"] #bootVeil{background:#FAFAFA}
-html[data-theme="growth"] #bootVeil .bv-spin{border-color:rgba(13,148,136,.2);border-top-color:#0D9488}
-html[data-theme="growth"] .content::-webkit-scrollbar-thumb{background:rgba(13,148,136,.24)}
-html[data-theme="growth"] .content::-webkit-scrollbar-thumb:hover{background:rgba(13,148,136,.4)}
-html[data-theme="growth"] .nav a.on{background:rgba(13,148,136,.10);color:#0B7C72}
-html[data-theme="growth"] .nav a:hover{background:rgba(13,148,136,.06)}
-html[data-theme="growth"] .mpm-card{background:#FFFFFF;border:1px solid rgba(13,148,136,.22)}
-html[data-theme="growth"] .mpm-ok{background:linear-gradient(175deg,#0D9488,#0B7C72);color:#fff}
-html[data-theme="growth"] .mp-top{background:linear-gradient(180deg,#FFFFFF,#FAFAFA);border-bottom:1px solid rgba(13,148,136,.18)}
-html[data-theme="growth"] .mph-card{background:#FFFFFF;border:1px solid rgba(13,148,136,.14)}
-html[data-theme="growth"] .mph-card:hover{border-color:rgba(245,158,11,.5)}
-html[data-theme="growth"] .mg-card{background:#FFFFFF;border:1px solid rgba(13,148,136,.18)}
-html[data-theme="growth"] .mg-in h2{color:#18181B}
-html[data-theme="growth"] .mp-tip{background:#18181B;color:#FAFAFA;border:1px solid rgba(245,158,11,.35)}
-html[data-theme="growth"] .mp-search:focus{border-color:#0D9488}
-html[data-theme="growth"] .mp-tab.on{background:#0D9488;color:#fff}
-html[data-theme="growth"] .mp-act{background:#0D9488;color:#fff;border-color:#0D9488}
-html[data-theme="growth"] .mp-act:hover{background:#0B7C72}
-html[data-theme="growth"] .dp-panel,.drill-panel{background:#FFFFFF;border:1px solid rgba(13,148,136,.2)}
-html[data-theme="growth"] .dt-btn:hover,.data-btn:hover{border-color:#F59E0B;color:#0B7C72}
-html[data-theme="growth"] .att-tab.on{background:#0D9488;color:#fff}
-html[data-theme="growth"] .set-pop .set-panel{background:#FFFFFF}
-
-/* ============================================================
-   R42 — THEME: الابتكار المشرق (Creative & Vibrant)
-   الأساسي #4F46E5 · الحيوي #EC4899 · الخلفية #F9FAFB · النص #111827
-   ============================================================ */
-html[data-theme="creative"]{
-  --bg:#F9FAFB;
-  --shell:rgba(255,255,255,.9);
-  --card:linear-gradient(160deg,#FFFFFF 0%,#F4F5F9 100%);
-  --card-solid:#FFFFFF;
-  --brd:rgba(79,70,229,.20);
-  --brd-soft:rgba(17,24,39,.09);
-  --brd-hov:rgba(236,72,153,.50);
-  --txt:#111827;
-  --muted:#4B5563;
-  --faint:#6B7280;
-  --accent:#4F46E5;
-  --accent-2:#EC4899;
-  --accent-soft:rgba(236,72,153,.10);
-  --accent-glow:rgba(79,70,229,.15);
-  --good:#059669;  --good-soft:rgba(5,150,105,.10);
-  --warn:#D97706;  --warn-soft:rgba(217,119,6,.12);
-  --bad:#DC2626;   --bad-soft:rgba(220,38,38,.10);
-  --r-lg:22px; --r-md:16px; --r-sm:11px;
-  --sh:0 14px 40px rgba(17,24,39,.10);
-  --sh-hov:0 20px 50px rgba(17,24,39,.14), 0 0 0 1px var(--brd-hov), 0 8px 34px var(--accent-glow);
-  --chart-muted:#4B5563; --chart-faint:#6B7280; --chart-txt:#111827;
-  --chart-grid:rgba(79,70,229,.10); --chart-halo:#FFFFFF; --chart-ink:#F9FAFB;
-  --chart-1:#4F46E5; --chart-2:#EC4899; --chart-3:#8B5CF6; --chart-4:#06B6D4;
-  --chart-5:#F59E0B; --chart-6:#10B981; --chart-7:#3B82F6; --chart-8:#F43F5E;
-  --lg-bg:#EEF0FB; --lg-denim:#FFFFFF; --lg-denim2:#F4F5F9;
-  --lg-input:#FFFFFF; --lg-input2:#F9FAFB;
-  --lg-tan:#4F46E5; --lg-tan2:#EC4899; --lg-tan3:#4338CA;
-  --lg-cream:#111827; --lg-gold:#4F46E5; --lg-thread:#EC4899;
-  --lg-txt:#111827; --lg-dim:#6B7280;
-}
-html[data-theme="creative"] body{
-  background:
-    radial-gradient(1050px 520px at 88% -12%, rgba(79,70,229,.07), transparent 58%),
-    radial-gradient(880px 460px at 6% 108%, rgba(236,72,153,.05), transparent 55%),
-    #F9FAFB;
-  background-attachment:fixed;
-}
-html[data-theme="creative"] ::selection{background:rgba(79,70,229,.28)}
-html[data-theme="creative"] .bg-fx::before{background:radial-gradient(circle,rgba(79,70,229,.06),transparent 62%)}
-html[data-theme="creative"] .bg-fx::after{background:radial-gradient(circle,rgba(236,72,153,.05),transparent 60%)}
-html[data-theme="creative"] .shell{border:1px solid rgba(79,70,229,.16);box-shadow:var(--sh)}
-html[data-theme="creative"] .shell::before{background:none}
-html[data-theme="creative"] .topbar{
-  background:linear-gradient(180deg,#FFFFFF,#F9FAFB);
-  border-bottom:1px solid rgba(79,70,229,.18);
-}
-html[data-theme="creative"] .brand .logo{filter:drop-shadow(0 4px 14px rgba(79,70,229,.18))}
-html[data-theme="creative"] .live{border-color:rgba(79,70,229,.24)}
-html[data-theme="creative"] .live i{background:#EC4899}
-html[data-theme="creative"] .lang-sw .sw-btn.on{
-  color:#FFFFFF;background:linear-gradient(175deg,#4F46E5,#4338CA);
-}
-html[data-theme="creative"] .lang-sw .sw-btn:hover{color:var(--accent);background:rgba(79,70,229,.08)}
-html[data-theme="creative"] .card::before{background:linear-gradient(160deg,rgba(79,70,229,.05),transparent 40%)}
-html[data-theme="creative"] .card:hover::after{background:radial-gradient(420px 180px at var(--mx,50%) var(--my,50%),rgba(236,72,153,.10),transparent 60%)}
-html[data-theme="creative"] .kpi::before{background:linear-gradient(180deg,rgba(79,70,229,.07),transparent)}
-html[data-theme="creative"] #tip{background:#FFFFFF;border:1px solid rgba(79,70,229,.2);color:#111827;box-shadow:0 16px 40px rgba(17,24,39,.14)}
-html[data-theme="creative"] #tip .drill-hint{color:#BE185D}
-html[data-theme="creative"] #toast{background:#111827;color:#F9FAFB;border:1px solid rgba(236,72,153,.4)}
-html[data-theme="creative"] #bootVeil{background:#F9FAFB}
-html[data-theme="creative"] #bootVeil .bv-spin{border-color:rgba(79,70,229,.2);border-top-color:#4F46E5}
-html[data-theme="creative"] .content::-webkit-scrollbar-thumb{background:rgba(79,70,229,.24)}
-html[data-theme="creative"] .content::-webkit-scrollbar-thumb:hover{background:rgba(79,70,229,.4)}
-html[data-theme="creative"] .nav a.on{background:rgba(79,70,229,.10);color:#4338CA}
-html[data-theme="creative"] .nav a:hover{background:rgba(79,70,229,.06)}
-html[data-theme="creative"] .mpm-card{background:#FFFFFF;border:1px solid rgba(79,70,229,.22)}
-html[data-theme="creative"] .mpm-ok{background:linear-gradient(175deg,#4F46E5,#4338CA);color:#fff}
-html[data-theme="creative"] .mp-top{background:linear-gradient(180deg,#FFFFFF,#F9FAFB);border-bottom:1px solid rgba(79,70,229,.18)}
-html[data-theme="creative"] .mph-card{background:#FFFFFF;border:1px solid rgba(79,70,229,.14)}
-html[data-theme="creative"] .mph-card:hover{border-color:rgba(236,72,153,.5)}
-html[data-theme="creative"] .mg-card{background:#FFFFFF;border:1px solid rgba(79,70,229,.18)}
-html[data-theme="creative"] .mg-in h2{color:#111827}
-html[data-theme="creative"] .mp-tip{background:#111827;color:#F9FAFB;border:1px solid rgba(236,72,153,.35)}
-html[data-theme="creative"] .mp-search:focus{border-color:#4F46E5}
-html[data-theme="creative"] .mp-tab.on{background:#4F46E5;color:#fff}
-html[data-theme="creative"] .mp-act{background:#4F46E5;color:#fff;border-color:#4F46E5}
-html[data-theme="creative"] .mp-act:hover{background:#4338CA}
-html[data-theme="creative"] .dp-panel,.drill-panel{background:#FFFFFF;border:1px solid rgba(79,70,229,.2)}
-html[data-theme="creative"] .dt-btn:hover,.data-btn:hover{border-color:#EC4899;color:#4338CA}
-html[data-theme="creative"] .att-tab.on{background:#4F46E5;color:#fff}
-html[data-theme="creative"] .set-pop .set-panel{background:#FFFFFF}
-
-
-/* ============================================================
-   R42 — مكونات جديدة: شريط أدوات ثابت + combobox + تحديد متعدد +
-   صفحات الكروت + مودال التأكيد + معاينة الاستيراد + كروت الثيمات
-   ============================================================ */
-
-/* ---------- شريط الأدوات الثابت (الطلب 7): فتح/قفل الكل بيفضلوا معاك ---------- */
-.mp-tools{
-  position:sticky;top:0;z-index:30;
-  background:linear-gradient(180deg,var(--bg) 82%,transparent);
-  padding:6px 2px 10px;
-  backdrop-filter:blur(6px);
-}
-.mp-thead{
-  position:sticky;top:52px;z-index:25;
-  background:var(--card-solid);
-}
-@media (max-width:760px){ .mp-thead{top:96px} }
-
-/* ---------- أزرار الهيدر (إعدادات/بيانات) ---------- */
-.mp-hdr{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:36px;height:36px;padding:0;color:var(--muted);
-}
-.mp-hdr svg{width:19px;height:19px}
-.mp-hdr:hover{color:var(--accent-2);border-color:var(--brd-hov)}
-
-/* ---------- زرار التبديل عامل↔وظيفة ---------- */
-.mp-mini.ord{color:var(--accent-2);border-color:var(--brd-hov);font-weight:700}
-.mp-mini.ord.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-
-/* ---------- combobox الوظائف ---------- */
-.mp-combo{position:relative;display:block;flex:1}
-.mp-combo input{width:100%}
-.mc-arrow{
-  position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);
-  width:26px;height:26px;border:0;background:transparent;color:var(--muted);
-  cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:8px;
-}
-.mc-arrow svg{width:16px;height:16px;pointer-events:none}
-.mc-arrow:hover{color:var(--accent-2);background:var(--accent-soft)}
-.mc-list{
-  position:absolute;top:calc(100% + 6px);inset-inline:0;max-height:240px;overflow:auto;
-  background:var(--card-solid);border:1px solid var(--brd-hov);border-radius:12px;
-  box-shadow:var(--sh);z-index:60;display:none;padding:5px;
-}
-.mc-list.on{display:block}
-.mc-o{
-  display:block;width:100%;text-align:start;padding:7px 11px;border:0;background:transparent;
-  color:var(--txt);font:inherit;font-size:13px;border-radius:8px;cursor:pointer;
-}
-.mc-o:hover{background:var(--accent-soft)}
-.mc-o.sel{background:var(--accent);color:#fff}
-.mc-o mark{background:transparent;color:var(--accent-2);font-weight:800;padding:0}
-.mc-o.sel mark{color:#fff}
-.mc-none{padding:10px 12px;color:var(--faint);font-size:12px}
-
-/* ---------- وضع التحديد + التشيك بوكس ---------- */
-.mchk{
-  flex:0 0 auto;width:22px;height:22px;margin-inline-end:2px;border-radius:7px;
-  border:2px solid var(--brd-hov);display:inline-flex;align-items:center;justify-content:center;
-  color:#fff;font-size:13px;font-weight:900;cursor:pointer;user-select:none;
-  transition:all .15s;
-}
-.mchk.on{background:var(--accent);border-color:var(--accent)}
-.mpr.sel{background:var(--accent-soft)}
-.mpr.ar.sel{background:var(--accent-soft)}
-
-/* ---------- شريط التحديد العائم ---------- */
-.mp-selbar{
-  position:fixed;bottom:22px;inset-inline:50% auto;left:50%;transform:translateX(-50%) translateY(80px);
-  display:flex;align-items:center;gap:12px;z-index:70;
-  background:var(--card-solid);border:1px solid var(--brd-hov);border-radius:16px;
-  box-shadow:var(--sh-hov);padding:10px 16px;opacity:0;pointer-events:none;
-  transition:all .22s ease;max-width:92vw;
-}
-[dir="rtl"] .mp-selbar{left:auto;right:50%;transform:translateX(50%) translateY(80px)}
-.mp-selbar.on{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
-[dir="rtl"] .mp-selbar.on{transform:translateX(50%) translateY(0)}
-.mp-selbar b.num{font-size:17px;color:var(--accent-2);min-width:18px;text-align:center}
-.mp-selbar .mp-flex{flex:1;min-width:10px}
-.ms-btn{
-  border:1px solid var(--brd);background:var(--accent-soft);color:var(--txt);
-  padding:7px 14px;border-radius:10px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;
-}
-.ms-btn.move{background:var(--accent);color:#fff;border-color:var(--accent)}
-.ms-btn.del{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
-.ms-btn.x{background:transparent;color:var(--muted)}
-.ms-btn:hover{filter:brightness(1.08)}
-
-/* ---------- صفحة الكروت ---------- */
-.cards-back{display:inline-flex;align-items:center;gap:7px}
-.cards-back svg{width:15px;height:15px}
-.cards-title{font-size:15px;color:var(--accent-2)}
-.cards-search{max-width:280px;min-width:180px}
-.mp-cards{display:flex;flex-direction:column;gap:8px;padding:6px 0 30px}
-.cc-row{
-  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-  background:var(--card);border:1px solid var(--brd-soft);border-radius:13px;
-  padding:11px 16px;animation:ccIn .3s both;
-}
-@keyframes ccIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
-.cc-row .cc-main{font-weight:700;font-size:14px;flex:0 1 auto;max-width:46%}
-.cc-row .cc-main .mlc{margin-inline-start:8px}
-.cc-row .cc-sub{flex:1;min-width:140px;color:var(--faint);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cc-row .cc-act{display:flex;gap:8px}
-.cc-row.vac .cc-main{color:var(--bad)}
-.cc-row:hover{border-color:var(--brd-hov)}
-
-/* ---------- مودال التأكيد (بديل حوار المتصفح) ---------- */
-.mpm-confirm .cf-body{padding:6px 0 2px;font-size:13.5px;color:var(--txt)}
-.cf-warn{
-  background:var(--warn-soft);border:1px dashed var(--warn);color:var(--txt);
-  border-radius:10px;padding:10px 13px;margin-top:10px;font-size:12.5px;line-height:1.7;
-}
-.mpm-confirm .mpm-del{background:var(--bad);color:#fff;border-color:var(--bad)}
-.mpm-confirm h3.del-h{color:var(--bad)}
-
-/* ---------- معاينة الاستيراد ---------- */
-.pv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin:8px 0 4px}
-.pv-i{
-  background:var(--accent-soft);border:1px solid var(--brd);border-radius:12px;
-  padding:9px 10px;text-align:center;
-}
-.pv-i b{display:block;font-size:19px;color:var(--accent)}
-.pv-i.ok b{color:var(--good)}
-.pv-i.bad{background:var(--bad-soft)} .pv-i.bad b{color:var(--bad)}
-.pv-i span{font-size:11px;color:var(--muted)}
-.pv-ex{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.8}
-.pv-ex.bad{color:var(--bad)}
-
-/* ---------- كروت الثيمات (الإعدادات) ---------- */
-.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:6px 2px}
-.theme-card{
-  display:flex;flex-direction:column;gap:9px;align-items:flex-start;
-  background:var(--card);border:2px solid var(--brd-soft);border-radius:15px;
-  padding:14px;cursor:pointer;font:inherit;color:var(--txt);text-align:start;
-  transition:all .18s;
-}
-.theme-card:hover{border-color:var(--brd-hov);transform:translateY(-2px)}
-.theme-card.on{border-color:var(--accent);box-shadow:var(--accent-glow) 0 0 0 3px}
-.theme-card b{font-size:13.5px}
-.theme-card small{color:var(--faint);font-size:10.5px;direction:ltr}
-.tc-sw{display:flex;gap:5px}
-.tc-sw i{width:22px;height:22px;border-radius:7px;border:1px solid rgba(255,255,255,.25);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
-
-/* ---------- أزرار البوابة (إعدادات/بيانات) ---------- */
-.mg-utils{display:flex;gap:10px;justify-content:center;margin-top:22px}
+/* ============ R45: أزرار البوابة الصغيرة (إعدادات/مستخدمين/بيانات/خروج) ============
+   كانت بترسم من غير تنسيق خالص (زراير المتصفح الافتراضية باهتة). */
+.mg-utils{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .mg-utils button{
-  display:inline-flex;align-items:center;gap:8px;
-  background:transparent;border:1px dashed var(--brd);color:var(--muted);
-  padding:9px 18px;border-radius:12px;font:inherit;font-size:13px;cursor:pointer;
-  transition:all .16s;
+  display:inline-flex;align-items:center;gap:9px;padding:10px 17px;border-radius:12px;
+  background:rgba(217,168,107,.08);border:1px solid rgba(217,168,107,.30);
+  color:#E7DDC8;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;
 }
-.mg-utils svg{width:17px;height:17px}
-.mg-utils button:hover{color:var(--accent-2);border-color:var(--brd-hov);background:var(--accent-soft)}
-
-/* ---------- صف الوظيفة (وضع الوظيفة-أولًا) ---------- */
-.mpr.jr .mln{font-size:13.5px}
-.mpr.jr .mi.job{color:var(--accent-2)}
-.mpr.jr .mls.vln{color:var(--bad);font-weight:700}
-
-/* ---------- مربع الفرق: مؤشر اللمس ---------- */
-.mv[data-vk]{cursor:help;position:relative}
-.mv[data-vk]:hover{filter:brightness(1.2)}
-
-/* ---------- إضافة عجز: خانة العدد ---------- */
-.mv-count input{max-width:110px}
-.mp-tip .tt-j{font-weight:700}
-.mp-tip .tt-div{height:1px;background:var(--brd);margin:7px 0}
-
-
-/* ---------- R42: خلفية الاتزان + كارت الدخول مع الثيمات الفاتحة ---------- */
-html[data-theme="energy"] .mp-wrap,
-html[data-theme="growth"] .mp-wrap,
-html[data-theme="creative"] .mp-wrap{
+.mg-utils button svg{width:17px;height:17px;color:#D9A86B;flex:none}
+.mg-utils button:hover{border-color:rgba(217,168,107,.68);background:rgba(217,168,107,.16);transform:translateY(-2px)}
+.mg-utils button#mgLogout{border-color:rgba(248,113,113,.34);color:#F5C6C8}
+.mg-utils button#mgLogout svg{color:#E8A7AA}
+.mg-utils button#mgLogout:hover{border-color:rgba(248,113,113,.62);background:rgba(248,113,113,.12)}
+/* تسجيل الخروج الصغير في هيدر الاتزان */
+.mp-mini.mp-hdr.out{color:#E8A7AA;border-color:rgba(248,113,113,.30)}
+.mp-mini.mp-hdr.out:hover{color:#FFB3B6;border-color:rgba(248,113,113,.6);background:rgba(248,113,113,.12)}
+/* كارت الزيادة + زرار بدون كود */
+.mph-card.exc b{color:#F0BE55}
+html[data-theme="light"] .mph-card.exc b{color:#B45309}
+.cc-row.jump{cursor:pointer}
+.cc-row.jump:hover{border-color:rgba(217,168,107,.55);background:rgba(217,168,107,.07)}
+.cc-row .cc-sub.faint{color:var(--faint);font-size:10.5px}
+.mp-mini.ncode{display:inline-flex;align-items:center;gap:6px}
+.mp-mini.ncode .nc-n{
+  font-size:10.5px;font-weight:800;color:#FFD9A0;background:rgba(240,190,85,.16);
+  border:1px solid rgba(240,190,85,.4);border-radius:999px;padding:0 7px;min-width:18px;text-align:center;
+}
+html[data-theme="light"] .mp-mini.ncode .nc-n{color:#7C4A03;background:rgba(180,83,9,.12);border-color:rgba(180,83,9,.4)}
+/* ==== R45: فجوات الثيم الفاتح — النص الفاتح على خلفية فاتحة ==== */
+/* حجاب الإقلاع: نص غامق على الأرضية الفاتحة */
+html[data-theme="light"] #bootVeil{color:#1F2937}
+html[data-theme="light"] #bootVeil .bv-spin{border-color:rgba(29,58,95,.25);border-top-color:#1D3A5F}
+/* الشريط العلوي فاتح-الخلفية غامق في الثيم الفاتح فلازم كلامه يفضل فاتح */
+html[data-theme="light"] #syncChip{color:#C9D4E4;background:rgba(255,255,255,.07);border-color:rgba(217,168,107,.35)}
+html[data-theme="light"] .date-chip{color:#E7E2D5;background:rgba(217,168,107,.13);border-color:rgba(217,168,107,.30)}
+html[data-theme="light"] .lang-sw .sw-btn{color:#C9B583}
+html[data-theme="light"] .lang-sw .sw-btn:hover{color:#EAD9B8}
+html[data-theme="light"] .user-chip b{color:#F5F1E8}
+html[data-theme="light"] .uc-role.user{color:#C9D4E4;background:rgba(255,255,255,.06);border-color:rgba(217,168,107,.25)}
+/* بوابة ما بعد الدخول: كروت فاتحة وكلام غامق (قبل كده الكلام الغامق
+   بيقعد على كروت غامقة فمبيبانش) */
+html[data-theme="light"] .mgate{background:rgba(226,232,242,.84)}
+html[data-theme="light"] .mg-in h2{color:#1F2937;border-bottom-color:rgba(176,126,63,.5)}
+html[data-theme="light"] .mg-card{background:linear-gradient(162deg,#FFFFFF 0%,#F5F8FC 100%);border-color:rgba(20,33,61,.16);box-shadow:0 14px 40px rgba(15,23,42,.14)}
+html[data-theme="light"] .mg-card b{color:#1F2937}
+html[data-theme="light"] .mg-card small{color:#5B6472}
+html[data-theme="light"] .mg-card .mg-ico{background:rgba(29,58,95,.08);color:#1D3A5F;border-color:rgba(29,58,95,.18)}
+html[data-theme="light"] .mg-card.mp .mg-ico{background:rgba(176,126,63,.13);color:#A66B24;border-color:rgba(176,126,63,.32)}
+html[data-theme="light"] .mg-card:hover{box-shadow:0 20px 46px rgba(15,23,42,.20),0 0 0 1px rgba(176,126,63,.45)}
+html[data-theme="light"] .mg-utils button{background:#FFFFFF;color:#1F2937;border-color:rgba(20,33,61,.22)}
+html[data-theme="light"] .mg-utils button svg{color:#A66B24}
+html[data-theme="light"] .mg-utils button:hover{border-color:rgba(176,126,63,.65);background:#F7F9FC}
+html[data-theme="light"] .mg-utils button#mgLogout{color:#C0321F;border-color:rgba(192,50,31,.35)}
+html[data-theme="light"] .mg-utils button#mgLogout svg{color:#C0321F}
+html[data-theme="light"] .mg-utils button#mgLogout:hover{border-color:rgba(192,50,31,.6);background:rgba(192,50,31,.08)}
+html[data-theme="light"] .mp-mini.mp-hdr.out{color:#C0321F;border-color:rgba(192,50,31,.35)}
+html[data-theme="light"] .mp-mini.mp-hdr.out:hover{color:#A02814;border-color:rgba(192,50,31,.6);background:rgba(192,50,31,.08)}
+html[data-theme="light"] body{
   background:
-    radial-gradient(1100px 540px at 85% -12%, var(--accent-glow), transparent 58%),
-    radial-gradient(880px 460px at 5% 108%, var(--accent-soft), transparent 55%),
-    var(--bg);
+    radial-gradient(1050px 520px at 88% -12%, rgba(176,126,63,.06), transparent 58%),
+    radial-gradient(880px 460px at 6% 108%, rgba(29,58,95,.06), transparent 55%),
+    #F2F4F8;
+  background-attachment:fixed;
 }
-html[data-theme="energy"] .lg-card,
-html[data-theme="growth"] .lg-card,
-html[data-theme="creative"] .lg-card{
-  background:linear-gradient(162deg, var(--lg-denim) 0%, var(--lg-denim2) 58%, var(--lg-input2) 100%);
-  border:1px solid var(--brd);
-  box-shadow:0 34px 90px rgba(15,23,42,.22), inset 0 1px 0 rgba(255,255,255,.6);
+html[data-theme="light"] ::selection{background:rgba(176,126,63,.30)}
+html[data-theme="light"] .bg-fx::before{background:radial-gradient(circle,rgba(29,58,95,.05),transparent 62%)}
+html[data-theme="light"] .bg-fx::after{background:radial-gradient(circle,rgba(176,126,63,.05),transparent 60%)}
+html[data-theme="light"] .shell{border:1px solid rgba(20,33,61,.18);box-shadow:var(--sh)}
+html[data-theme="light"] .shell::before{background:none}
+
+/* ---- الشريط العلوي غامق: اللوجو الأبيض باين والكلام فاتح ---- */
+html[data-theme="light"] .topbar{
+  background:linear-gradient(180deg,#1A2942,#131F35);
+  border-bottom:1px solid rgba(217,168,107,.30);
 }
-html[data-theme="energy"] .lg-card::before,
-html[data-theme="growth"] .lg-card::before,
-html[data-theme="creative"] .lg-card::before{border-color:var(--brd-hov)}
+html[data-theme="light"] .brand .logo{filter:drop-shadow(0 4px 14px rgba(0,0,0,.35))}
+html[data-theme="light"] .live{border-color:rgba(217,168,107,.30)}
+html[data-theme="light"] .live i{background:#D9A86B}
+html[data-theme="light"] .lang-sw .sw-btn.on{color:#FFFFFF;background:linear-gradient(175deg,#2A4066,#1B2C49)}
+html[data-theme="light"] .lang-sw .sw-btn:hover{color:#EAD9B8;background:rgba(217,168,107,.14)}
 
-/* ============ R43: energy — contrast fixes (targets numbers, tree dept names,
-   modals, reqpop, cmp-pop, pw-mirror, selects, search) ============ */
-html[data-theme="energy"] .tg-row input{background:#FFFFFF;border-color:rgba(30,58,138,.26);color:#16276B}
-html[data-theme="energy"] .tg-row input:focus{border-color:#1E3A8A}
-html[data-theme="energy"] .mp-reqpop{background:#FFFFFF;border-color:rgba(30,58,138,.26);box-shadow:0 14px 34px rgba(15,23,42,.14)}
-html[data-theme="energy"] .mp-reqpop .rp-t{color:#1E3A8A}
-html[data-theme="energy"] .mp-reqpop .rp-in{background:#F1F5F9}
-html[data-theme="energy"] .mp-reqpop .rp-in:focus{border-color:#1E3A8A}
-html[data-theme="energy"] .cmp-pop{background:#FFFFFF;border-color:rgba(30,58,138,.26);box-shadow:0 18px 44px rgba(15,23,42,.16)}
-html[data-theme="energy"] .cmp-pop .cp-x:hover{background:rgba(30,58,138,.06)}
-html[data-theme="energy"] .cmp-pop .cp-opt,html[data-theme="energy"] .cmp-pop .cp-off{background:rgba(30,58,138,.06)}
-html[data-theme="energy"] .cmp-pop .cp-off:hover{background:rgba(220,38,38,.08)}
-html[data-theme="energy"] .cmp-strip{background:rgba(30,58,138,.06)}
-html[data-theme="energy"] .cmp-strip b.down{background:rgba(220,38,38,.1);color:#B91C1C}
-html[data-theme="energy"] .cmp-strip b.flat{background:rgba(15,23,42,.06);color:#334155}
-html[data-theme="energy"] .pw-mirror{background:#F1F5F9;box-shadow:inset 0 2px 6px rgba(15,23,42,.14)}
-html[data-theme="energy"] .mpc-sel option{background:#FFFFFF;color:#16276B}
-html[data-theme="energy"] .mpm-card h3{color:#1E3A8A}
-html[data-theme="energy"] .mpm-card input{background:#F1F5F9;border-color:rgba(30,58,138,.26)}
-html[data-theme="energy"] .mpm-card input:focus{border-color:#1E3A8A}
-html[data-theme="energy"] .mpm-ok{background:#1E3A8A;border-color:#1E3A8A;color:#FFFFFF}
-html[data-theme="energy"] .mpm-ok:hover:not(:disabled){background:#16276B}
-html[data-theme="energy"] .mpm-del{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.35);color:#B91C1C}
-html[data-theme="energy"] .mpm-del:hover:not(:disabled){background:rgba(220,38,38,.16);color:#991B1B}
-html[data-theme="energy"] .mpm-del-card .del-h{color:#B91C1C}
-html[data-theme="energy"] .mpm-confirm h3.del-h{color:#B91C1C}
-html[data-theme="energy"] .mpm-warn .w-ok{color:#047857}
-html[data-theme="energy"] .mpm-warn .w-bad{color:#B91C1C}
-html[data-theme="energy"] .mpr.dn .ml{color:#1E3A8A}
-html[data-theme="energy"] .mpr .mi.dept{color:#1E3A8A;background:rgba(30,58,138,.06)}
-html[data-theme="energy"] .mpr .mi.job{color:#1E3A8A;background:rgba(30,58,138,.06)}
-html[data-theme="energy"] .mpr .tw:hover{background:rgba(30,58,138,.06);color:#1E3A8A}
-html[data-theme="energy"] .mpr .mo:hover{color:#1E3A8A;background:rgba(30,58,138,.06)}
-html[data-theme="energy"] .mpr .mn.r{background:rgba(30,58,138,.06);color:#1E3A8A}
-html[data-theme="energy"] .mpr.ar .ara{color:#1E3A8A}
-html[data-theme="energy"] .mpr mark{background:rgba(255,107,53,.22);color:#7C2D12}
-html[data-theme="energy"] .mpr.rootrow .mv,html[data-theme="energy"] .mpr.rootrow .mn{background:rgba(255,255,255,.55)}
-html[data-theme="energy"] .mpr.rootrow .mbar{background:rgba(15,23,42,.10)}
-html[data-theme="energy"] .mph-card.req b{color:#1E3A8A}
-html[data-theme="energy"] .mp-search{background:#FFFFFF;border-color:rgba(30,58,138,.26)}
-html[data-theme="energy"] .mp-mini{background:#F1F5F9;border-color:rgba(30,58,138,.26);color:#16276B}
-html[data-theme="energy"] .mp-mini:hover{border-color:#1E3A8A;color:#1E3A8A}
-html[data-theme="energy"] .mp-mini.ord[aria-pressed="true"]{background:#1E3A8A;color:#fff;border-color:#1E3A8A}
+/* ---- الكروت: فاتحة + شريط عنوان غامق وكلامه فاتح ---- */
+html[data-theme="light"] .card::before{background:linear-gradient(160deg,rgba(29,58,95,.04),transparent 40%)}
+html[data-theme="light"] .card:hover::after{background:radial-gradient(420px 180px at var(--mx,50%) var(--my,50%),rgba(176,126,63,.09),transparent 60%)}
+html[data-theme="light"] .card-head{
+  background:linear-gradient(175deg,#1D2E4C,#152340);
+  margin:-16px -18px 14px;padding:11px 16px 10px;
+  border-radius:var(--r-md) var(--r-md) 0 0;
+  border-bottom:1px solid rgba(217,168,107,.28);
+}
+html[data-theme="light"] .card-head h4{color:#F1E4C9}
+html[data-theme="light"] .card-head .en{color:#C9B583}
+html[data-theme="light"] .card-head .chip{color:#E7DDC8;background:rgba(255,255,255,.06);border-color:rgba(217,168,107,.30)}
+html[data-theme="light"] .kpi::before{background:linear-gradient(180deg,rgba(29,58,95,.06),transparent)}
 
-/* ============ R43: growth — contrast fixes (targets numbers, tree dept names,
-   modals, reqpop, cmp-pop, pw-mirror, selects, search) ============ */
-html[data-theme="growth"] .tg-row input{background:#FFFFFF;border-color:rgba(13,148,136,.28);color:#0B5D57}
-html[data-theme="growth"] .tg-row input:focus{border-color:#0D9488}
-html[data-theme="growth"] .mp-reqpop{background:#FFFFFF;border-color:rgba(13,148,136,.28);box-shadow:0 14px 34px rgba(15,23,42,.14)}
-html[data-theme="growth"] .mp-reqpop .rp-t{color:#0F766E}
-html[data-theme="growth"] .mp-reqpop .rp-in{background:#F0FDFA}
-html[data-theme="growth"] .mp-reqpop .rp-in:focus{border-color:#0D9488}
-html[data-theme="growth"] .cmp-pop{background:#FFFFFF;border-color:rgba(13,148,136,.28);box-shadow:0 18px 44px rgba(15,23,42,.16)}
-html[data-theme="growth"] .cmp-pop .cp-x:hover{background:rgba(13,148,136,.06)}
-html[data-theme="growth"] .cmp-pop .cp-opt,html[data-theme="growth"] .cmp-pop .cp-off{background:rgba(13,148,136,.06)}
-html[data-theme="growth"] .cmp-pop .cp-off:hover{background:rgba(220,38,38,.08)}
-html[data-theme="growth"] .cmp-strip{background:rgba(13,148,136,.06)}
-html[data-theme="growth"] .cmp-strip b.down{background:rgba(220,38,38,.1);color:#B91C1C}
-html[data-theme="growth"] .cmp-strip b.flat{background:rgba(15,23,42,.06);color:#334155}
-html[data-theme="growth"] .pw-mirror{background:#F0FDFA;box-shadow:inset 0 2px 6px rgba(15,23,42,.14)}
-html[data-theme="growth"] .mpc-sel option{background:#FFFFFF;color:#0B5D57}
-html[data-theme="growth"] .mpm-card h3{color:#0F766E}
-html[data-theme="growth"] .mpm-card input{background:#F0FDFA;border-color:rgba(13,148,136,.28)}
-html[data-theme="growth"] .mpm-card input:focus{border-color:#0D9488}
-html[data-theme="growth"] .mpm-ok{background:#0F766E;border-color:#0F766E;color:#FFFFFF}
-html[data-theme="growth"] .mpm-ok:hover:not(:disabled){background:#0B5D57}
-html[data-theme="growth"] .mpm-del{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.35);color:#B91C1C}
-html[data-theme="growth"] .mpm-del:hover:not(:disabled){background:rgba(220,38,38,.16);color:#991B1B}
-html[data-theme="growth"] .mpm-del-card .del-h{color:#B91C1C}
-html[data-theme="growth"] .mpm-confirm h3.del-h{color:#B91C1C}
-html[data-theme="growth"] .mpm-warn .w-ok{color:#047857}
-html[data-theme="growth"] .mpm-warn .w-bad{color:#B91C1C}
-html[data-theme="growth"] .mpr.dn .ml{color:#0F766E}
-html[data-theme="growth"] .mpr .mi.dept{color:#0F766E;background:rgba(13,148,136,.06)}
-html[data-theme="growth"] .mpr .mi.job{color:#0F766E;background:rgba(13,148,136,.06)}
-html[data-theme="growth"] .mpr .tw:hover{background:rgba(13,148,136,.06);color:#0F766E}
-html[data-theme="growth"] .mpr .mo:hover{color:#0F766E;background:rgba(13,148,136,.06)}
-html[data-theme="growth"] .mpr .mn.r{background:rgba(13,148,136,.06);color:#0F766E}
-html[data-theme="growth"] .mpr.ar .ara{color:#0F766E}
-html[data-theme="growth"] .mpr mark{background:rgba(245,158,11,.25);color:#78350F}
-html[data-theme="growth"] .mpr.rootrow .mv,html[data-theme="growth"] .mpr.rootrow .mn{background:rgba(255,255,255,.55)}
-html[data-theme="growth"] .mpr.rootrow .mbar{background:rgba(15,23,42,.10)}
-html[data-theme="growth"] .mph-card.req b{color:#0F766E}
-html[data-theme="growth"] .mp-search{background:#FFFFFF;border-color:rgba(13,148,136,.28)}
-html[data-theme="growth"] .mp-mini{background:#F0FDFA;border-color:rgba(13,148,136,.28);color:#0B5D57}
-html[data-theme="growth"] .mp-mini:hover{border-color:#0D9488;color:#0F766E}
-html[data-theme="growth"] .mp-mini.ord[aria-pressed="true"]{background:#0F766E;color:#fff;border-color:#0F766E}
+/* ---- جداول: رأس غامق + نص غامق على أرضية فاتحة ---- */
+html[data-theme="light"] .tbl thead th{background:#1B2A44;color:#C9D4E4;border-bottom:1px solid rgba(217,168,107,.30)}
+html[data-theme="light"] .tbl tbody td{border-bottom:1px solid rgba(15,23,42,.08)}
+html[data-theme="light"] .tbl tbody tr:hover{background:rgba(176,126,63,.07)}
+html[data-theme="light"] .dt-months-tbl th{color:#5B6472;border-bottom:1px solid rgba(15,23,42,.14)}
+html[data-theme="light"] .dt-months-tbl td{border-bottom:1px solid rgba(15,23,42,.08);color:#1F2937}
 
-/* ============ R43: creative — contrast fixes (targets numbers, tree dept names,
-   modals, reqpop, cmp-pop, pw-mirror, selects, search) ============ */
-html[data-theme="creative"] .tg-row input{background:#FFFFFF;border-color:rgba(79,70,229,.24);color:#3730A3}
-html[data-theme="creative"] .tg-row input:focus{border-color:#4F46E5}
-html[data-theme="creative"] .mp-reqpop{background:#FFFFFF;border-color:rgba(79,70,229,.24);box-shadow:0 14px 34px rgba(15,23,42,.14)}
-html[data-theme="creative"] .mp-reqpop .rp-t{color:#4F46E5}
-html[data-theme="creative"] .mp-reqpop .rp-in{background:#EEF2FF}
-html[data-theme="creative"] .mp-reqpop .rp-in:focus{border-color:#4F46E5}
-html[data-theme="creative"] .cmp-pop{background:#FFFFFF;border-color:rgba(79,70,229,.24);box-shadow:0 18px 44px rgba(15,23,42,.16)}
-html[data-theme="creative"] .cmp-pop .cp-x:hover{background:rgba(79,70,229,.05)}
-html[data-theme="creative"] .cmp-pop .cp-opt,html[data-theme="creative"] .cmp-pop .cp-off{background:rgba(79,70,229,.05)}
-html[data-theme="creative"] .cmp-pop .cp-off:hover{background:rgba(220,38,38,.08)}
-html[data-theme="creative"] .cmp-strip{background:rgba(79,70,229,.05)}
-html[data-theme="creative"] .cmp-strip b.down{background:rgba(220,38,38,.1);color:#B91C1C}
-html[data-theme="creative"] .cmp-strip b.flat{background:rgba(15,23,42,.06);color:#334155}
-html[data-theme="creative"] .pw-mirror{background:#EEF2FF;box-shadow:inset 0 2px 6px rgba(15,23,42,.14)}
-html[data-theme="creative"] .mpc-sel option{background:#FFFFFF;color:#3730A3}
-html[data-theme="creative"] .mpm-card h3{color:#4F46E5}
-html[data-theme="creative"] .mpm-card input{background:#EEF2FF;border-color:rgba(79,70,229,.24)}
-html[data-theme="creative"] .mpm-card input:focus{border-color:#4F46E5}
-html[data-theme="creative"] .mpm-ok{background:#4F46E5;border-color:#4F46E5;color:#FFFFFF}
-html[data-theme="creative"] .mpm-ok:hover:not(:disabled){background:#3730A3}
-html[data-theme="creative"] .mpm-del{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.35);color:#B91C1C}
-html[data-theme="creative"] .mpm-del:hover:not(:disabled){background:rgba(220,38,38,.16);color:#991B1B}
-html[data-theme="creative"] .mpm-del-card .del-h{color:#B91C1C}
-html[data-theme="creative"] .mpm-confirm h3.del-h{color:#B91C1C}
-html[data-theme="creative"] .mpm-warn .w-ok{color:#047857}
-html[data-theme="creative"] .mpm-warn .w-bad{color:#B91C1C}
-html[data-theme="creative"] .mpr.dn .ml{color:#4F46E5}
-html[data-theme="creative"] .mpr .mi.dept{color:#4F46E5;background:rgba(79,70,229,.05)}
-html[data-theme="creative"] .mpr .mi.job{color:#4F46E5;background:rgba(79,70,229,.05)}
-html[data-theme="creative"] .mpr .tw:hover{background:rgba(79,70,229,.05);color:#4F46E5}
-html[data-theme="creative"] .mpr .mo:hover{color:#4F46E5;background:rgba(79,70,229,.05)}
-html[data-theme="creative"] .mpr .mn.r{background:rgba(79,70,229,.05);color:#4F46E5}
-html[data-theme="creative"] .mpr.ar .ara{color:#4F46E5}
-html[data-theme="creative"] .mpr mark{background:rgba(236,72,153,.18);color:#831843}
-html[data-theme="creative"] .mpr.rootrow .mv,html[data-theme="creative"] .mpr.rootrow .mn{background:rgba(255,255,255,.55)}
-html[data-theme="creative"] .mpr.rootrow .mbar{background:rgba(15,23,42,.10)}
-html[data-theme="creative"] .mph-card.req b{color:#4F46E5}
-html[data-theme="creative"] .mp-search{background:#FFFFFF;border-color:rgba(79,70,229,.24)}
-html[data-theme="creative"] .mp-mini{background:#EEF2FF;border-color:rgba(79,70,229,.24);color:#3730A3}
-html[data-theme="creative"] .mp-mini:hover{border-color:#4F46E5;color:#4F46E5}
-html[data-theme="creative"] .mp-mini.ord[aria-pressed="true"]{background:#4F46E5;color:#fff;border-color:#4F46E5}
+/* ---- تولتيب + توست + بوت فيل ---- */
+html[data-theme="light"] #tip{background:#FFFFFF;border:1px solid rgba(20,33,61,.20);color:#1F2937;box-shadow:0 16px 40px rgba(15,23,42,.16)}
+html[data-theme="light"] #tip .drill-hint{color:#A66B24}
+html[data-theme="light"] #toast{background:#1B2A44;color:#F5F1E8;border:1px solid rgba(217,168,107,.4)}
+html[data-theme="light"] #bootVeil{background:#F2F4F8}
+html[data-theme="light"] #bootVeil .bv-spin{border-color:rgba(29,58,95,.2);border-top-color:#1D3A5F}
+html[data-theme="light"] .content::-webkit-scrollbar-thumb{background:rgba(29,58,95,.25)}
+html[data-theme="light"] .content::-webkit-scrollbar-thumb:hover{background:rgba(29,58,95,.42)}
+
+/* ---- السايدبار: فاتح والنص غامق ---- */
+html[data-theme="light"] .sidebar{background:rgba(255,255,255,.75);border-inline-start:1px solid rgba(15,23,42,.10)}
+html[data-theme="light"] .nav-btn:hover{color:#1F2937;background:rgba(29,58,95,.07)}
+html[data-theme="light"] .nav-btn.on{
+  color:#A66B24;background:linear-gradient(270deg,rgba(176,126,63,.16),transparent 75%);
+  border-color:rgba(176,126,63,.30);
+}
+html[data-theme="light"] .nav-btn.on::after{background:#B07E3F;box-shadow:0 0 12px rgba(176,126,63,.8)}
+
+/* ---- فلاتر وأزرار سريعة ---- */
+html[data-theme="light"] .qp-btn.on{color:#fff;background:linear-gradient(135deg,#2A4066,#1D2E4C);box-shadow:0 6px 18px rgba(29,58,95,.28)}
+html[data-theme="light"] .scope-btn.on,html[data-theme="light"] .att-tab.on{background:#1D3A5F;color:#fff}
+html[data-theme="light"] input[type=date]{color-scheme:light}
+html[data-theme="light"] .au-bar input[type=date]{background:#FFFFFF;border-color:rgba(15,23,42,.16);color:#1F2937}
+html[data-theme="light"] .au-x-btn{background:#1D3A5F;color:#fff;border-color:#1D3A5F}
+html[data-theme="light"] .au-x-btn.ghost{background:transparent;color:#8A5A2B;border-color:rgba(176,126,63,.5)}
+
+/* ---- المودالات: بانل أبيض + هيد غامق ---- */
+html[data-theme="light"] .dp-panel,.drill-panel{background:#FFFFFF;border:1px solid rgba(20,33,61,.20);box-shadow:0 24px 60px rgba(15,23,42,.22)}
+html[data-theme="light"] .dp-head{
+  background:linear-gradient(175deg,#1D2E4C,#152340);
+  margin:-20px -22px 16px;padding:14px 20px 12px;
+  border-radius:var(--r-lg) var(--r-lg) 0 0;border-bottom:1px solid rgba(217,168,107,.28);
+}
+html[data-theme="light"] .dp-head h3{color:#F1E4C9}
+html[data-theme="light"] .dp-head .sub{color:#C9B583}
+html[data-theme="light"] .dp-head .icon-btn{color:#E7DDC8}
+html[data-theme="light"] .set-pop .set-panel{background:#FFFFFF}
+html[data-theme="light"] .set-sec{border-top:1px dashed rgba(15,23,42,.14)}
+html[data-theme="light"] .set-sec-head{color:#1D3A5F}
+html[data-theme="light"] .set-sec-head .chev{color:#5B6472}
+html[data-theme="light"] .set-hint{color:#5B6472}
+html[data-theme="light"] .set-box{background:#F7F9FC;border-color:rgba(20,33,61,.16);color:#1F2937}
+html[data-theme="light"] .set-box:hover{border-color:rgba(176,126,63,.6)}
+html[data-theme="light"] .set-box small{color:#5B6472}
+
+/* ---- تصنيف المشرفين: الأسماء غامقة على أرضية فاتحة ---- */
+html[data-theme="light"] .cls-row{background:#F7F9FC;border-color:rgba(15,23,42,.12)}
+html[data-theme="light"] .cls-row .nm{color:#1F2937}
+html[data-theme="light"] .cls-row .from{color:#5B6472}
+html[data-theme="light"] .tg-row{background:#F7F9FC;border-color:rgba(15,23,42,.12)}
+html[data-theme="light"] .tg-row .tg-name{color:#1F2937}
+html[data-theme="light"] .tg-row input{background:#FFFFFF;color:#1F2937;border-color:rgba(15,23,42,.18)}
+html[data-theme="light"] .tg-row input:focus{border-color:#B07E3F}
+html[data-theme="light"] .pw-mirror{background:#F7F9FC;color:#1F2937;border-color:rgba(15,23,42,.14)}
+
+/* ---- صفحة البيانات + أوفرلاي البيانات ---- */
+html[data-theme="light"] .dt-btn,.data-btn{background:#FFFFFF;border-color:rgba(20,33,61,.18);color:#1F2937}
+html[data-theme="light"] .dt-btn small,.data-btn small{color:#5B6472}
+html[data-theme="light"] .dt-btn:hover,.data-btn:hover{border-color:#B07E3F;color:#1D3A5F}
+
+/* ---- الاتزان: هيكل فاتح + هيد غامق ---- */
+html[data-theme="light"] .mp-wrap{
+  background:
+    radial-gradient(900px 420px at 85% -8%, rgba(176,126,63,.05), transparent 60%),
+    #F2F4F8;
+}
+html[data-theme="light"] .mp-top{background:linear-gradient(180deg,#1A2942,#131F35);border-bottom:1px solid rgba(217,168,107,.30)}
+html[data-theme="light"] .mp-search{background:#FFFFFF;border-color:rgba(20,33,61,.20);color:#1F2937}
+html[data-theme="light"] .mp-search:focus{border-color:#B07E3F}
+html[data-theme="light"] .mp-mini{background:#FFFFFF;border-color:rgba(20,33,61,.18);color:#3D4A5C}
+html[data-theme="light"] .mp-mini:hover{border-color:#B07E3F;color:#A66B24}
+html[data-theme="light"] .mp-mini.ord[aria-pressed="true"]{background:#1D3A5F;color:#fff;border-color:#1D3A5F}
+html[data-theme="light"] .mp-tab.on{background:#1D3A5F;color:#fff}
+html[data-theme="light"] .mp-act{background:#1D3A5F;color:#fff;border-color:#1D3A5F}
+html[data-theme="light"] .mp-act:hover{background:#15283F}
+html[data-theme="light"] .mp-thead{background:#1B2A44;border-color:rgba(217,168,107,.22);color:#C9D4E4}
+html[data-theme="light"] .mph-card{background:#FFFFFF;border-color:rgba(20,33,61,.14)}
+html[data-theme="light"] .mph-card:hover{border-color:rgba(176,126,63,.55)}
+html[data-theme="light"] .mph-card h3{color:#1F2937}
+html[data-theme="light"] .mph-card.req b{color:#A66B24}
+html[data-theme="light"] .mp-tip{background:#1B2A44;color:#F5F1E8;border:1px solid rgba(217,168,107,.35)}
+/* صفوف الشجرة: خلفية فاتحة وأسماء غامقة */
+html[data-theme="light"] .mpr{background:rgba(255,255,255,.85);border-color:transparent}
+html[data-theme="light"] .mpr:hover{background:rgba(176,126,63,.08);border-color:rgba(176,126,63,.30)}
+html[data-theme="light"] .mpr.dn .ml{color:#1D3A5F}
+html[data-theme="light"] .mpr .mln{color:#1F2937}
+html[data-theme="light"] .mpr .mls{color:#5B6472}
+html[data-theme="light"] .mpr .mn.a{background:rgba(29,58,95,.08);color:#1F2937}
+html[data-theme="light"] .mpr .mn.r{background:rgba(176,126,63,.14);color:#A66B24}
+html[data-theme="light"] .mpr .mv.na{color:#5B6472}
+html[data-theme="light"] .mpr .mi.emp{color:#5B6472;background:rgba(29,58,95,.07)}
+html[data-theme="light"] .mpr .mi.dept{color:#A66B24;background:rgba(176,126,63,.13)}
+html[data-theme="light"] .mpr .mi.job{color:#1D3A5F;background:rgba(29,58,95,.09)}
+html[data-theme="light"] .mpr mark{background:rgba(176,126,63,.35);color:#3D2B10;border-radius:4px;padding:0 2px}
+html[data-theme="light"] .mpr .tw:hover{background:rgba(176,126,63,.16);color:#A66B24}
+html[data-theme="light"] .mpr .mo:hover{color:#A66B24;background:rgba(176,126,63,.14)}
+html[data-theme="light"] .mpr.rootrow .mbar{background:rgba(20,33,61,.10)}
+html[data-theme="light"] .mpr.rootrow .mv,html[data-theme="light"] .mpr.rootrow .mn{color:#1F2937}
+html[data-theme="light"] .mpr.ar{background:#FFFFFF;border-color:rgba(15,23,42,.10)}
+html[data-theme="light"] .mpr.ar .ara{color:#A66B24}
+html[data-theme="light"] .mpr.ar .are{color:#1F2937}
+html[data-theme="light"] .mpr.ar .arp{color:#3D4A5C}
+html[data-theme="light"] .mp-reqpop{background:#FFFFFF;border-color:rgba(20,33,61,.20);box-shadow:0 18px 44px rgba(15,23,42,.18)}
+html[data-theme="light"] .mp-reqpop .rp-t{color:#1F2937}
+html[data-theme="light"] .mp-reqpop .rp-in{background:#FFFFFF;color:#1F2937;border-color:rgba(15,23,42,.18)}
+html[data-theme="light"] .mp-reqpop .rp-in:focus{border-color:#B07E3F}
+html[data-theme="light"] .mpc-sel{background:#FFFFFF;color:#1F2937;border-color:rgba(15,23,42,.18)}
+html[data-theme="light"] .mpc-sel option{background:#FFFFFF;color:#1F2937}
+/* مودالات الاتزان */
+html[data-theme="light"] .mpm-card{background:#FFFFFF;border-color:rgba(20,33,61,.18)}
+html[data-theme="light"] .mpm-card h3{color:#1F2937}
+html[data-theme="light"] .mpm-card input{background:#FFFFFF;color:#1F2937;border-color:rgba(15,23,42,.18)}
+html[data-theme="light"] .mpm-card input:focus{border-color:#B07E3F}
+html[data-theme="light"] .mpm-ok{background:linear-gradient(175deg,#2A4066,#1D2E4C);color:#fff}
+html[data-theme="light"] .mpm-ok:hover:not(:disabled){background:#1D3A5F}
+html[data-theme="light"] .mpm-del{background:#FFFFFF;color:#C0321F;border-color:rgba(192,50,31,.4)}
+html[data-theme="light"] .mpm-del:hover:not(:disabled){background:#C0321F;color:#fff}
+html[data-theme="light"] .mpm-del-card .del-h,html[data-theme="light"] .mpm-confirm h3.del-h{color:#C0321F}
+html[data-theme="light"] .mpm-warn .w-ok{color:#0B7A4B}
+html[data-theme="light"] .mpm-warn .w-bad{color:#C0321F}
+/* مقارنة الفترات */
+html[data-theme="light"] .cmp-pop{background:#FFFFFF;border-color:rgba(20,33,61,.20)}
+html[data-theme="light"] .cmp-pop .cp-opt,html[data-theme="light"] .cmp-pop .cp-off{background:#F7F9FC;color:#1F2937;border-color:rgba(15,23,42,.14)}
+html[data-theme="light"] .cmp-pop .cp-off:hover,html[data-theme="light"] .cmp-pop .cp-x:hover{border-color:#B07E3F;color:#1D3A5F}
+html[data-theme="light"] .cmp-strip{background:#F7F9FC;border-color:rgba(15,23,42,.12)}
+html[data-theme="light"] .cmp-strip b.down{color:#C0321F}
+html[data-theme="light"] .cmp-strip b.flat{color:#5B6472}
+
 
 /* ============ R43: كروت الاتزان — القابل للضغط بس اللي بيتحرك ============ */
 .mph-card{transition:transform .18s cubic-bezier(.2,.8,.3,1.25),box-shadow .2s ease,border-color .2s ease}

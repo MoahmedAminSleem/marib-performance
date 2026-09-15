@@ -54,8 +54,8 @@ var App = (function () {
   function fmtPct(v, d) { return I18N.fmtPct(v, d); }
   function pctF(d) { return function (v) { return I18N.pctV(v, d); }; }
   function wd(iso) { return I18N.dayFull(U.isoDayOfWeek(iso)); }
-  function machShort(n) { return I18N.is("ar") ? "ماكينة " + n : (I18N.is("tr") ? "Makine " + n : "Machine " + n); }
-  function otSrcLine(n) { return I18N.is("ar") ? "أوفر · خط " + n : (I18N.is("tr") ? "FM · Hat " + n : "OT · Line " + n); }
+  function machShort(n) { return I18N.is("tr") ? "Makine " + n : "Machine " + n; }
+  function otSrcLine(n) { return I18N.is("tr") ? "FM · Hat " + n : "OT · Line " + n; }
   function setSub(el, txt) { el.innerHTML = txt; I18N.fixSubCaps(el); }
 
   /* ---------------- tiny helpers ---------------- */
@@ -2367,6 +2367,8 @@ var App = (function () {
   }
 
   function render() {
+    /* R44: لوجوهات شريط العنوان — الصفحة الرئيسية بس (مهام كذا الطريق اللي الصفحة بتتغير بيه) */
+    document.body.classList.toggle("pg-home", state.page === "mhome" || state.page === "overview");
     if (!state.model) return;
     /* R31: a dev-picked manager-home user never lands on the classic
        overview — any render that finds him there hops to his home. */
@@ -2420,7 +2422,7 @@ var App = (function () {
     var me = window.MaribAuth ? MaribAuth.me() : null;
     if (!me) { document.title = T("brand_name"); return; }
     var label = T("nav_" + (state.page || "overview"));
-    document.title = label + (I18N.is("ar") ? " — مأرب" : " — Marib");
+    document.title = label + " — Marib";
   }
 
   function goToPage(page) {
@@ -2430,6 +2432,9 @@ var App = (function () {
     if (page === "mhome" && !mhomeActive()) page = "overview";
     state.page = page;
     document.body.classList.toggle("pg-mhome", page === "mhome");
+    /* R44: لوجوهات الإعدادات/البيانات/المستخدمين في شريط العنوان —
+     الصفحة الرئيسية بس */
+    document.body.classList.toggle("pg-home", page === "mhome" || page === "overview");
     if (page === "mhome") {
       /* supervisor filter + scope segment are HIDDEN here — clear any active
          selection so nothing filters the manager's numbers invisibly. */
@@ -2629,8 +2634,12 @@ var App = (function () {
      فبتتحدث مع أي ثيم. الحفظ: localStorage فورًا + السيرفر للأدمن
      (يبقى الثيم الافتراضي للجميع).
      ============================================================ */
-  var THEMES = ["denim", "energy", "growth", "creative"];
+  /* R44: ثيم فاتح واحد بس (بدل التلاتة اللي كانوا بيوجعوا العين) —
+     اللي كان مختار أي ثيم فاتح بيتنقل عليه تلقائيًا */
+  var THEMES = ["denim", "light"];
+  var LEGACY_THEMES = { energy: "light", growth: "light", creative: "light" };
   function applyTheme(id, silent) {
+    if (LEGACY_THEMES[id]) id = LEGACY_THEMES[id];
     if (THEMES.indexOf(id) < 0) id = "denim";
     var html = document.documentElement;
     if (id === "denim") html.removeAttribute("data-theme");
@@ -2652,7 +2661,7 @@ var App = (function () {
   function bootTheme() {
     var saved = null;
     try { saved = localStorage.getItem("marib_theme"); } catch (e) { }
-    if (saved && THEMES.indexOf(saved) >= 0) applyTheme(saved, true);
+    if (saved && (THEMES.indexOf(saved) >= 0 || LEGACY_THEMES[saved])) applyTheme(saved, true);
     /* localStorage فاضي؟ هنستنى إعدادات السيرفر (الثيم الافتراضي) —
        applySettings بتعمل بقية الشغل */
   }
@@ -2684,7 +2693,7 @@ var App = (function () {
     if (s && s.theme) {
       var local = null;
       try { local = localStorage.getItem("marib_theme"); } catch (e) { }
-      if (!local && THEMES.indexOf(s.theme) >= 0) applyTheme(s.theme, true);
+      if (!local && (THEMES.indexOf(s.theme) >= 0 || LEGACY_THEMES[s.theme])) applyTheme(s.theme, true);
     }
   }
 
@@ -2747,6 +2756,9 @@ var App = (function () {
         ndSet(false);
         boot("cloud", []);
       }
+      /* R44: لو الأوفرلاي مفتوح (رفع من البوابة/الاتزان) حدّث جدول الأشهر */
+      var dpp2 = $("dpPop");
+      if (dpp2 && dpp2.classList.contains("on")) dpRenderMonths();
       setSync("ok");
     }).catch(function () {
       setSync("err");
@@ -2831,7 +2843,10 @@ var App = (function () {
       } else {
         var chost = $("clsPeople");
         if (chost) chost.innerHTML = "<div style='padding:16px;color:var(--muted);font-weight:700'>&#8230;</div>";
-        MaribCloud.dataGet().then(function (d) {
+        var sec = (state.groups ? Promise.resolve(null) : MaribCloud.settingsGet().catch(function () { return null; }));
+        Promise.all([MaribCloud.dataGet(), sec]).then(function (res) {
+          var d = res[0], s = res[1];
+          if (s && s.groups && !state.groups) state.groups = s.groups;   /* R44: التصنيف المحفوظ يبان من غير دخول الشاشة الرئيسية */
           var months = (d && d.months) || [];
           var m2 = null;
           if (months.length) {
@@ -2862,6 +2877,64 @@ var App = (function () {
       if (el) el.hidden = true;
     });
   }
+
+  /* ============================================================
+     R44 — Data overlay: the Data button opens this over the gate or
+     الاتزان WITHOUT entering the performance-analysis app (and without
+     the eternal loading face — the months table loads on its own).
+     ============================================================ */
+  function dpRenderMonths() {
+    var host = $("dpMonths"), chip = $("dpSyncChip");
+    if (!host) return;
+    var mm = (state.monthsMeta || []).slice().sort(function (a, b) { return a.key < b.key ? 1 : -1; });
+    var total = 0; mm.forEach(function (x) { total += x.rows; });
+    if (chip) chip.textContent = I18N.fmtInt(total) + " / " + I18N.count(mm.length, "rec");
+    if (!mm.length) {
+      host.innerHTML = "<tbody><tr><td style='padding:20px'>" + T("dt_empty") + "</td></tr></tbody>";
+      return;
+    }
+    var head = "<thead><tr><th>" + T("dt_month") + "</th><th>" + T("dt_rows") + "</th><th>" + T("dt_last_sync") + "</th></tr></thead>";
+    var rows = mm.map(function (x) {
+      var last = x.last ? esc(x.last.actor) + " · " + auWhen(x.last.at) : "—";
+      return "<tr><td><b>" + esc(dpMonthLabel(x.key)) + "</b></td><td class='num'>" + I18N.fmtInt(x.rows) + "</td><td>" + last + "</td></tr>";
+    }).join("");
+    host.innerHTML = head + "<tbody>" + rows + "</tbody>";
+  }
+  /* R44: شهر جميل حتى من غير ما الموديل يتحمل (من البوابة/الاتزان) */
+  function dpMonthLabel(key) {
+    var viaModel = monthLabelOf(key);
+    if (viaModel !== key) return viaModel;
+    var mk = "m_" + String(key).slice(5, 7);
+    var mn = T(mk);
+    return (mn !== mk ? mn : String(key).slice(5, 7)) + " " + String(key).slice(0, 4);
+  }
+  function openDataPop() {
+    var pop = $("dpPop");
+    if (!pop) return;
+    var host = $("dpMonths");
+    if (host && !(state.monthsMeta && state.monthsMeta.length)) {
+      host.innerHTML = "<tbody><tr><td style='padding:20px'>…</td></tr></tbody>";
+    } else dpRenderMonths();
+    pop.classList.add("on");
+    /* the months arrive on their own — no model build, no eternal spinner */
+    if (!(state.monthsMeta && state.monthsMeta.length)) {
+      MaribCloud.dataGet().then(function (d) {
+        var months = (d && d.months) || [];
+        var meta = months.map(function (mo) {
+          var pack = (d.pack || {})[mo] || {};
+          var rows = 0;
+          ["dd", "ot", "pm", "att", "lo"].forEach(function (k) {
+            var t = pack[k]; if (t && t.r && t.r.length) rows += t.r.length;
+          });
+          return { key: mo, rows: rows, last: (d.lastSync || {})[mo] || null };
+        });
+        if (!state.monthsMeta || !state.monthsMeta.length) state.monthsMeta = meta;
+        if (pop.classList.contains("on")) dpRenderMonths();
+      }).catch(function () { dpRenderMonths(); });
+    }
+  }
+  function closeDataPop() { var p = $("dpPop"); if (p) p.classList.remove("on"); }
+  window.__maribDataPop = { open: openDataPop, refresh: dpRenderMonths };   /* used by الاتزان + gate */
 
   function openSettings() {
     var admin = MaribAuth.isAdmin ? MaribAuth.isAdmin() : false;
@@ -3002,21 +3075,25 @@ var App = (function () {
   /* ---------- classification section (R23 #7 / R24 #3) ---------- */
   var pendingAsg = {};
   function derivedGroupOf(name) {
-    var m = state.model || {};
-    if ((m.leaders || []).indexOf(name) >= 0 && (m.supervisors || []).indexOf(name) < 0) return "leader";
-    if ((m.managers || []).indexOf(name) >= 0 && (m.supervisors || []).indexOf(name) < 0) return "mgr";
-    if ((m.supervisors || []).indexOf(name) >= 0) return "sup";
-    if ((m.leaders || []).indexOf(name) >= 0) return "leader";
+    var m = state.model || clsModel || {};   /* R44: التصنيف من البوابة/الاتزان — الموديل اللي اتجاب */
+    /* R45: مدير الصالة الأول، بعده رئيس الخط، وآخرهم مشرف القسم — اللي
+       بيكون الاتنين بيتحسب للأعلى (قبل كده رئيس الخط اللي بيشرِف كمان
+       كان بيتدفن في «مشرفي الأقسام» فالزرارين التانيين كانوا فاضيين) */
     if ((m.managers || []).indexOf(name) >= 0) return "mgr";
+    if ((m.leaders || []).indexOf(name) >= 0) return "leader";
     return "sup";
   }
   function effectiveGroupOf(name) {
     var a = state.groups && state.groups.assignments;
     return (a && a[name]) || derivedGroupOf(name);
   }
+  var clsModel = null;   /* R44: آخر موديل اتجاب للتصنيف — عشان زراير الفلتر
+     (مشرفي الأقسام / رؤساء الخطوط / مديري الصالة) تشتغل حتى لو فتحت
+     الإعدادات من البوابة أو الاتزان من غير ما الشاشة الرئيسية اتحملت */
   function buildClsList(m2) {
     var host = $("clsPeople");
-    var m = m2 || state.model;   /* R43: بيقبل موديل جاهز — عشان الفتح من البوابة */
+    if (m2) clsModel = m2;
+    var m = m2 || state.model || clsModel;   /* R43: بيقبل موديل جاهز — عشان الفتح من البوابة */
     if (!host || !m) return;
     var seen = {};
     var names = [];
@@ -3407,9 +3484,13 @@ var App = (function () {
     /* R42: الثيمات — تفعيل المحفوظ قبل أي رسم + ربط كروت الثيمات
        + زراير البوابة (إعدادات / بيانات) من غير دخول تحليل الأداء */
     bindTheme();
-    var mgS = $("mgSettings"), mgD = $("mgData");
+    var mgS = $("mgSettings"), mgD = $("mgData"), mgU = $("mgUsers");
     if (mgS) mgS.addEventListener("click", function () { openSettings(); });
-    if (mgD) mgD.addEventListener("click", function () { enterDash("data"); });
+    /* R44: البيانات بقت أوفرلاي فوق البوابة نفسها — مش دخول لشاشة التحليل */
+    if (mgD) mgD.addEventListener("click", function () { openDataPop(); });
+    if (mgU) mgU.addEventListener("click", function () {
+      if (window.MaribAuth && MaribAuth.openUsers) MaribAuth.openUsers();
+    });
 
     /* language switcher */
     document.querySelectorAll("#langSw .sw-btn").forEach(function (b) {
@@ -3533,16 +3614,39 @@ var App = (function () {
     $("xlsxPick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
     if ($("ndBtn")) $("ndBtn").addEventListener("click", function () { $("dirPick").click(); });
 
+    /* R44: data overlay — upload buttons reuse the same pickers as the
+       data page; closing = X, backdrop or Escape (same UX as settings) */
+    var dpp = $("dpPop");
+    if (dpp) {
+      var dpF = $("dpFolder"), dpX = $("dpExcel");
+      if (dpF) dpF.addEventListener("click", function () { $("dirPick").click(); });
+      if (dpX) dpX.addEventListener("click", function () { $("xlsxPick").click(); });
+      var dpC = $("dpClose");
+      if (dpC) dpC.addEventListener("click", closeDataPop);
+      dpp.addEventListener("click", function (e) { if (e.target === dpp) closeDataPop(); });
+    }
+    /* R44: topbar mini logos (main page only) — settings / data / users */
+    var tbS = $("tbSetBtn"), tbD = $("tbDataBtn"), tbU = $("tbUsersBtn");
+    if (tbS) tbS.addEventListener("click", function () { openSettings(); });
+    if (tbD) tbD.addEventListener("click", function () { goToPage("data"); });
+    if (tbU) tbU.addEventListener("click", function () {
+      if (window.MaribAuth && MaribAuth.openUsers) MaribAuth.openUsers();
+    });
+
     /* settings panel (R27 — boxes → views) */
     var sp = $("setPop");
-    $("btnSettings").addEventListener("click", function (e) {
+    /* R44: زرار الإعدادات الجانبي اتشال — اللوجو بقى في شريط العنوان */
+    var bs = $("btnSettings");
+    if (bs) bs.addEventListener("click", function (e) {
       e.stopPropagation();
       if (sp.classList.contains("on")) sp.classList.remove("on");
       else openSettings();
     });
     $("setClose").addEventListener("click", function () { sp.classList.remove("on"); });
     sp.addEventListener("click", function (e) { if (e.target === sp) sp.classList.remove("on"); });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") sp.classList.remove("on"); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { sp.classList.remove("on"); closeDataPop(); }
+    });
     document.querySelectorAll("#setHome .set-box").forEach(function (b) {
       b.addEventListener("click", function () { showSettingsView(b.getAttribute("data-view")); });
     });
@@ -3716,7 +3820,10 @@ var App = (function () {
     updateTitle();
     var loaded = !!(state.model && state.model.dates && state.model.dates.length);
     if (page && $("page-" + page)) {
-      goToPage(page);
+      /* R44: مفيش شاشة تحليل من غير داتا — لو الموديل مش محمل نجيبه الأول
+         عشان صندوق «صلي علي النبي» ميفضلش معلق للأبد */
+      if (!loaded) cloudLoad().then(function () { goToPage(page); });
+      else goToPage(page);
       return;
     }
     if (!loaded) {
@@ -3738,6 +3845,7 @@ var App = (function () {
     cloudLoad: cloudLoad,
     enterDash: enterDash,
     openSettings: openSettings,   /* R42: زراير الإعدادات في البوابة والاتزان */
+    openDataPop: openDataPop,     /* R44: زرار البيانات من البوابة والاتزان */
     updateTitle: updateTitle,
     promptData: function () {
       var nd = $("noData");

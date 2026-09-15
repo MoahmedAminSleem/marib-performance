@@ -437,6 +437,12 @@ var MaribAuth = (function () {
     if (b) b.style.display = isAdmin(me) ? "" : "none";
     if (o) o.style.display = me ? "" : "none";
     if (g) g.style.display = me ? "" : "none";
+    /* R44: لوجو المستخدمين الجديد (شريط العنوان + البوابة + الاتزان) — أدمن بس */
+    var adm = isAdmin(me);
+    ["tbUsersBtn", "mgUsers", "mpUsersBtn"].forEach(function (id) {
+      var el = $(id);
+      if (el) el.style.display = adm ? "" : "none";
+    });
     /* R26/R27: photo circle + name + job title (title row, topbar chip) */
     if (window.MaribMe) { try { window.MaribMe.set(me); } catch (e) { } }
   }
@@ -724,6 +730,7 @@ var MaribAuth = (function () {
     });
   }
 
+  var openUsersFn = null;   /* R44: اللوجوهات الجديدة (شريط العنوان/البوابة/الاتزان) بتفتح المودال من هنا */
   function bindUsers() {
     var pop = $("usPop");
     if (!pop) return;
@@ -732,6 +739,7 @@ var MaribAuth = (function () {
       loadUsers();
       pop.classList.add("on");
     }
+    openUsersFn = openUs;
     function closeUs() { pop.classList.remove("on"); }
     var bu = $("btnUsers");
     if (bu) bu.addEventListener("click", openUs);
@@ -759,15 +767,19 @@ var MaribAuth = (function () {
        No location.reload(): a brand-new tab therefore loads ONCE and
        settles instantly (R24 #12). R26: the stay flags go too — the
        next open asks for the login again. */
-    var lo = $("btnLogout");
-    if (lo) lo.addEventListener("click", function () {
-      var done = function () {
-        me = null;
-        clearStay();
-        toast(T("toast_logout"), "ok");
-        showLogin();
-      };
-      MaribCloud.logout().then(done).catch(done);
+    /* R45: تسجيل الخروج بقى في الصفحة الرئيسية (البوابة) وفي هيدر الاتزان —
+       زرار الشريط الجانبي اتشال من صفحة التحليل */
+    ["btnLogout", "mgLogout", "mpLogout"].forEach(function (id) {
+      var lo = $(id);
+      if (lo) lo.addEventListener("click", function () {
+        var done = function () {
+          me = null;
+          clearStay();
+          toast(T("toast_logout"), "ok");
+          showLogin();
+        };
+        MaribCloud.logout().then(done).catch(done);
+      });
     });
   }
 
@@ -950,8 +962,8 @@ var MaribAuth = (function () {
     veilOff: veilOff,
     /* R37: both surfaces reopen the mode gate through this handle */
     showGate: showModeGate,
-    hideGate: hideModeGate   /* R43: enterDash يقفلها لو الدخول من زراير البوابة */,
-    hideGate: hideModeGate   /* R43: enterDash يقفلها لو الدخول من زراير البوابة */
+    hideGate: hideModeGate,  /* R43: enterDash يقفلها لو الدخول من زراير البوابة */
+    openUsers: function () { if (openUsersFn) openUsersFn(); }   /* R44 */
   };
   window.__maribAuth42 = __authApi42;
   return __authApi42;

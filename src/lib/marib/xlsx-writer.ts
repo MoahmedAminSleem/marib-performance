@@ -537,6 +537,39 @@ export class XBook {
     const n = this.sheets.length;
     const zip = new Zip();
 
+    /* R45: docProps (core + app) — أجزاء إلزامية في مواصفة OPC. من غيرهم
+       إكسل الحقيقي بيفتح الملف في وضع الإصلاح/للقراءة فقط فيحس المستخدم
+       إن الملف «مش قابل للنسخ» جواه أو براه. */
+    const now = new Date();
+    const iso = now.toISOString().replace(/\.\d{3}Z$/, "Z");
+    const coreXml =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" ' +
+      'xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" ' +
+      'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
+      '<dc:creator>Marib Performance</dc:creator>' +
+      '<cp:lastModifiedBy>Marib Performance</cp:lastModifiedBy>' +
+      `<dcterms:created xsi:type="dcterms:W3CDTF">${iso}</dcterms:created>` +
+      `<dcterms:modified xsi:type="dcterms:W3CDTF">${iso}</dcterms:modified>` +
+      "</cp:coreProperties>";
+    const appXml =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" ' +
+      'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
+      '<Application>Marib Performance</Application>' +
+      "<DocSecurity>0</DocSecurity>" +
+      "<ScaleCrop>false</ScaleCrop>" +
+      "<HeadingPairs><vt:vector size=\"2\" baseType=\"variant\">" +
+      '<vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant>' +
+      `<vt:variant><vt:i4>${n}</vt:i4></vt:variant>` +
+      "</vt:vector></HeadingPairs>" +
+      "<TitlesOfParts><vt:vector size=\"" + n + "\" baseType=\"lpstr\">" +
+      this.sheets.map((s) => `<vt:lpstr>${esc(s.name)}</vt:lpstr>`).join("") +
+      "</vt:vector></TitlesOfParts>" +
+      "<Company></Company>" +
+      "<AppVersion>1.0</AppVersion>" +
+      "</Properties>";
+
     /* [Content_Types].xml */
     let ct =
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -544,7 +577,9 @@ export class XBook {
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
       '<Default Extension="xml" ContentType="application/xml"/>' +
       '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
-      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>' +
+      '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>';
     for (let i = 1; i <= n; i++) {
       ct += `<Override PartName="/xl/worksheets/sheet${i}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`;
     }
@@ -557,13 +592,22 @@ export class XBook {
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
         '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+        '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>' +
+        '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>' +
         "</Relationships>"
     );
+    zip.add("docProps/core.xml", coreXml);
+    zip.add("docProps/app.xml", appXml);
 
-    /* workbook.xml + its rels */
+    /* workbook.xml + its rels — R45: workbookPr + bookViews (spec order:
+       fileVersion, fileSharing, workbookPr, bookViews, sheets, …) */
     let wbXml =
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<fileVersion appName="xl" lastEdited="7" lowestEdited="7" rupBuild="2703"/>' +
+      '<workbookPr defaultThemeVersion="166939"/>' +
+      '<bookViews><workbookView xWindow="0" yWindow="0" windowWidth="24000" windowHeight="15000"/></bookViews>' +
+      "<sheets>";
     let rels =
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';

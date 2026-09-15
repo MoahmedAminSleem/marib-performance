@@ -288,7 +288,7 @@ var MaribCharts = (function () {
   function tipHTML(p) {
     var h = '<div class="t">' + (p.tipTitle || p.label) + "</div>";
     (p.tip || []).forEach(function (r) { h += '<div class="r"><span>' + r[0] + "</span><b>" + r[1] + "</b></div>"; });
-    if (p.drill) h += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
+    if (p.drill) h += '<div class="drill-hint">' + esc(TT("t_drill", "Click for details")) + "</div>";
     return h;
   }
 
@@ -297,11 +297,11 @@ var MaribCharts = (function () {
      the current average of the plotted values and the goal ratio */
   function goalTipHTML(g, curAvg, fmt) {
     var gv = g.y != null ? g.y : g.value;
-    var h = '<div class="t">' + esc(TT(g.tipTitle || "t_goal_line", "خط الهدف")) + "</div>";
-    h += '<div class="r"><span>' + esc(TT("ref_target", "الهدف")) + "</span><b>" + (fmt ? fmt(gv) : U.fmtNum(gv)) + "</b></div>";
+    var h = '<div class="t">' + esc(TT(g.tipTitle || "t_goal_line", "Target line")) + "</div>";
+    h += '<div class="r"><span>' + esc(TT("ref_target", "Target")) + "</span><b>" + (fmt ? fmt(gv) : U.fmtNum(gv)) + "</b></div>";
     if (curAvg != null && isFinite(curAvg)) {
-      h += '<div class="r"><span>' + esc(TT("t_cur", "الحالي")) + "</span><b>" + (fmt ? fmt(curAvg) : U.fmtNum(curAvg)) + "</b></div>";
-      if (gv) h += '<div class="r"><span>' + esc(TT("t_ratio", "النسبة")) + "</span><b>" + TPCT(curAvg / gv * 100, 1) + "</b></div>";
+      h += '<div class="r"><span>' + esc(TT("t_cur", "Current")) + "</span><b>" + (fmt ? fmt(curAvg) : U.fmtNum(curAvg)) + "</b></div>";
+      if (gv) h += '<div class="r"><span>' + esc(TT("t_ratio", "Ratio")) + "</span><b>" + TPCT(curAvg / gv * 100, 1) + "</b></div>";
     }
     return h;
   }
@@ -315,7 +315,7 @@ var MaribCharts = (function () {
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3.2-3.2M20 17H7l3.2 3.2"/></svg>' +
       esc(cmp.label) + "</span>";
     if (cmp.empty) {
-      html += '<span class="cmp-empty">' + esc(TT("cmp_empty", "لا توجد بيانات في الفترة المقارنة")) + "</span>";
+      html += '<span class="cmp-empty">' + esc(TT("cmp_empty", "No data recorded in the compared period")) + "</span>";
     } else {
       (cmp.cells || []).forEach(function (c) {
         var curS = c.fmt ? c.fmt(c.cur) : U.fmtNum(c.cur);
@@ -406,8 +406,8 @@ var MaribCharts = (function () {
         var row = el("rect", { x: 0, y: y - 4, width: w, height: (opts.rowH || 30), fill: "transparent" }, svg);
         bindTip(row, function () {
           var hh = '<div class="t">' + esc(it.label) + "</div>";
-          (it.tip || [[opts.valueName || TT("t_value", "القيمة"), valTxt]]).forEach(function (r) { hh += '<div class="r"><span>' + esc(r[0]) + "</span><b>" + esc(r[1]) + "</b></div>"; });
-          if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
+          (it.tip || [[opts.valueName || TT("t_value", "Value"), valTxt]]).forEach(function (r) { hh += '<div class="r"><span>' + esc(r[0]) + "</span><b>" + esc(r[1]) + "</b></div>"; });
+          if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "Click for details")) + "</div>";
           return hh;
         });
         bindDrill(row, it.drill);
@@ -493,7 +493,7 @@ var MaribCharts = (function () {
             bindTip(r, function () {
               var hh = '<div class="t">' + esc(it.label) + "</div>";
               hh += '<div class="r"><span>' + esc(v.name || "") + "</span><b>" + (opts.fmt ? opts.fmt(v.v) : U.fmtInt(v.v)) + "</b></div>";
-              if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
+              if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "Click for details")) + "</div>";
               return hh;
             });
             /* data labels for grouped bars: vertical (rotated) value inside the bar */
@@ -514,8 +514,8 @@ var MaribCharts = (function () {
           txt(svg, cx, Math.max(y - 5, 10), lab, { size: 10, fill: MUTED, anchor: "middle", cls: "num", halo: true });
           bindTip(r, function () {
             var hh = '<div class="t">' + esc(it.label) + "</div>";
-            (it.tip || [[opts.valueName || TT("t_value", "القيمة"), lab]]).forEach(function (rr) { hh += '<div class="r"><span>' + esc(rr[0]) + "</span><b>" + esc(rr[1]) + "</b></div>"; });
-            if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
+            (it.tip || [[opts.valueName || TT("t_value", "Value"), lab]]).forEach(function (rr) { hh += '<div class="r"><span>' + esc(rr[0]) + "</span><b>" + esc(rr[1]) + "</b></div>"; });
+            if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "Click for details")) + "</div>";
             return hh;
           });
           bindDrill(r, it.drill);
@@ -590,11 +590,11 @@ var MaribCharts = (function () {
           if (it.tip && it.tip.length) {
             /* round 8: caller-supplied tooltip rows win (e.g. share-only) */
             it.tip.forEach(function (r) { hh += '<div class="r"><span>' + esc(r[0]) + "</span><b>" + esc(r[1]) + "</b></div>"; });
-            if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "اضغط لعرض التفاصيل")) + "</div>";
+            if (it.drill) hh += '<div class="drill-hint">' + esc(TT("t_drill", "Click for details")) + "</div>";
             return hh;
           }
-          hh += '<div class="r"><span>' + esc(opts.valueName || TT("t_value", "القيمة")) + "</span><b>" + (opts.fmt ? opts.fmt(it.value) : U.fmtInt(it.value)) + "</b></div>";
-          hh += '<div class="r"><span>' + esc(TT("t_share", "النسبة")) + "</span><b>" + TPCT(frac * 100, 1) + "</b></div>";
+          hh += '<div class="r"><span>' + esc(opts.valueName || TT("t_value", "Value")) + "</span><b>" + (opts.fmt ? opts.fmt(it.value) : U.fmtInt(it.value)) + "</b></div>";
+          hh += '<div class="r"><span>' + esc(TT("t_share", "Share")) + "</span><b>" + TPCT(frac * 100, 1) + "</b></div>";
           return hh;
         });
         bindDrill(path, it.drill);
@@ -674,7 +674,7 @@ var MaribCharts = (function () {
     mount(container, function (w) {
       if (opts.cmp) cmpStrip(container, opts.cmp);
       var days = (window.I18N && I18N.heatDays) ? I18N.heatDays()
-        : ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+        : ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
       var ltr = DIRV.d === "ltr";
       var dws = [6, 0, 1, 2, 3, 4, 5];
       var weeks = opts.weeks || [];
@@ -703,8 +703,8 @@ var MaribCharts = (function () {
             txt(svg, x + cell / 2, y + cell / 2 + 3.5, (c.pct * 100).toFixed(0), { size: 10, fill: c.pct > .62 ? INKC : TXT, anchor: "middle", weight: 700, cls: "num" });
             bindTip(rc, function () {
               var hh = '<div class="t">' + dname + " " + U.isoShort(wk) + "</div>";
-              hh += '<div class="r"><span>' + esc(TT("t_disc", "الانضباط")) + "</span><b>" + U.fmtPct(c.pct) + "</b></div>";
-              hh += '<div class="r"><span>' + esc(TT("t_recs2", "عدد السجلات")) + "</span><b>" + c.count + "</b></div>";
+              hh += '<div class="r"><span>' + esc(TT("t_disc", "Discipline")) + "</span><b>" + U.fmtPct(c.pct) + "</b></div>";
+              hh += '<div class="r"><span>' + esc(TT("t_recs2", "Records")) + "</span><b>" + c.count + "</b></div>";
               return hh;
             });
           }

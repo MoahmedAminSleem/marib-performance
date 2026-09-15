@@ -349,11 +349,15 @@ export async function POST(req: NextRequest) {
       const deptId = body.deptId !== undefined ? cleanStr(body.deptId, 40) : (old.dept_id as string);
       const hire = body.hire !== undefined ? cleanStr(body.hire, 10) : (old.hire as string);
       /* allow setting the code of a جديد row (code pending) — never steal
-         a code that already belongs to someone else */
+         a code that already belongs to someone else.
+         R45: مسح الكود بقى مسموح — فاضي أو «جديد» يرجّع الموظف لحالة
+         «من غير كود» (NULL) عشان لو حد غلط في الكود يرجّعه براحته */
       let newCode = old.code as string | null;
       if (body.code !== undefined) {
         const c = normCode(body.code);
-        if (c && c !== (old.code || "")) {
+        if (c === "" || c === "جديد") {
+          newCode = null;   /* back to no-code state */
+        } else if (c && c !== (old.code || "")) {
           const dup = await q("SELECT 1 FROM marib_emp WHERE code = $1 AND id <> $2 LIMIT 1", [c, old.id]);
           if (dup.length) return fail("dup", 409);
           newCode = c;
