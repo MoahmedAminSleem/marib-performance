@@ -203,6 +203,90 @@ const BOOT_SQL: string[] = [
     at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (term, lang)
   )`,
+  /* R46-3: الأسماء العربية للموظفين والوظائف. nullable — لو مش متسجل،
+     الـ UI بيلغي الـ toggle icon. الأسماء الإنجليزي هي الـ default في
+     الـ name/job columns العادية، والـ Arabic بيتحط في الـ columns دي. */
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS name_ar TEXT`,
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS job_ar TEXT`,
+  /* R46 — نظام الصلاحيات per-user × per-feature. المستخدم المطور (dev)
+     بيحدد لكل يوزر صلاحية كل ميزة: inherit | hidden | view | edit.
+     inherit = fallback حسب الـ role (dev:edit, admin:edit, user:view).
+     مفتاح أساسي مركّب: (user_id, feature). */
+  `CREATE TABLE IF NOT EXISTS marib_perm (
+    user_id    TEXT NOT NULL,
+    feature    TEXT NOT NULL,
+    level      TEXT NOT NULL DEFAULT 'inherit',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by TEXT,
+    PRIMARY KEY (user_id, feature)
+  )`,
+  `CREATE INDEX IF NOT EXISTS marib_perm_user_idx ON marib_perm (user_id)`,
+  /* R46-7: نظام الـ undo للاستيراد. قبل أي استيراد، بناخد snapshot
+     للجداول marib_emp + marib_dept + marib_req + marib_transfer + marib_meta
+     ونخزنها JSON هنا مع token + 15 دقيقة expiry. لو اليوزر دوس Undo
+     في خلال الـ 15 دقيقة، السيرفر بيعمل restore. لو عدى، بنحذف الـ token. */
+  `CREATE TABLE IF NOT EXISTS marib_undo (
+    token      TEXT NOT NULL PRIMARY KEY,
+    actor      TEXT NOT NULL,
+    payload    JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS marib_undo_expires_idx ON marib_undo (expires_at)`,
+  /* R46-8: صفحات إدخال البيانات الجديدة. بدل ما اليوزر يعتمد على
+     الإكسل، بيقدر يدخل البيانات من على الموقع مباشرة. الـ dashboard
+     بياخد البيانات دي ويضيفها للـ months اللي بتبني الـ model. */
+  /* جدول إدخال الإنتاج بالـ PO: لكل قسم + خط + تاريخ، كمية بإسم PO. */
+  `CREATE TABLE IF NOT EXISTS marib_prod (
+    id         TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    month_key  TEXT NOT NULL,           -- YYYY-MM
+    date       DATE NOT NULL,
+    dept_id    TEXT,                     -- الأقسام (mأرب 3، الإنتاج، ...)
+    line_id    TEXT,                     -- الخط (خط 1، 2، 3، ...)
+    po_number  TEXT NOT NULL DEFAULT '', -- رقم أمر الإنتاج
+    qty        INT NOT NULL DEFAULT 0,   -- الكمية
+    note       TEXT NOT NULL DEFAULT '',
+    actor      TEXT NOT NULL,            -- مين اللي عمل الإدخال
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS marib_prod_month_idx ON marib_prod (month_key)`,
+  `CREATE INDEX IF NOT EXISTS marib_prod_date_idx ON marib_prod (date)`,
+  /* جدول الغياب: كل سجل = موظف + تاريخ + سبب. ممكن يكون emp_id فاضي
+     لو الموظف لسه مش موجود في الاتزان (لو اليوزر رفع غياب لشخص من غير
+     الكود — بيتسجل كعدد لحد ما يترفع على الاتزان). */
+  `CREATE TABLE IF NOT EXISTS marib_absence (
+    id         TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    month_key  TEXT NOT NULL,
+    date       DATE NOT NULL,
+    emp_id     TEXT,                     -- nullable — لو مش موجود في marib_emp
+    emp_code   TEXT NOT NULL DEFAULT '',
+    emp_name   TEXT NOT NULL DEFAULT '',
+    dept_id    TEXT,                     -- القسم اللي هو فيه (من marib_emp)
+    reason     TEXT NOT NULL DEFAULT '',
+    note       TEXT NOT NULL DEFAULT '',
+    actor      TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS marib_absence_month_idx ON marib_absence (month_key)`,
+  `CREATE INDEX IF NOT EXISTS marib_absence_date_idx ON marib_absence (date)`,
+  /* جدول الأوفر تايم: كل سجل = موظف + تاريخ + ساعات. لو الموظف مش
+     موجود، بنسجله كعدد في قسم/خط معين لحد ما يترفع على الاتزان. */
+  `CREATE TABLE IF NOT EXISTS marib_overtime (
+    id         TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    month_key  TEXT NOT NULL,
+    date       DATE NOT NULL,
+    emp_id     TEXT,
+    emp_code   TEXT NOT NULL DEFAULT '',
+    emp_name   TEXT NOT NULL DEFAULT '',
+    dept_id    TEXT,
+    line_id    TEXT,
+    hours      NUMERIC(4,2) NOT NULL DEFAULT 0,
+    note       TEXT NOT NULL DEFAULT '',
+    actor      TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS marib_overtime_month_idx ON marib_overtime (month_key)`,
+  `CREATE INDEX IF NOT EXISTS marib_overtime_date_idx ON marib_overtime (date)`,
 ];
 
 let booting: Promise<void> | null = null;

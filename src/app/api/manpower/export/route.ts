@@ -52,12 +52,18 @@ type Node = {
 };
 type Emp = { code: string; name: string; job: string; hire: string; vac: boolean; mach: string; note: string };
 
-/* SEWING's numeric lines display as "خط N" on the site — same here */
+/* SEWING's numeric lines display as "خط N" on the site — same here.
+   R46-10: applies the active translation (set per-request from GET) when
+   a non-English lang was requested. */
 function dispName(n: Node): string {
   const parentName = n.parent ? (byId.get(n.parent)?.name || "") : "";
-  return /^\d+$/.test(n.name) && parentName === "SEWING" ? "خط " + n.name : n.name;
+  const raw = /^\d+$/.test(n.name) && parentName === "SEWING" ? "خط " + n.name : n.name;
+  return activeTr(raw);
 }
 let byId = new Map<string, Node>();
+/* R46-10: per-request translation function. Default is identity (no-op).
+   Set inside GET() when lang=ar or lang=tr is requested. */
+let activeTr: (s: string) => string = (s) => s;
 
 function statusOf(variance: number): { label: string; color: string; fill: string } {
   if (variance < 0) return { label: "ناقص", color: C.red, fill: C.redFill };
@@ -94,17 +100,40 @@ export async function GET(req: NextRequest) {
     const g = await requireUser(req, "manpower", "EXPORT");
     if (g.res) return g.res;
 
+    /* ---------- R46-10: ?lang=ar|en|tr — اختيار لغة الـ export ----------
+       الـ default هو en (الأسماء زي ما هي متخزنة في DB). لو lang=ar أو
+       lang=tr، بنطبّق الترجمات المتاحة في marib_i18n على الأسماء قبل
+       كتابتها في الشيت. الكلمات اللي ملهاش ترجمة بت favorei زي ما هي. */
+    const sp = new URL(req.url).searchParams;
+    const wantLang = (sp.get("lang") || "en").toLowerCase() === "ar" ? "ar"
+                   : (sp.get("lang") || "en").toLowerCase() === "tr" ? "tr"
+                   : "en";
+    /* load translations if a non-default lang is requested */
+    let trMap = new Map<string, string>();
+    if (wantLang !== "en") {
+      const trRows = await q("SELECT term, tr FROM marib_i18n WHERE lang = $1", [wantLang]);
+      for (const r of trRows) trMap.set(r.term as string, r.tr as string);
+    }
+    /* helper: apply translation if available, else return original */
+    const trName = (s: string): string => {
+      if (!s || wantLang === "en") return s;
+      return trMap.get(s) || s;
+    };
+    /* set the module-level translation function so dispName() and emp
+       cells pick up the active language automatically. */
+    activeTr = trName;
+
     /* ---------- R42: ?template=1 — تيمبلت الرفع بالداتا الحالية ----------
        نفس أعمدة Database بتاعة ملف Manpower + عمود «حذف؟» — ينزل
        مليان بالموظفين الحاليين عشان اللي بيحب يشتغل على الإكسل يعدّل
        ويرفع. التعليمات شيت جوه الملف نفسه. */
-    if (new URL(req.url).searchParams.get("template") === "1") {
+    if (sp.get("template") === "1") {
       const deptRows = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
       const empRows = await q(
         "SELECT code, name, job, dept_id, hire, vac, mach, note FROM marib_emp ORDER BY ord ASC"
       );
       const pById = new Map<string, { name: string; parent: string }>();
-      for (const d of deptRows) pById.set(d.id as string, { name: d.name as string, parent: (d.parent_id as string) || "" });
+      for (const d of deptRows) pById.set(d.id as string, { name: trName(d.name as string), parent: (d.parent_id as string) || "" });
       const chainOf = (id: string | null): [string, string, string] => {
         const parts: string[] = [];
         let cur = id ? pById.get(id) : undefined;
@@ -142,17 +171,17 @@ export async function GET(req: NextRequest) {
         p++;
         db.cell(tr, 1, p, st());
         db.cell(tr, 2, vac ? "" : ((e.code as string) || ""), st(vac ? { color: C.faint } : undefined));
-        db.cell(tr, 3, vac ? "" : ((e.name as string) || ""), stR(vac ? { color: C.faint } : undefined));
+        db.cell(tr, 3, vac ? "" : trName((e.name as string) || ""), stR(vac ? { color: C.faint } : undefined));
         db.cell(tr, 4, a, stR());
         db.cell(tr, 5, b, stR());
         db.cell(tr, 6, c, stR());
-        db.cell(tr, 7, (e.job as string) || "", stR());
+        db.cell(tr, 7, trName((e.job as string) || ""), stR());
         db.cell(tr, 8, (e.mach as string) || "", st());
         db.cell(tr, 9, (e.note as string) || "", stR());
         db.cell(tr, 10, "", st());
         if (vac) {
           db.cell(tr, 3, "", st({ italic: true, color: C.red, bold: true }));
-          db.cell(tr, 7, (e.job as string) || "", stR({ italic: true, color: C.red, bold: true }));
+          db.cell(tr, 7, trName((e.job as string) || ""), stR({ italic: true, color: C.red, bold: true }));
         }
         tr++;
       }

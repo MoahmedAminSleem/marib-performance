@@ -1,20 +1,22 @@
-/* /api/audit — سجل العمليات (dev/Amin only)
+/* /api/audit — سجل العمليات
    GET ?from=YYYY-MM-DD&to=YYYY-MM-DD →
    { events: [...desc], entities: [{ entity, label, creator:{actor,at}, edits:[{actor,at} ×≤3] }] }
    The grouped view keeps the CREATOR untouched and carries the last 3
    editors only — a new edit drops the oldest of the three (rolling window).
-   R25: refactored onto the shared http helpers. */
+   R25: refactored onto the shared http helpers.
+   R46-2: now respects the audit.view perm — admin/user with view+ access
+   can read; dev gets it by default; the admin can hide it per-user. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q } from "@/lib/marib/db";
-import { serverFail, requireRole } from "@/lib/marib/http";
+import { serverFail, requirePerm } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
-    const g = await requireRole(req, "dev", "audit", "GET");
+    const g = await requirePerm(req, "audit.view", "view");
     if (g.res) return g.res;
 
     const from = req.nextUrl.searchParams.get("from") || "";

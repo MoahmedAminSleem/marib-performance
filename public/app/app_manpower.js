@@ -49,6 +49,8 @@ var MaribManpower = (function () {
   /* R40 — مؤشر الماكينة: علامة صغيرة جنب الكود تعرّف إن في تولتيب
      (الماكينة/الملاحظات) بتيجي بالماوس من غير ضغط */
   var ICO_MACH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M7 8h4M7 12h6"/><path d="M17.5 8.5v2M9 17l-1.5 4M15 17l1.5 4"/></svg>';
+  /* R46-3: زرار صغير للتبديل بين الاسم الإنجليزي والعربي — حرف "ع" خفيف */
+  var ICO_AR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="AR"><path d="M4 5h6M7 5v14M4 19h6"/><path d="M14 5h6M17 5v14m-3 0h6"/></svg>';
   /* R41 — سلة المسح: زرار أحمر صغير جنب كل قسم (للأقسام الفاضية) */
   var ICO_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2"/><path d="M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12"/><path d="M10 11.5v5.5M14 11.5v5.5"/></svg>';
 
@@ -477,6 +479,12 @@ var MaribManpower = (function () {
   var jobOpen = {};               /* مفتوحية صفوف الوظائف (وضع الوظيفة-أولًا) */
   var cardMode = null;            /* emps|req|var|vacs|depts — صفحة تفاصيل الكارت */
   var cardQ = "";
+  /* R46-3: علامة الـ toggle للأسماء العربية. per-session — الأدمن بيدوس
+     على زرار صغير جنبه، بيشوف الـ name_ar/job_ar بدل الـ EN. */
+  var arShow = {};
+  /* R46-6: علامة الـ toggle لترجمة الأقسام مؤقتاً. per-session — الزرار الصغير
+     بيجيب الترجمة العربية من الـ cache (DATA.tr) ويوريها بدل الاسم الأصلي. */
+  var deptArShow = {};
   var archSel = {};                /* R42: تحديد سجلات الأرشيف (id → true) */
   var loading = false;
   var on = false;
@@ -802,8 +810,20 @@ var MaribManpower = (function () {
       ? '<button class="tw' + (isOpen ? " open" : "") + '" type="button" aria-expanded="' + (isOpen ? "true" : "false") + '" aria-label="' + esc(n.label) + '">' + ICO_CHEV + "</button>"
       : '<span class="tw ghost"></span>';
     var ico = '<span class="mi dept">' + ICO_DEPT + "</span>";
-    var label = '<span class="ml">' + hl(deptLabel(n), needle) +
-      (n.own !== null ? '<i class="mls ov" title="' + esc(T("mp_req_own")) + '">✎</i>' : "") + "</span>";
+    /* R46-6: اسم القسم يبان زي ما هو (RAW) افتراضياً، مع زرار صغير جنبه
+       يوريك الترجمة العربية مؤقتاً. لو فيه ترجمة cached في DATA.tr،
+       بناخدها على طول؛ غير كده، الزرار بيعمل fetch من /api/translate
+       (Google gtx + MyMemory، مجاني بدون مفتاح) ويخزنها للمرّة الجاية. */
+    var deptAr = (DATA && DATA.tr && DATA.tr[n.label] && DATA.tr[n.label].ar) ? DATA.tr[n.label].ar : "";
+    /* R46-6 live: حتى لو مفيش cached، الزرار يبان — عشان اليوزر يقدر
+       يطلب ترجمة فورية لأي قسم. */
+    var showAr = !!deptArShow[n.key];
+    var dispLabel = showAr ? (deptArShow[n.key] === "__loading__" ? "…" : (deptAr || n.label)) : n.label;
+    if (showAr && deptAr) dispLabel = deptAr;
+    if (showAr && !deptAr && deptArShow[n.key] !== "__loading__") dispLabel = n.label;
+    var arToggle = '<i class="mar-btn' + (showAr ? " on" : "") + '" role="button" tabindex="0" title="' + esc(T("mp_show_ar")) + '" data-dar="' + esc(n.id) + '" data-term="' + esc(n.label) + '" aria-pressed="' + (showAr ? "true" : "false") + '">' + ICO_AR + "</i>";
+    var label = '<span class="ml"><b class="mln' + (showAr && deptAr ? " ar" : "") + '">' + hl(dispLabel, needle) + "</b>" +
+      (n.own !== null ? '<i class="mls ov" title="' + esc(T("mp_req_own")) + '">✎</i>' : "") + arToggle + "</span>";
     /* R39: زرار واحد بس — نفس المودال بيعمل التسمية والنقل مع بعض
        R41: + سلة حمرا لمسح القسم الفاضي (نسخ الإضافة المتكررة) */
     var adm = ADMIN
@@ -818,6 +838,8 @@ var MaribManpower = (function () {
   /* employee row — الاسم والكود مع بعض (Expand ⇒ الوظيفة) */
   function empRow(e, needle, anim, delay) {
     var id = e[0], code = String(e[1] || ""), name = String(e[2] || "");
+    var nameAr = String(e[9] || "");  /* R46-3: Arabic name */
+    var jobAr = String(e[10] || ""); /* R46-3: Arabic job title */
     var isOpen = !!empOpen[id];
     var isNew = !code || code === "جديد";
     var trs = transfersOf(id);
@@ -826,10 +848,18 @@ var MaribManpower = (function () {
     var codeChip = isNew
       ? '<i class="mlc newc">' + esc(T("mp_code_new")) + "</i>"
       : '<i class="mlc num">' + hl(code, needle) + "</i>";
-    var label = '<span class="ml"><b class="mln">' + hl(name, needle) + "</b>" + codeChip +
+    /* R46-3: زرار صغير جنبه يوريك الاسم بالعربي (لو موجود) — خفيف ومتناسق */
+    var arToggle = nameAr
+      ? '<i class="mar-btn' + (arShow[id] ? " on" : "") + '" role="button" tabindex="0" title="' + esc(T("mp_show_ar")) + '" data-ar="' + esc(id) + '" aria-pressed="' + (arShow[id] ? "true" : "false") + '">' + ICO_AR + "</i>"
+      : "";
+    var displayName = arShow[id] && nameAr ? nameAr : name;
+    var displayJob = (e[3] || "");
+    if (arShow[id] && jobAr) displayJob = jobAr;
+    var label = '<span class="ml"><b class="mln' + (arShow[id] && nameAr ? " ar" : "") + '">' + hl(displayName, needle) + "</b>" + codeChip +
       /* R40: مؤشر صغير — الوقوف على الصف بيطلع الماكينة والملاحظات
          (من غير title عشان ميتعملش تولتيبين فوق بعض) */
-      ((e[8] || e[7]) ? '<i class="mtag" aria-hidden="true">' + ICO_MACH + "</i>" : "") + "</span>";
+      ((e[8] || e[7]) ? '<i class="mtag" aria-hidden="true">' + ICO_MACH + "</i>" : "") +
+      arToggle + "</span>";
     var pen = ADMIN ? '<span class="mo" role="button" tabindex="0" title="' + esc(T("mp_edit")) + '" data-ei="' + esc(id) + '">' + ICO_PEN + "</span>" : "";
     /* R43: تشيك بوكس دايم جنب كل موظف (للأدمن) — من غير وضع تحديد */
     var chk = ADMIN ? '<span class="mchk' + (selSet[id] ? " on" : "") + '" data-chk="' + esc(id) + '" role="checkbox" aria-checked="' + (selSet[id] ? "true" : "false") + '" tabindex="0">' + (selSet[id] ? '\u2713' : "") + "</span>" : "";
@@ -1203,65 +1233,37 @@ var MaribManpower = (function () {
           "</div>");
       }
     } else if (cardMode === "excess") {
-      /* R45: الأقسام اللي فيها زيادة عن المطلوب — الضغط على الصف يودّي
-         للقسم نفسه في الشجرة (يفتح سلسلة الآباء ويعمل فلاش) */
+      /* R46: الأقسام اللي فيها زيادة عن المطلوب — الضغط على الصف يودّي
+         للقسم نفسه في الشجرة (يفتح سلسلة الآباء ويعمل فلاش).
+         تغيير R46: بدل عرض الوظايف اللي جوه القسم (مش واضح ومش مفهوم)،
+         بنعرض الأقسام الداخلية (الأبناء) اللي فيها الزيادة فعلاً — بشكل سيمبل. */
       var exn = excessNodes();
       for (var ix = 0; ix < exn.length; ix++) {
         var xn = exn[ix].n, xx = exn[ix].x;
         if (N && norm(hay(xn.label) + " " + nodePathTT(xn)).indexOf(N) < 0) continue;
-        /* الوظايف اللي جوه القسم ده (أكتر 4 + «+كمان») */
-        var byj = {}, jord = [];
-        (function collectJ(n) {
-          for (var q1 = 0; q1 < n.emps.length; q1++) {
-            var jj2 = n.emps[q1][3] || "";
-            if (!byj[jj2]) { byj[jj2] = 0; jord.push(jj2); }
-            byj[jj2]++;
+        /* R46: الأقسام الداخلية (الأبناء المباشرين) اللي فيها زيادة عن المطلوب */
+        var subExcess = [];
+        for (var q1 = 0; q1 < xn.kids.length; q1++) {
+          var kd = xn.kids[q1];
+          var kx = 0;
+          /* لو الابن عنده override نحسب زيادته بنفسه، غير كده نلف في أبنائه */
+          if (kd.own !== null) {
+            if (kd.tCount > kd.own) kx = kd.tCount - kd.own;
+          } else {
+            (function walkSub(n) {
+              if (n.own !== null) { if (n.tCount > n.own) kx += n.tCount - n.own; return; }
+              for (var i2 = 0; i2 < n.kids.length; i2++) walkSub(n.kids[i2]);
+            })(kd);
           }
-          for (var q2 = 0; q2 < n.kids.length; q2++) collectJ(n.kids[q2]);
-        })(xn);
-        jord.sort(function (a, b) { return byj[b] - byj[a] || natCmp(TT(a), TT(b)); });
+          if (kx > 0) subExcess.push({ name: deptLabel(kd), x: kx, id: kd.id });
+        }
+        subExcess.sort(function (a, b) { return b.x - a.x || natCmp(a.name, b.name); });
         var jbits = [];
-        for (var q3 = 0; q3 < jord.length && q3 < 4; q3++) jbits.push(esc(TT(jord[q3]) || T("mp_no_job")) + " " + byj[jord[q3]]);
-        var jsub = jbits.join(" · ") + (jord.length > 4 ? " · +" + (jord.length - 4) : "");
+        for (var q3 = 0; q3 < subExcess.length && q3 < 4; q3++) jbits.push(esc(subExcess[q3].name) + " <b class=\"mv pos\"><bdi>+" + subExcess[q3].x + "</bdi></b>");
+        var jsub = jbits.join(" · ") + (subExcess.length > 4 ? " · +" + (subExcess.length - 4) : "");
+        if (!jsub) jsub = esc(T("mp_excess_empty"));
         html.push('<div class="cc-row jump" data-jump="' + esc(xn.id) + '"><span class="cc-main">' + hl(deptLabel(xn), needle) + ' <b class="mv pos"><bdi>+' + xx + "</bdi></b></span>" +
-          '<div class="cc-sub">' + esc(jsub) + "</div>" +
-          '<div class="cc-sub faint">' + esc(nodePathTT(parentOf(xn)) || rootLabel()) + "</div></div>");
-      }
-    } else if (cardMode === "nocode") {
-      /* R45: كل اللي من غير كود — قلم تعديل يفتح المودال يكتب الكود */
-      var nc = noCodeList();
-      for (var inc = 0; inc < nc.length; inc++) {
-        var ne = nc[inc];
-        var nnode = findByKey("d:" + ne[4]);
-        if (N && norm(hay(ne[2]) + " " + hay(ne[3]) + " " + (nnode ? nodePathTT(nnode) : "")).indexOf(N) < 0) continue;
-        html.push('<div class="cc-row ncr"><span class="cc-main">' + hl(ne[2], needle) + ' <i class="mlc newc">' + esc(T("mp_code_new")) + "</i></span>" +
-          '<div class="cc-sub">' + esc(TT(ne[3]) || T("mp_no_job")) + " · " + esc(nnode ? nodePathTT(nnode) : "—") + "</div>" +
-          (ADMIN ? '<span class="cc-act"><span class="mo" role="button" tabindex="0" title="' + esc(T("mp_nocode_edit")) + '" data-ei="' + esc(ne[0]) + '">' + ICO_PEN + "</span></span>" : "") +
-          "</div>");
-      }
-    } else if (cardMode === "excess") {
-      /* R45: الأقسام اللي فيها زيادة عن المطلوب — الضغط على الصف يودّي
-         للقسم نفسه في الشجرة (يفتح سلسلة الآباء ويعمل فلاش) */
-      var exn = excessNodes();
-      for (var ix = 0; ix < exn.length; ix++) {
-        var xn = exn[ix].n, xx = exn[ix].x;
-        if (N && norm(hay(xn.label) + " " + nodePathTT(xn)).indexOf(N) < 0) continue;
-        /* الوظايف اللي جوه القسم ده (أكتر 4 + «+كمان») */
-        var byj = {}, jord = [];
-        (function collectJ(n) {
-          for (var q1 = 0; q1 < n.emps.length; q1++) {
-            var jj2 = n.emps[q1][3] || "";
-            if (!byj[jj2]) { byj[jj2] = 0; jord.push(jj2); }
-            byj[jj2]++;
-          }
-          for (var q2 = 0; q2 < n.kids.length; q2++) collectJ(n.kids[q2]);
-        })(xn);
-        jord.sort(function (a, b) { return byj[b] - byj[a] || natCmp(TT(a), TT(b)); });
-        var jbits = [];
-        for (var q3 = 0; q3 < jord.length && q3 < 4; q3++) jbits.push(esc(TT(jord[q3]) || T("mp_no_job")) + " " + byj[jord[q3]]);
-        var jsub = jbits.join(" · ") + (jord.length > 4 ? " · +" + (jord.length - 4) : "");
-        html.push('<div class="cc-row jump" data-jump="' + esc(xn.id) + '"><span class="cc-main">' + hl(deptLabel(xn), needle) + ' <b class="mv pos"><bdi>+' + xx + "</bdi></b></span>" +
-          '<div class="cc-sub">' + esc(jsub) + "</div>" +
+          '<div class="cc-sub">' + jsub + "</div>" +
           '<div class="cc-sub faint">' + esc(nodePathTT(parentOf(xn)) || rootLabel()) + "</div></div>");
       }
     } else if (cardMode === "vacs") {
@@ -2070,6 +2072,97 @@ var MaribManpower = (function () {
     var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? m[0] : "";
   }
+
+  /* ============================================================
+     R46-7 — Undo notification (persistent toast, 15-min window)
+     Shows up after every import with a summary + Undo button + Dismiss.
+     Clicking Undo calls POST /api/manpower?action=undo with the token
+     returned by the import. The notification auto-expires after 15 min.
+     ============================================================ */
+  var UNDO_TTL_MS = 15 * 60 * 1000;
+  var undoToastEl = null;
+  var undoTimer = null;
+  function showUndoToast(token, summary, info) {
+    /* replace any existing undo toast */
+    if (undoToastEl) { undoToastEl.classList.add("bye"); setTimeout(function () { undoToastEl && undoToastEl.remove(); }, 220); }
+    if (undoTimer) { clearInterval(undoTimer); undoTimer = null; }
+    var el = document.createElement("div");
+    el.className = "mp-undo-toast";
+    el.setAttribute("role", "alert");
+    el.setAttribute("aria-live", "polite");
+    var bits = [];
+    if (info) {
+      if (info.inserted) bits.push("+" + info.inserted + " " + T("mp_pv_new"));
+      if (info.updated) bits.push("✎ " + info.updated + " " + T("mp_pv_jobs"));
+      if (info.moved) bits.push(T("mp_moved_n") + " " + info.moved);
+      if (info.keptOut) bits.push(T("mp_kept_out") + " " + info.keptOut);
+      if (info.deleted) bits.push("−" + info.deleted + " " + T("mp_pv_dels"));
+    }
+    el.innerHTML =
+      '<div class="ut-head">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v4h4"/><path d="M3.5 11a9 9 0 1 1 2.6 6.4"/><path d="M12 7h9v9h-9"/></svg>' +
+        '<b>' + esc(T("mp_import_done")) + '</b>' +
+      '</div>' +
+      '<div class="ut-sum">' + esc(bits.join(" · ") || summary) + '</div>' +
+      '<div class="ut-bar">' +
+        '<button type="button" class="ut-undo" data-token="' + esc(token) + '">' + esc(T("mp_undo")) + '</button>' +
+        '<button type="button" class="ut-x" aria-label="' + esc(T("mp_cancel")) + '">' +
+          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="ut-count"><b>15</b> ' + esc(T("mp_undo_left").replace("{n}", "15").split("{n}")[1] || "min") + '</div>';
+    document.body.appendChild(el);
+    undoToastEl = el;
+    /* countdown */
+    var left = UNDO_TTL_MS;
+    var countEl = el.querySelector(".ut-count");
+    undoTimer = setInterval(function () {
+      left -= 1000;
+      if (left <= 0) {
+        clearInterval(undoTimer); undoTimer = null;
+        if (countEl) { countEl.classList.add("done"); countEl.innerHTML = esc(T("mp_undo_expired")); }
+        /* auto-dismiss after 5 more seconds */
+        setTimeout(function () { if (undoToastEl === el) dismissUndoToast(); }, 5000);
+        return;
+      }
+      var mins = Math.floor(left / 60000);
+      var secs = Math.floor((left % 60000) / 1000);
+      if (countEl) countEl.innerHTML = '<b>' + mins + ':' + (secs < 10 ? "0" : "") + secs + '</b> ' + esc(T("mp_undo_left").replace("{n}", String(mins)).split("{n}")[1] || "min left");
+    }, 1000);
+    function dismissUndoToast() {
+      if (undoTimer) { clearInterval(undoTimer); undoTimer = null; }
+      if (undoToastEl === el) undoToastEl = null;
+      el.classList.add("bye");
+      setTimeout(function () { el.remove(); }, 220);
+    }
+    /* undo click */
+    el.querySelector(".ut-undo").addEventListener("click", function () {
+      var undoBtn = el.querySelector(".ut-undo");
+      undoBtn.disabled = true;
+      var orig = undoBtn.textContent;
+      undoBtn.textContent = "…";
+      fetch("/api/manpower", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "undo", undoToken: token })
+      })
+        .then(function (r) { if (!r.ok) throw { status: r.status }; return r.json(); })
+        .then(function () {
+          toast(T("mp_undo_done"), "ok");
+          dismissUndoToast();
+          reload();
+        })
+        .catch(function (e) {
+          undoBtn.disabled = false;
+          undoBtn.textContent = orig;
+          toast(e && e.status === 410 ? T("mp_undo_expired") : T("toast_sync_err"), "err");
+        });
+    });
+    /* dismiss click */
+    el.querySelector(".ut-x").addEventListener("click", dismissUndoToast);
+  }
+
   function importExcel(file) {
     ensureXLSX().then(function (XLSX) {
       var fr = new FileReader();
@@ -2206,6 +2299,10 @@ var MaribManpower = (function () {
               if (r && r.keptOut) bits.push(T("mp_kept_out") + " " + r.keptOut);
               if (r && r.deleted) bits.push(T("mp_pv_dels") + " " + r.deleted);
               toast(bits.join(" · "), "ok");
+              /* R46-7: persistent undo notification — 15-min window */
+              if (r && r.undoToken) {
+                showUndoToast(r.undoToken, bits.join(" · "), r);
+              }
               if (cardMode) closeCards();
             }).catch(function () { });
           });
@@ -2542,10 +2639,195 @@ var MaribManpower = (function () {
         .then(function () { exp.disabled = false; });
     });
 
+    /* ============================================================
+       R46-7 — Unified Import & Export dropdown + Undo notification
+       ============================================================ */
+    var ieb = $("mpImpExpBtn");
+    var iem = $("mpImpExpMenu");
+    if (ieb && iem) {
+      var ieClose = function () { iem.hidden = true; ieb.setAttribute("aria-expanded", "false"); };
+      var ieOpen = function () {
+        iem.hidden = false;
+        ieb.setAttribute("aria-expanded", "true");
+        /* close on outside click / escape / scroll */
+        setTimeout(function () {
+          document.addEventListener("click", ieOutClose, true);
+          document.addEventListener("keydown", ieEsc, true);
+        }, 0);
+      };
+      var ieOutClose = function (e2) {
+        if (!iem.contains(e2.target) && !ieb.contains(e2.target)) {
+          ieClose();
+          document.removeEventListener("click", ieOutClose, true);
+          document.removeEventListener("keydown", ieEsc, true);
+        }
+      };
+      var ieEsc = function (e3) {
+        if (e3.key === "Escape") {
+          ieClose();
+          document.removeEventListener("click", ieOutClose, true);
+          document.removeEventListener("keydown", ieEsc, true);
+        }
+      };
+      ieb.addEventListener("click", function (e4) {
+        e4.stopPropagation();
+        if (iem.hidden) ieOpen(); else ieClose();
+      });
+      /* wire the 3 menu options to trigger the existing buttons */
+      iem.addEventListener("click", function (e5) {
+        var b = e5.target.closest ? e5.target.closest("[data-act]") : null;
+        if (!b) return;
+        var act = b.getAttribute("data-act");
+        ieClose();
+        /* R46-10: export + template بيسألوا عن لغة التنزيل (AR/EN/TR) */
+        if (act === "export" || act === "template") {
+          pickExportLang().then(function (lang) {
+            if (!lang) return; /* cancelled */
+            if (act === "export") doExport(lang);
+            else doTemplate(lang);
+          });
+          return;
+        }
+        if (act === "import") {
+          var im = $("mpImportBtn"); if (im) im.click();
+        }
+      });
+    }
+
+    /* R46-10: language picker modal — returns a Promise<"ar"|"en"|"tr"|null> */
+    function pickExportLang() {
+      return new Promise(function (resolve) {
+        var m = modalOpen("mpm-lang",
+          '<h3>' + esc(T("mp_pick_lang")) + '</h3>' +
+          '<div class="cf-body">' +
+            '<div class="mp-lang-grid">' +
+              '<button type="button" class="mp-lang-opt" data-lang="ar"><b>عربي</b><small>Arabic</small></button>' +
+              '<button type="button" class="mp-lang-opt" data-lang="en"><b>English</b><small>الإنجليزية</small></button>' +
+              '<button type="button" class="mp-lang-opt" data-lang="tr"><b>Türkçe</b><small>التركية</small></button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mpm-btns"><button type="button" class="mpm-x">' + esc(T("mp_cancel")) + '</button></div>');
+        m.querySelectorAll(".mp-lang-opt").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var l = btn.getAttribute("data-lang");
+            m.remove();
+            resolve(l);
+          });
+        });
+        m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); resolve(null); });
+      });
+    }
+    /* R46-10: doExport + doTemplate — wrappers that pass ?lang= to the API */
+    function doExport(lang) {
+      var ex = $("mpExportBtn");
+      if (ex) ex.disabled = true;
+      toast(T("mp_export_going"), "");
+      var d = new Date();
+      function p2(n) { return (n < 10 ? "0" : "") + n; }
+      var stamp = d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate());
+      fetch("/api/manpower/export?lang=" + encodeURIComponent(lang), { credentials: "same-origin" })
+        .then(function (r) { if (!r.ok) throw new Error("export " + r.status); return r.blob(); })
+        .then(function (b) {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(b);
+          var langSuffix = lang === "ar" ? "-AR" : lang === "tr" ? "-TR" : "";
+          a.download = "Manpower-Marib3-" + stamp + langSuffix + ".xlsx";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
+          toast(T("mp_export_done"), "ok");
+        })
+        .catch(function () { toast(T("toast_sync_err"), "err"); })
+        .then(function () { if (ex) ex.disabled = false; });
+    }
+    function doTemplate(lang) {
+      var tp = $("mpTmplBtn");
+      if (tp) tp.disabled = true;
+      toast(T("mp_tmpl_going"), "");
+      fetch("/api/manpower/export?template=1&lang=" + encodeURIComponent(lang), { credentials: "same-origin" })
+        .then(function (r) { if (!r.ok) throw new Error("t" + r.status); return r.blob(); })
+        .then(function (b) {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(b);
+          var d = new Date();
+          function p2(n) { return (n < 10 ? "0" : "") + n; }
+          var langSuffix = lang === "ar" ? "-AR" : lang === "tr" ? "-TR" : "";
+          a.download = "Manpower-Template-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + langSuffix + ".xlsx";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
+          toast(T("mp_tmpl_done"), "ok");
+        })
+        .catch(function () { toast(T("toast_sync_err"), "err"); })
+        .then(function () { if (tp) tp.disabled = false; });
+    }
+
     /* tree interaction — one delegated listener */
     var tree = $("mpTree");
     if (tree) tree.addEventListener("click", function (e) {
       var el = e.target;
+      /* R46-3: زرار التبديل للعربي — قبل أي handler تاني عشان الـ .mar-btn
+         جوه .ml (نفس مكان الـ pen/mach tag) */
+      var arBtn = el.closest ? el.closest(".mar-btn[data-ar]") : null;
+      if (arBtn) {
+        e.stopPropagation();
+        var arId = arBtn.getAttribute("data-ar");
+        if (arId) {
+          arShow[arId] = !arShow[arId];
+          renderTree();
+        }
+        return;
+      }
+      /* R46-6: زرار التبديل لترجمة القسم — نفس النمط */
+      var darBtn = el.closest ? el.closest(".mar-btn[data-dar]") : null;
+      if (darBtn) {
+        e.stopPropagation();
+        var darId = darBtn.getAttribute("data-dar");
+        var darTerm = darBtn.getAttribute("data-term") || "";
+        if (darId) {
+          var node = findByKey("d:" + darId);
+          if (node) {
+            /* toggle off → just remove the flag */
+            if (deptArShow[node.key] && deptArShow[node.key] !== "__loading__") {
+              delete deptArShow[node.key];
+              renderTree();
+            } else {
+              /* toggle on — check cache first */
+              var cached = (DATA && DATA.tr && DATA.tr[node.label] && DATA.tr[node.label].ar) ? DATA.tr[node.label].ar : "";
+              if (cached) {
+                deptArShow[node.key] = cached;
+                renderTree();
+              } else {
+                /* fetch live translation via /api/translate */
+                deptArShow[node.key] = "__loading__";
+                renderTree();
+                fetch("/api/translate?term=" + encodeURIComponent(node.label) + "&to=ar", { credentials: "include" })
+                  .then(function (r) { if (!r.ok) throw new Error("tr" + r.status); return r.json(); })
+                  .then(function (data) {
+                    var tr = (data && data.tr) || "";
+                    if (tr) {
+                      /* cache it client-side so next click is instant */
+                      if (!DATA.tr) DATA.tr = {};
+                      if (!DATA.tr[node.label]) DATA.tr[node.label] = {};
+                      DATA.tr[node.label].ar = tr;
+                      deptArShow[node.key] = tr;
+                    } else {
+                      delete deptArShow[node.key];
+                      toast(T("toast_sync_err"), "err");
+                    }
+                    renderTree();
+                  })
+                  .catch(function () {
+                    delete deptArShow[node.key];
+                    toast(T("toast_sync_err"), "err");
+                    renderTree();
+                  });
+              }
+            }
+          }
+        }
+        return;
+      }
       /* R42: تعديل اسم الجذر (مأرب 3) — أول شرط: الزرار ده عليه class
          mo rn فأي فحص تاني (dept edit / pen) بياخده ويسكت */
       var rted = el.closest ? el.closest("[data-rootedit]") : null;

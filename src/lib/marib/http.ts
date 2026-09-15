@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureBoot } from "@/lib/marib/db";
 import { currentUser, sessionUser, isAdmin, isDev, type SessionUser } from "@/lib/marib/session";
+import { checkPerm, type PermLevel } from "@/lib/marib/perms";
 import { log, type ChildLogger } from "@/lib/marib/logger";
 
 export const MAX_BODY_BYTES = 8 * 1024 * 1024; // 8 MB — months of sheets fit easily
@@ -86,6 +87,42 @@ export async function requireRoleBody(req: NextRequest, role: Role): Promise<{ u
   if (role === "admin" && !isAdmin(me)) return { res: fail("admin", 403) };
   if (role === "dev" && !isDev(me)) return { res: fail("dev", 403) };
   return { user: me };
+}
+
+/* R46-2 — perm-aware route guard: boots, checks session, then verifies the
+   signed-in user has at least `minLevel` access on `feature`. Returns
+   { user } on success, { res: 401|403 } on failure. Use this on every
+   route that protects an R46 feature. */
+export async function requirePerm(
+  req: NextRequest,
+  feature: string,
+  minLevel: PermLevel = "view"
+): Promise<{ user?: SessionUser; level?: PermLevel; res?: NextResponse }> {
+  const { user, level, allowed } = await checkPerm(req, feature, minLevel);
+  if (!user) return { res: fail("auth", 401) };
+  if (!allowed) return { res: fail("forbidden", 403) };
+  return { user, level };
+}
+
+/* Same as requirePerm but also reads the body first (for POST/PUT/DELETE
+   where the body is going to be parsed anyway — saves a round-trip
+   in the caller). */
+export async function requirePermBody(
+  req: NextRequest,
+  feature: string,
+  minLevel: PermLevel = "view"
+): Promise<{ user?: SessionUser; level?: PermLevel; res?: NextResponse }> {
+  await ensureBoot();
+  const { currentUser } = await import("./session");
+  const me = await currentUser(req);
+  if (!me) return { res: fail("auth", 401) };
+  const { loadUserPerms, effectiveLevel } = await import("./perms");
+  const overrides = await loadUserPerms(me.uid);
+  const level = effectiveLevel(me.role, overrides, feature);
+  const ORDER: PermLevel[] = ["hidden", "view", "edit"];
+  const allowed = ORDER.indexOf(level) >= ORDER.indexOf(minLevel);
+  if (!allowed) return { res: fail("forbidden", 403) };
+  return { user: me, level };
 }
 
 export { isAdmin, isDev };

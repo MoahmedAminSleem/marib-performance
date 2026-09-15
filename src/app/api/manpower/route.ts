@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
 
     const depts = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
     const emps = await q(
-      `SELECT id, code, name, job, dept_id, hire, vac, note, mach FROM marib_emp
+      `SELECT id, code, name, job, dept_id, hire, vac, note, mach, name_ar, job_ar FROM marib_emp
        ORDER BY ord ASC`
     );
     const reqRows = await q("SELECT node_key, required FROM marib_req");
@@ -177,7 +177,7 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({
       depts: depts.map((r) => [r.id, r.name, r.parent_id || "", r.ord]),
-      emps: emps.map((r) => [r.id, r.code || "", r.name || "", r.job || "", r.dept_id || "", r.hire || "", r.vac ? 1 : 0, r.note || "", r.mach || ""]),
+      emps: emps.map((r) => [r.id, r.code || "", r.name || "", r.job || "", r.dept_id || "", r.hire || "", r.vac ? 1 : 0, r.note || "", r.mach || "", r.name_ar || "", r.job_ar || ""]),
       req: reqRows.reduce<Record<string, number>>((acc, r) => {
         acc[r.node_key as string] = r.required as number;
         return acc;
@@ -586,6 +586,11 @@ export async function POST(req: NextRequest) {
     if (action === "import") {
       const rows = Array.isArray(body.rows) ? (body.rows as unknown[]) : [];
       if (!rows.length || rows.length > 6000) return fail("rows", 400);
+      /* R46-7: capture an undo snapshot BEFORE mutating anything —
+         the client will show an Undo button for 15 minutes that calls
+         the "undo" action with this token. */
+      const undoToken = await (await import("@/lib/marib/undo")).captureUndoSnapshot(me.username);
+      await (await import("@/lib/marib/undo")).sweepExpiredUndoTokens().catch(() => {});
       /* R42: أعمدة موجودة فعلًا في الشيت؟ (لو عمود التعيين مش موجود
          أصلًا، مفيش فرغ لتواريخ التعيين المخزنة) */
       const colFlags = {
@@ -840,7 +845,19 @@ export async function POST(req: NextRequest) {
       const kept = existing.filter((r) => !r.vac && !seenIds.has(r.id as string) && r.code && r.code !== "جديد");
       await audit(actor, "upload", "manpower", null, { rows: clean.length, inserted, updated, moved, codeFilled, keptOut: kept.length, deleted });
       lg.info("manpower import", { rows: clean.length, inserted, updated, moved, codeFilled, keptOut: kept.length, deleted });
-      return NextResponse.json({ ok: true, inserted, updated, moved, codeFilled, total: clean.length, keptOut: kept.length, deleted });
+      return NextResponse.json({ ok: true, inserted, updated, moved, codeFilled, total: clean.length, keptOut: kept.length, deleted, undoToken });
+    }
+
+    /* R46-7: undo an import — restore the snapshot taken before the
+       most recent import (within the 15-min window). Returns the
+       same shape as the original import would return. */
+    if (action === "undo") {
+      const token = String(body.undoToken || "");
+      if (!token) return fail("undoToken", 400);
+      const restored = await (await import("@/lib/marib/undo")).restoreFromSnapshot(token, me.username);
+      if (!restored) return fail("expired", 410);
+      lg.info("manpower undo", { by: me.username, token });
+      return NextResponse.json({ ok: true, restored: true });
     }
 
     return fail("action", 400);
