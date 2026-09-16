@@ -811,17 +811,13 @@ var MaribManpower = (function () {
       : '<span class="tw ghost"></span>';
     var ico = '<span class="mi dept">' + ICO_DEPT + "</span>";
     /* R46-6: اسم القسم يبان زي ما هو (RAW) افتراضياً، مع زرار صغير جنبه
-       يوريك الترجمة العربية مؤقتاً. لو فيه ترجمة cached في DATA.tr،
-       بناخدها على طول؛ غير كده، الزرار بيعمل fetch من /api/translate
-       (Google gtx + MyMemory، مجاني بدون مفتاح) ويخزنها للمرّة الجاية. */
+       يوريك الترجمة العربية مؤقتاً (لو فيه ترجمة متاحة). */
     var deptAr = (DATA && DATA.tr && DATA.tr[n.label] && DATA.tr[n.label].ar) ? DATA.tr[n.label].ar : "";
-    /* R46-6 live: حتى لو مفيش cached، الزرار يبان — عشان اليوزر يقدر
-       يطلب ترجمة فورية لأي قسم. */
     var showAr = !!deptArShow[n.key];
-    var dispLabel = showAr ? (deptArShow[n.key] === "__loading__" ? "…" : (deptAr || n.label)) : n.label;
-    if (showAr && deptAr) dispLabel = deptAr;
-    if (showAr && !deptAr && deptArShow[n.key] !== "__loading__") dispLabel = n.label;
-    var arToggle = '<i class="mar-btn' + (showAr ? " on" : "") + '" role="button" tabindex="0" title="' + esc(T("mp_show_ar")) + '" data-dar="' + esc(n.id) + '" data-term="' + esc(n.label) + '" aria-pressed="' + (showAr ? "true" : "false") + '">' + ICO_AR + "</i>";
+    var dispLabel = showAr && deptAr ? deptAr : n.label;
+    var arToggle = deptAr
+      ? '<i class="mar-btn' + (showAr ? " on" : "") + '" role="button" tabindex="0" title="' + esc(T("mp_show_ar")) + '" data-dar="' + esc(n.id) + '" aria-pressed="' + (showAr ? "true" : "false") + '">' + ICO_AR + "</i>"
+      : "";
     var label = '<span class="ml"><b class="mln' + (showAr && deptAr ? " ar" : "") + '">' + hl(dispLabel, needle) + "</b>" +
       (n.own !== null ? '<i class="mls ov" title="' + esc(T("mp_req_own")) + '">✎</i>' : "") + arToggle + "</span>";
     /* R39: زرار واحد بس — نفس المودال بيعمل التسمية والنقل مع بعض
@@ -1233,38 +1229,64 @@ var MaribManpower = (function () {
           "</div>");
       }
     } else if (cardMode === "excess") {
-      /* R46: الأقسام اللي فيها زيادة عن المطلوب — الضغط على الصف يودّي
-         للقسم نفسه في الشجرة (يفتح سلسلة الآباء ويعمل فلاش).
-         تغيير R46: بدل عرض الوظايف اللي جوه القسم (مش واضح ومش مفهوم)،
-         بنعرض الأقسام الداخلية (الأبناء) اللي فيها الزيادة فعلاً — بشكل سيمبل. */
+      /* R46-fix: بدل عرض الأقسام الأم (اللي ليها override + surplus)،
+         بنعرض الأقسام الداخلية اللي فيها موظفين (leaf depts) تحت كل أب
+         ليه surplus. كل قسم داخلي يبقى كارت مستقل باسمه + عدد الموظفين
+         جواه + مسار الأب. ده اللي المستخدم عايزه: يشوف الأقسام
+         الداخلية اللي قبل الاسم علطول (اللي شايلين الزيادة فعلاً). */
       var exn = excessNodes();
       for (var ix = 0; ix < exn.length; ix++) {
         var xn = exn[ix].n, xx = exn[ix].x;
         if (N && norm(hay(xn.label) + " " + nodePathTT(xn)).indexOf(N) < 0) continue;
-        /* R46: الأقسام الداخلية (الأبناء المباشرين) اللي فيها زيادة عن المطلوب */
-        var subExcess = [];
-        for (var q1 = 0; q1 < xn.kids.length; q1++) {
-          var kd = xn.kids[q1];
-          var kx = 0;
-          /* لو الابن عنده override نحسب زيادته بنفسه، غير كده نلف في أبنائه */
-          if (kd.own !== null) {
-            if (kd.tCount > kd.own) kx = kd.tCount - kd.own;
-          } else {
-            (function walkSub(n) {
-              if (n.own !== null) { if (n.tCount > n.own) kx += n.tCount - n.own; return; }
-              for (var i2 = 0; i2 < n.kids.length; i2++) walkSub(n.kids[i2]);
-            })(kd);
+        /* R46-fix: نوّل على كل الأقسام الداخلية اللي جوه xn اللي فيها
+           موظفين مباشرين (leaf depts — مفيش أبناء تحتهم عندهم موظفين).
+           كل واحد فيهم يبقى كارت مستقل. */
+        var leafDepts = [];
+        (function findLeaves(n) {
+          /* لو القسم ده عنده موظفين مباشرين (في n.emps) ومفيش أبناء
+             عندهم موظفين، اعتبره leaf. */
+          var hasEmpKids = false;
+          for (var q = 0; q < n.kids.length; q++) {
+            if (n.kids[q].emps.length > 0 || n.kids[q].kids.length > 0) {
+              hasEmpKids = true;
+              break;
+            }
           }
-          if (kx > 0) subExcess.push({ name: deptLabel(kd), x: kx, id: kd.id });
+          if (n.emps.length > 0 && !hasEmpKids) {
+            /* ده leaf dept — فيه موظفين مباشرين ومفيش أقسام فرعية */
+            leafDepts.push({
+              name: deptLabel(n),
+              count: n.emps.length,
+              id: n.id,
+              parent: parentOf(n),
+              node: n
+            });
+            return;
+          }
+          /* مش leaf — نلف على الأبناء */
+          for (var q2 = 0; q2 < n.kids.length; q2++) {
+            findLeaves(n.kids[q2]);
+          }
+        })(xn);
+        /* رتّب بعدد الموظفين (الأكتر الأول) بعدين بالاسم */
+        leafDepts.sort(function (a, b) { return b.count - a.count || natCmp(a.name, b.name); });
+        /* لو مفيش leaf depts، اعرض الأب نفسه ككارت */
+        if (!leafDepts.length) {
+          leafDepts.push({ name: deptLabel(xn), count: xx, id: xn.id, parent: parentOf(xn) });
         }
-        subExcess.sort(function (a, b) { return b.x - a.x || natCmp(a.name, b.name); });
-        var jbits = [];
-        for (var q3 = 0; q3 < subExcess.length && q3 < 4; q3++) jbits.push(esc(subExcess[q3].name) + " <b class=\"mv pos\"><bdi>+" + subExcess[q3].x + "</bdi></b>");
-        var jsub = jbits.join(" · ") + (subExcess.length > 4 ? " · +" + (subExcess.length - 4) : "");
-        if (!jsub) jsub = esc(T("mp_excess_empty"));
-        html.push('<div class="cc-row jump" data-jump="' + esc(xn.id) + '"><span class="cc-main">' + hl(deptLabel(xn), needle) + ' <b class="mv pos"><bdi>+' + xx + "</bdi></b></span>" +
-          '<div class="cc-sub">' + jsub + "</div>" +
-          '<div class="cc-sub faint">' + esc(nodePathTT(parentOf(xn)) || rootLabel()) + "</div></div>");
+        /* اعرض كل قسم داخلي ككارت مستقل */
+        for (var s = 0; s < leafDepts.length; s++) {
+          var sd = leafDepts[s];
+          if (N && norm(hay(sd.name) + " " + nodePathTT(sd.parent)).indexOf(N) < 0) continue;
+          var sdParentPath = (function () {
+            try { return nodePathTT(sd.parent) || rootLabel(); } catch (e) { return rootLabel(); }
+          })();
+          html.push('<div class="cc-row jump" data-jump="' + esc(sd.id) + '">' +
+            '<span class="cc-main">' + hl(sd.name, needle) + '</span>' +
+            '<div class="cc-sub faint">' + esc(sdParentPath) + '</div>' +
+            '<b class="mv pos"><bdi>' + sd.count + '</bdi></b>' +
+            '</div>');
+        }
       }
     } else if (cardMode === "vacs") {
       /* كل الشواغر — الوظيفة والمكان، وزرار التعيين للأدمن */
@@ -2783,47 +2805,11 @@ var MaribManpower = (function () {
       if (darBtn) {
         e.stopPropagation();
         var darId = darBtn.getAttribute("data-dar");
-        var darTerm = darBtn.getAttribute("data-term") || "";
         if (darId) {
           var node = findByKey("d:" + darId);
           if (node) {
-            /* toggle off → just remove the flag */
-            if (deptArShow[node.key] && deptArShow[node.key] !== "__loading__") {
-              delete deptArShow[node.key];
-              renderTree();
-            } else {
-              /* toggle on — check cache first */
-              var cached = (DATA && DATA.tr && DATA.tr[node.label] && DATA.tr[node.label].ar) ? DATA.tr[node.label].ar : "";
-              if (cached) {
-                deptArShow[node.key] = cached;
-                renderTree();
-              } else {
-                /* fetch live translation via /api/translate */
-                deptArShow[node.key] = "__loading__";
-                renderTree();
-                fetch("/api/translate?term=" + encodeURIComponent(node.label) + "&to=ar", { credentials: "include" })
-                  .then(function (r) { if (!r.ok) throw new Error("tr" + r.status); return r.json(); })
-                  .then(function (data) {
-                    var tr = (data && data.tr) || "";
-                    if (tr) {
-                      /* cache it client-side so next click is instant */
-                      if (!DATA.tr) DATA.tr = {};
-                      if (!DATA.tr[node.label]) DATA.tr[node.label] = {};
-                      DATA.tr[node.label].ar = tr;
-                      deptArShow[node.key] = tr;
-                    } else {
-                      delete deptArShow[node.key];
-                      toast(T("toast_sync_err"), "err");
-                    }
-                    renderTree();
-                  })
-                  .catch(function () {
-                    delete deptArShow[node.key];
-                    toast(T("toast_sync_err"), "err");
-                    renderTree();
-                  });
-              }
-            }
+            deptArShow[node.key] = !deptArShow[node.key];
+            renderTree();
           }
         }
         return;
