@@ -277,7 +277,17 @@ var AppAdmin = (function (ctx) {
       .then(function (r) { if (!r.ok) throw { status: r.status }; return r.json(); })
       .then(function (data) {
         PM_DATA = data;
-        renderPerms();
+        /* R53: فصل خطأ الرندر عن خطأ الشبكة — قبل كده أي Throw جوا
+           renderPerms كان بيتلقط في الـ catch التحتاني ويظهر كـ"المزامنة
+           فشلت" حتى لو الـ GET رجع 200 (باج I18N.cur عاش من R46 للـ R52
+           من غير ما حد ياخد باله). دلوقتي كل مسار بيقول رسالته الصح. */
+        try {
+          renderPerms();
+        } catch (err) {
+          console.error("[perms] render failed:", err);
+          usersHead.innerHTML = "";
+          rowsHost.innerHTML = "<p style='padding:16px;color:var(--muted)'>" + esc(T("pm_render_err")) + "</p>";
+        }
       })
       .catch(function (e) {
         usersHead.innerHTML = "";
@@ -316,7 +326,10 @@ var AppAdmin = (function (ctx) {
       if (!groups[g]) return;
       html.push('<div class="pm-group">' + esc(T("pm_group_" + g)) + "</div>");
       groups[g].forEach(function (f) {
-        html.push('<div class="pm-feat"><b>' + esc(I18N.cur() === "ar" ? f.label_ar : f.label_en) + "</b><small>" + esc(I18N.cur() === "ar" ? f.desc_ar : f.desc_en) + "</small></div>");
+        /* R53: I18N.cur() كانت باج كامن من R46 — cur متغير خاص جوا
+           i18n_core ومش من الـ exports، فالنداء كان بيضرب TypeError
+           ولوحة الصلاحيات بتقول "المزامنة فشلت". الصح هو I18N.is() */
+        html.push('<div class="pm-feat"><b>' + esc(I18N.is("ar") ? f.label_ar : f.label_en) + "</b><small>" + esc(I18N.is("ar") ? f.desc_ar : f.desc_en) + "</small></div>");
         html.push('<div class="pm-cells">');
         users.forEach(function (u) {
           var cur = (u.perms && u.perms[f.key]) || "inherit";

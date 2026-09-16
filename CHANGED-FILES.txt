@@ -1,40 +1,31 @@
-Marib R52 — Refactoring: تقسيم app_main + استخراج منطق الاتزان + تنظيف ميت
+Marib R53 — إصلاح لوحة الصلاحيات: «المزامنة فشلت» اللي كانت كذبة
 ====================================================================================
 
-الجولة 52 (16 سبتمبر 2026) — طلب المالك «اعمل refactoring»:
-هندسة داخلية صفر تغيير في السلوك أو الشكل. متدفقة مباشرة على GitHub.
+الجولة 53 (16 سبتمبر 2026) — بلاغ المالك: «خانة الصلاحيات بيقولي
+المزامنة فشلت». التشخيص: الشبكة سليمة (GET /api/perms بيرجع 200) —
+الباج كان جوا الرندر نفسه وبيتخفى ورا رسالة فشل المزامنة.
 
-  1. app_main.js (4583 سطر) اتقسم 4 وحدات بجسر window.__maribCtx:
-       - app_main.js (2196): الحالة + الأدوات + الفلاتر + الدريو + الإعدادات
-       - app_pages.js (1444 جديد): عرض صفحات التحليل + بيت المدير
-       - app_entries.js (611 جديد): إدخال البيانات (إنتاج/غياب/أوفر تايم)
-       - app_admin.js (393 جديد): الأوديت + التخزين + الصلاحيات
-  2. manpower/route.ts (876 ← 476) + src/lib/marib/manpower_io.ts (جديد):
-     منطق الاستيراد الذكي كله اتنقل حرفيًا — نفس السلوك بالظبط.
-  3. مسح كود ميت متحقق منه: nodePath + 71 قاعدة CSS (app.css 4331 ← 4127).
-  4. cache-bust r51 → r52 (page.tsx + layout.tsx + skeleton.ts).
+  1. الجذر: renderPerms بينادي I18N.cur() — cur متغير خاص جوا
+     i18n_core وعمرو ما اتصدّر → TypeError بيتلقط في catch الشبكة.
+     الباج دخل مع R46 وعاش نقلات R50/R51/R52 (7 جولات).
+  2. الإصلاح: I18N.is("ar") + فصل catch الرندر عن catch الشبكة
+     (console.error + رسالة مستقلة pm_render_err عربي/إنجليزي/تركي).
+  3. تنظيف: مفاتيح pm_empty_t/pm_empty_d/pm_add_user كانت متكررة
+     مرتين من R51 — اتشال التكرار.
+  4. cache-bust r52 → r53 (page.tsx + layout.tsx + skeleton.ts).
 
-الاختبار: tsc + build نضيف · API 35/35 (استيراد round-trip مع undo كامل)
-· متصفح 18 لقطة بصفر أخطاء كونسول (لقطات في download/r52-screenshots/).
+الاختبار: بناء نضيف + E2E متصفح بداتابيز 3 مستخدمين (مطوّر/أدمن/
+يوزر): اللوحة بترندر كاملة (11 ميزة × أعمدة المستخدمين) · حفظ فعلي
+(صف في marib_perm + أوديت perms:manpower.view) · توست «الصلاحية
+اتغيرت» · صفر أخطاء كونسول · رسالة الفشل اختفت تمامًا.
 
-الملفات المتغيرة (14):
-------------------------------------------------------------------------------------
-معدّل        public/app/app_main.js          تقسيم + جسر __maribCtx + استرجاع MaribMe/DEF_TH/TG_FIELDS
-جديد         public/app/app_pages.js         عرض الصفحات (من app_main)
-جديد         public/app/app_entries.js       إدخال البيانات (من app_main)
-جديد         public/app/app_admin.js         الإدارة (من app_main)
-معدّل        public/app/app_manpower.js      حذف nodePath الميتة (3017 ← 3005)
-معدّل        public/app/app.css              مسح 71 قاعدة ميتة (4331 ← 4127)
-معدّل        src/app/page.tsx                ترتيب التحميل + r52
-معدّل        src/app/layout.tsx              r52
-معدّل        src/app/skeleton.ts             18 أيقونة r52
-معدّل        src/app/api/manpower/route.ts   فرع الاستيراد بقى 5 سطور (876 ← 476)
-جديد         src/lib/marib/manpower_io.ts    الاستيراد الذكي + الأدوات المشتركة (442)
-معدّل        docs/05-CURRENT-STATE.md        حالة R52
-معدّل        docs/06-ROUNDS.md               سجل R52
-جديد         docs/سير-العمل-R52.md           تفاصيل الجولة
-معدّل        سير-العمل.html                  بلوك R52
-معدّل        CHANGED-FILES.txt               الملف ده
+الملفات المتغيرة (5 + توثيق):
 
-ملاحظة للمالك: مش هتشوف أي فرق — نفس الشكل ونفس السلوك. لو حابب
-تتأكد: افتح الموقع وعمل Ctrl+Shift+R (تحديث قوي) مرة واحدة بعد النشر.
+  M  public/app/app_admin.js      — الإصلاح الرئيسي (I18N.is + فصل catch)
+  M  public/app/i18n_dict.js      — pm_render_err + إزالة التكرار
+  M  src/app/page.tsx             — cache-bust r53 (12 سكريبت)
+  M  src/app/layout.tsx           — cache-bust r53 (CSS)
+  M  src/app/skeleton.ts          — cache-bust r53 (أيقونة)
+  M  docs/05-CURRENT-STATE.md     — حالة R53
+  M  docs/06-ROUNDS.md            — سجل R53
+  A  docs/سير-العمل-R53.md        — تقرير الجولة الكامل
