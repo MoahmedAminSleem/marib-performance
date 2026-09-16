@@ -2978,7 +2978,7 @@ var App = (function () {
     m.innerHTML =
       '<div class="ent-panel">' +
         '<div class="ent-head">' +
-          '<h3>' + esc(T("ent_title")) + '</h3>' +
+          '<h3><i class="tb-em" aria-hidden="true">📝</i> ' + esc(T("ent_title")) + '</h3>' +
           '<div class="ent-tools">' +
             '<label class="ent-month"><span>' + esc(T("mp_month")) + '</span><input type="month" id="entMonth" value="' + entMonth + '"></label>' +
             '<button type="button" class="ent-x" aria-label="' + esc(T("dp_close")) + '">' +
@@ -2987,9 +2987,9 @@ var App = (function () {
           '</div>' +
         '</div>' +
         '<div class="ent-tabs">' +
-          '<button type="button" class="ent-tab on" data-tab="production">' + esc(T("ent_prod_tab")) + '</button>' +
-          '<button type="button" class="ent-tab" data-tab="absence">' + esc(T("ent_abs_tab")) + '</button>' +
-          '<button type="button" class="ent-tab" data-tab="overtime">' + esc(T("ent_ot_tab")) + '</button>' +
+          '<button type="button" class="ent-tab on" data-tab="production"><i class="tb-em" aria-hidden="true">🏭</i> ' + esc(T("ent_prod_tab")) + '</button>' +
+          '<button type="button" class="ent-tab" data-tab="absence"><i class="tb-em" aria-hidden="true">📋</i> ' + esc(T("ent_abs_tab")) + '</button>' +
+          '<button type="button" class="ent-tab" data-tab="overtime"><i class="tb-em" aria-hidden="true">⏱️</i> ' + esc(T("ent_ot_tab")) + '</button>' +
         '</div>' +
         '<div class="ent-body" id="entBody"></div>' +
       '</div>';
@@ -3067,69 +3067,50 @@ var App = (function () {
       b.addEventListener("click", function () { entDelete("production", b.getAttribute("data-id")); });
     });
   }
-  /* R47: قايمة الأقسام لفورم الإنتاج — من /api/manpower مرة واحدة
-     (cache على مستوى الجلسة) وعقبال كده كل فورم بفتح بلاقيها جاهزة */
-  var entDeptCache = null;
-  function entDeptOptions(cb) {
-    if (entDeptCache) { cb(entDeptCache); return; }
-    fetch("/api/manpower", { credentials: "include" })
-      .then(function (r) { if (!r.ok) throw new Error("m"); return r.json(); })
-      .then(function (d) {
-        var byId = {}, kids = {};
-        (d.depts || []).forEach(function (n) {
-          byId[n[0]] = n[1];
-          (kids[n[2] || ""] = kids[n[2] || ""] || []).push(n[0]);
-        });
-        var list = [];
-        (function walk(pid, depth) {
-          (kids[pid] || []).forEach(function (k) {
-            list.push({ id: k, name: byId[k] || k, depth: depth });
-            walk(k, depth + 1);
-          });
-        })("", 0);
-        entDeptCache = list;
-        cb(list);
-      })
-      .catch(function () { cb([]); });
+  /* R50: أقسام الإنتاج الخمسة الثابتة + الخمسة خطوط — دي أقسام
+     الأرضية الفعلية، مش شجرة الاتزان كلها (طلب المالك) */
+  var ENT_SECTIONS = ["الصدر", "الضهر", "التجميع", "التجهيزات", "البوكت"];
+  var ENT_LINES = ["1", "2", "3", "4", "5"];
+  function entSecOptions(sel) {
+    var h = '<option value="">' + esc(T("ent_sec_prod")) + '</option>';
+    for (var i = 0; i < ENT_SECTIONS.length; i++) {
+      h += '<option value="' + esc(ENT_SECTIONS[i]) + '">' + esc(ENT_SECTIONS[i]) + "</option>";
+    }
+    return h;
+  }
+  function entLineOptions() {
+    var h = '<option value="">' + esc(T("ent_line_n")) + "</option>";
+    for (var i = 0; i < ENT_LINES.length; i++) {
+      h += '<option value="' + esc(ENT_LINES[i]) + '">' + esc(I18N.lang() === "tr" ? "Hat " + ENT_LINES[i] : "خط " + ENT_LINES[i]) + "</option>";
+    }
+    return h;
   }
   function entOpenProdForm() {
     var today = new Date().toISOString().slice(0, 10);
     var html =
       '<div class="ent-form-row"><label>' + esc(T("ent_date")) + '<input type="date" id="efDate" value="' + today + '"></label></div>' +
-      /* R47: القسم + الخط — كانوا ناقصين من الفورم الأصلي رغم إن الطلب
-         الأصلي كان «إنتاج بالـ PO + القسم + الخط + التاريخ» */
-      '<div class="ent-form-row"><label>' + esc(T("ent_dept")) + '<select id="efDept"><option value="">—</option></select></label></div>' +
-      '<div class="ent-form-row"><label>' + esc(T("ent_line")) + '<input type="text" id="efLine" maxlength="40" placeholder="1 / 2 / 3…"></label></div>' +
-      '<div class="ent-form-row"><label>' + esc(T("ent_po")) + '<input type="text" id="efPo" placeholder="PO-123"></label></div>' +
-      '<div class="ent-form-row"><label>' + esc(T("ent_qty")) + '<input type="number" id="efQty" min="1" value="1"></label></div>' +
+      '<div class="ent-form-row two">' +
+        '<label>' + esc(T("ent_dept")) + '<select id="efSec">' + entSecOptions() + '</select></label>' +
+        '<label>' + esc(T("ent_line")) + '<select id="efLine">' + entLineOptions() + '</select></label>' +
+      '</div>' +
+      '<div class="ent-form-row two">' +
+        '<label>' + esc(T("ent_po")) + '<input type="text" id="efPo" placeholder="PO-123"></label>' +
+        '<label>' + esc(T("ent_qty")) + '<input type="number" id="efQty" min="1" value="1"></label>' +
+      '</div>' +
       '<div class="ent-form-row"><label>' + esc(T("ent_note")) + '<input type="text" id="efNote" placeholder=""></label></div>';
     entOpenForm(T("ent_add") + " — " + T("ent_prod_tab"), html, function (fm) {
       var data = {
         date: fm.querySelector("#efDate").value,
-        dept_id: (fm.querySelector("#efDept") || {}).value || "",
-        line_id: (fm.querySelector("#efLine") || {}).value || "",
+        dept: (fm.querySelector("#efSec") || {}).value || "",
+        line: (fm.querySelector("#efLine") || {}).value || "",
         po_number: fm.querySelector("#efPo").value,
         qty: parseInt(fm.querySelector("#efQty").value, 10) || 0,
         note: fm.querySelector("#efNote").value,
       };
-      if (!data.date || data.qty <= 0) { toast(T("toast_fill"), "err"); return false; }
+      if (!data.date || data.qty <= 0 || !data.dept || !data.line) { toast(T("toast_fill"), "err"); return false; }
       entSubmitForm("/api/entries/production", data);
       return true;
     });
-    /* R47: املأ سيلكت الأقسام بعد فتح الفورم (مش عند الحفظ) */
-    setTimeout(function () {
-      var sel = document.querySelector(".ent-form-modal #efDept");
-      if (sel && sel.options.length <= 1) {
-        entDeptOptions(function (list) {
-          list.forEach(function (d) {
-            var o = document.createElement("option");
-            o.value = d.id;
-            o.textContent = new Array(d.depth + 1).join("— ") + d.name;
-            sel.appendChild(o);
-          });
-        });
-      }
-    }, 60);
   }
   /* ---- absence ---- */
   function entLoadAbsence(body) {
@@ -3335,23 +3316,166 @@ var App = (function () {
       b.addEventListener("click", function () { entDelete("overtime", b.getAttribute("data-id")); });
     });
   }
+  /* R50: كومبوبوكس الموظفين — بحث بالاسم أو الكود من الاتزان،
+     مع إكمال تلقائي لباقي الكلمة، وزرار «إضافة كرقم» للي مش موجود */
+  var entEmpCache = null;   /* [{code, name, nameTr, job, path}] */
+  function entEmpList(cb) {
+    if (entEmpCache) { cb(entEmpCache); return; }
+    fetch("/api/manpower", { credentials: "include" })
+      .then(function (r) { if (!r.ok) throw new Error("m"); return r.json(); })
+      .then(function (d) {
+        var byId = {}, kids = {};
+        (d.depts || []).forEach(function (n) {
+          byId[n[0]] = n[1];
+          (kids[n[2] || ""] = kids[n[2] || ""] || []).push(n[0]);
+        });
+        var pathOf = {};
+        (function walk(pid, pref) {
+          (kids[pid] || []).forEach(function (k) {
+            pathOf[k] = (pref ? pref + " — " : "") + (byId[k] || k);
+            walk(k, pathOf[k]);
+          });
+        })("", "");
+        entEmpCache = [];
+        (d.emps || []).forEach(function (e) {
+          if (e[6]) return; /* شواغر مش ناس */
+          entEmpCache.push({
+            code: String(e[1] || ""), name: String(e[2] || ""),
+            nameTr: String(e[11] || ""), job: String(e[3] || ""),
+            path: pathOf[e[4]] || "",
+          });
+        });
+        cb(entEmpCache);
+      })
+      .catch(function () { cb([]); });
+  }
+  /* يبني ويربط كومبوبوكس جوه مودال الفورم — callback بالاختيار */
+  function entBindCombo(root, onState) {
+    var inp = root.querySelector("#efPerson");
+    var list = root.querySelector("#efPersonList");
+    var addBtn = root.querySelector("#efAddCode");
+    if (!inp || !list) return;
+    var state = { picked: null, raw: "" };   /* picked = {code,name} · raw = كود حر */
+    var Lng = I18N.lang();
+    function disp(e) { return (Lng === "tr" && e.nameTr ? e.nameTr : e.name) + " — " + e.code; }
+    function renderList(q) {
+      q = String(q || "").trim().toLowerCase();
+      if (!q) { list.hidden = true; list.innerHTML = ""; return; }
+      var hits = [];
+      var n = 0;
+      for (var i = 0; i < entEmpCache.length && n < 30; i++) {
+        var e = entEmpCache[i];
+        var hay = (e.name + " " + e.nameTr + " " + e.code).toLowerCase();
+        if (hay.indexOf(q) >= 0) { hits.push(e); n++; }
+      }
+      var h = "";
+      for (var j = 0; j < hits.length; j++) {
+        h += '<div class="ent-cb-it" data-ix="' + j + '"><b>' + esc(Lng === "tr" && hits[j].nameTr ? hits[j].nameTr : hits[j].name) + "</b>" +
+             '<i class="num">' + esc(hits[j].code) + "</i>" +
+             (hits[j].path ? '<small class="faint">' + esc(hits[j].path) + "</small>" : "") + "</div>";
+      }
+      if (!h) h = '<div class="ent-cb-none faint">' + esc(T("mp_search_none")) + "</div>";
+      list.innerHTML = h;
+      list.hidden = false;
+      list._hits = hits;
+    }
+    function pick(e) {
+      state.picked = e; state.raw = "";
+      inp.value = disp(e);
+      list.hidden = true;
+      if (addBtn) addBtn.hidden = true;
+      if (onState) onState(state);
+    }
+    function markRaw() {
+      state.picked = null;
+      state.raw = inp.value.trim();
+      if (addBtn) {
+        addBtn.hidden = !state.raw;
+        var lbl = addBtn.querySelector("b");
+        if (lbl) lbl.textContent = state.raw;
+      }
+      if (onState) onState(state);
+    }
+    inp.addEventListener("input", function () {
+      state.picked = null; state.raw = "";
+      renderList(inp.value);
+      /* R50-fix: الزرار يظهر طول ما فيه نص من غير اختيار — والضغط عليه
+         هو اللي بيأكد «خد النص ده ككود» (class ok). مجرد الكتابة = اسم. */
+      if (addBtn) {
+        addBtn.hidden = !inp.value.trim();
+        addBtn.classList.remove("ok");
+        var lbl0 = addBtn.querySelector("b");
+        if (lbl0) lbl0.textContent = inp.value.trim();
+      }
+      if (onState) onState(state);
+    });
+    inp.addEventListener("focus", function () { renderList(inp.value); });
+    /* الخروج من الخانة يقفل القايمة — بتأخير صغير عشان الـ mousedown يشوط */
+    inp.addEventListener("blur", function () { setTimeout(function () { list.hidden = true; }, 160); });
+    inp.addEventListener("keydown", function (ev) {
+      if (list.hidden || !list._hits || !list._hits.length) return;
+      var cur = list.querySelector(".ent-cb-it.on");
+      var items = list.querySelectorAll(".ent-cb-it");
+      var ix = cur ? parseInt(cur.getAttribute("data-ix"), 10) : -1;
+      if (ev.key === "ArrowDown") { ev.preventDefault(); ix = Math.min(ix + 1, items.length - 1); }
+      else if (ev.key === "ArrowUp") { ev.preventDefault(); ix = Math.max(ix - 1, 0); }
+      else if (ev.key === "Enter") { ev.preventDefault(); if (cur) pick(list._hits[parseInt(cur.getAttribute("data-ix"), 10)]); return; }
+      else return;
+      items.forEach(function (x) { x.classList.toggle("on", parseInt(x.getAttribute("data-ix"), 10) === ix); });
+    });
+    list.addEventListener("mousedown", function (ev) {
+      var it = ev.target.closest ? ev.target.closest(".ent-cb-it") : null;
+      if (it && list._hits) { ev.preventDefault(); pick(list._hits[parseInt(it.getAttribute("data-ix"), 10)]); }
+    });
+    if (addBtn) addBtn.addEventListener("click", function () {
+      markRaw();
+      addBtn.classList.add("ok");
+      toast(T("ent_add_code") + ": " + state.raw, "ok");
+    });
+    /* markRaw (الضغط) هو التأكيد الوحيد للكود الحر */
+    /* البداية: من غير اختيار */
+    if (onState) onState(state);
+  }
   function entOpenOtForm() {
     var today = new Date().toISOString().slice(0, 10);
     var html =
       '<div class="ent-form-row"><label>' + esc(T("ent_date")) + '<input type="date" id="efDate" value="' + today + '"></label></div>' +
-      '<div class="ent-form-row"><label>' + esc(T("ent_code")) + '<input type="text" id="efCode" placeholder="17007"></label></div>' +
-      '<div class="ent-form-row"><label>' + esc(T("ent_name")) + '<input type="text" id="efName" placeholder="اسم الموظف"></label></div>' +
+      '<div class="ent-form-row two">' +
+        '<label>' + esc(T("ent_dept")) + '<select id="efSec">' + entSecOptions() + '</select></label>' +
+        '<label>' + esc(T("ent_line")) + '<select id="efLine">' + entLineOptions() + '</select></label>' +
+      '</div>' +
+      '<div class="ent-form-row ent-cb-row"><label class="ent-cb-lbl">' + esc(T("ent_person")) + '</label>' +
+        '<div class="ent-cb"><input type="text" id="efPerson" placeholder="' + esc(T("ent_person")) + '" autocomplete="off">' +
+        '<div class="ent-cb-list" id="efPersonList" hidden></div></div>' +
+        '<button type="button" class="ent-add-code" id="efAddCode" hidden title="' + esc(T("ent_add_code_hint")) + '">➕ ' + esc(T("ent_add_code")) + ': <b></b></button>' +
+      '</div>' +
       '<div class="ent-form-row"><label>' + esc(T("ent_hours")) + '<input type="number" id="efHours" min="0.5" max="24" step="0.5" value="2"></label></div>' +
       '<div class="ent-form-row"><label>' + esc(T("ent_note")) + '<input type="text" id="efNote" placeholder=""></label></div>';
     entOpenForm(T("ent_add") + " — " + T("ent_ot_tab"), html, function (fm) {
       var data = {
         date: fm.querySelector("#efDate").value,
-        emp_code: fm.querySelector("#efCode").value.trim(),
-        emp_name: fm.querySelector("#efName").value.trim(),
+        dept: (fm.querySelector("#efSec") || {}).value || "",
+        line: (fm.querySelector("#efLine") || {}).value || "",
         hours: parseFloat(fm.querySelector("#efHours").value) || 0,
         note: fm.querySelector("#efNote").value.trim(),
       };
-      if (!data.date || (!data.emp_code && !data.emp_name) || data.hours <= 0) { toast(T("toast_fill"), "err"); return false; }
+      /* الشخص: يا اختيار من الكومبوبوكس يا كود حر من زرار «إضافة كرقم» */
+      var pinp = fm.querySelector("#efPerson");
+      var addBtn = fm.querySelector("#efAddCode");
+      if (pinp && pinp._picked) {
+        data.emp_code = pinp._picked.code;
+        data.emp_name = pinp._picked.name;
+      } else if (pinp && addBtn && addBtn.classList.contains("ok") && pinp.value.trim()) {
+        /* ضغط زرار «إضافة كرقم» = النص ده كود */
+        data.emp_code = pinp.value.trim();
+        data.emp_name = "";
+      } else if (pinp && pinp.value.trim()) {
+        data.emp_name = pinp.value.trim();
+      }
+      if (!data.date || (!data.emp_code && !data.emp_name) || data.hours <= 0 || !data.dept || !data.line) {
+        toast(T("toast_fill"), "err");
+        return false;
+      }
       entSubmitForm("/api/entries/overtime", data, function (r) {
         if (r && r.matched === false) {
           toast(T("ent_unmatched") + " — " + (r.id ? "id " + r.id : ""), "warn");
@@ -3361,6 +3485,18 @@ var App = (function () {
       });
       return true;
     });
+    /* اربط الكومبوبوكس بعد فتح المودال — الكاش من الاتزان */
+    setTimeout(function () {
+      var fm = document.querySelector(".ent-form-modal");
+      if (!fm) return;
+      entEmpList(function () {
+        var pinp = fm.querySelector("#efPerson");
+        if (pinp) pinp._picked = null;
+        entBindCombo(fm, function (st) {
+          if (pinp) pinp._picked = st.picked;
+        });
+      });
+    }, 40);
   }
   /* ---- helpers ---- */
   /* R47-fix: onSave كان بيقرأ الحقول من entModal (البوب أب الكبير) وهي
@@ -4063,13 +4199,15 @@ var App = (function () {
     /* R42: الثيمات — تفعيل المحفوظ قبل أي رسم + ربط كروت الثيمات
        + زراير البوابة (إعدادات / بيانات) من غير دخول تحليل الأداء */
     bindTheme();
-    var mgS = $("mgSettings"), mgD = $("mgData"), mgU = $("mgUsers");
+    var mgS = $("mgSettings"), mgD = $("mgData"), mgU = $("mgUsers"), mgE = $("mgEntry");
     if (mgS) mgS.addEventListener("click", function () { openSettings(); });
     /* R44: البيانات بقت أوفرلاي فوق البوابة نفسها — مش دخول لشاشة التحليل */
     if (mgD) mgD.addEventListener("click", function () { openDataPop(); });
     if (mgU) mgU.addEventListener("click", function () {
       if (window.MaribAuth && MaribAuth.openUsers) MaribAuth.openUsers();
     });
+    /* R50: الداتا إنتري بقى بطاقة في البوابة نفسها — مش زرار في التوب بار */
+    if (mgE) mgE.addEventListener("click", function () { openEntries(); });
 
     /* language switcher */
     document.querySelectorAll("#langSw .sw-btn").forEach(function (b) {
@@ -4204,16 +4342,13 @@ var App = (function () {
       if (dpC) dpC.addEventListener("click", closeDataPop);
       dpp.addEventListener("click", function (e) { if (e.target === dpp) closeDataPop(); });
     }
-    /* R44: topbar mini logos (main page only) — settings / data / users
-       R47: رجّعنا wiring زرار Entries — كان ضاع من رفع R46-v4 فالزرار
-       كان ميت (بيظهر من غير ما يعمل حاجة) */
-    var tbS = $("tbSetBtn"), tbD = $("tbDataBtn"), tbU = $("tbUsersBtn"), tbE = $("tbEntriesBtn");
+    /* R50: التوب بار بقى إعدادات + مستخدمين بس (بالأيموجي) —
+       الداتا والداتا إنتري بقوا بطاقات في البوابة (الصفحة الرئيسية) */
+    var tbS = $("tbSetBtn"), tbU = $("tbUsersBtn");
     if (tbS) tbS.addEventListener("click", function () { openSettings(); });
-    if (tbD) tbD.addEventListener("click", function () { goToPage("data"); });
     if (tbU) tbU.addEventListener("click", function () {
       if (window.MaribAuth && MaribAuth.openUsers) MaribAuth.openUsers();
     });
-    if (tbE) tbE.addEventListener("click", function () { openEntries(); });
 
     /* settings panel (R27 — boxes → views) */
     var sp = $("setPop");

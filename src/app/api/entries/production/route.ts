@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     if (!/^\d{4}-\d{2}$/.test(month)) return fail("month", 400);
 
     const rows = await q(
-      `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, dept_id, line_id, po_number, qty, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
+      `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, dept_id, dept_name, line_id, po_number, qty, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
        FROM marib_prod WHERE month_key = $1 ORDER BY date ASC, created_at ASC`,
       [month]
     );
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
         month: r.month_key,
         date: r.date_str,
         dept_id: r.dept_id || "",
-        dept_name: r.dept_id ? (deptMap[r.dept_id as string] || "") : "",
+        dept_name: (r.dept_name as string) || (r.dept_id ? (deptMap[r.dept_id as string] || "") : ""),
         line_id: r.line_id || "",
         po_number: r.po_number || "",
         qty: r.qty,
@@ -66,24 +66,29 @@ export async function POST(req: NextRequest) {
     const body = await readJson(req);
     if (!body) return fail("body", 413);
     const date = String(body.date || "");
+    /* R50: القسم بقى نص حر (أقسام الأرضية الخمسة: الصدر/الضهر/التجميع/
+       التجهيزات/البوكت) مش id من شجرة الاتزان — dept_name هو الأساس.
+       dept_id لسه مقبول للتوافق مع أي كود قديم. */
     const deptId = String(body.dept_id || "");
-    const lineId = String(body.line_id || "");
+    const deptName = String(body.dept || "").trim().slice(0, 60);
+    const lineId = String(body.line || body.line_id || "").trim().slice(0, 20);
     const poNumber = String(body.po_number || "").trim().slice(0, 40);
     const qty = parseInt(String(body.qty || "0"), 10);
     const note = String(body.note || "").trim().slice(0, 200);
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("date", 400);
     if (qty <= 0) return fail("qty", 400);
+    if (!deptName && !deptId) return fail("dept", 400);
 
     const monthKey = date.slice(0, 7);
     const id = crypto.randomUUID();
     await q(
-      `INSERT INTO marib_prod (id, month_key, date, dept_id, line_id, po_number, qty, note, actor)
-       VALUES ($1, $2, $3::date, NULLIF($4, ''), NULLIF($5, ''), $6, $7, $8, $9)`,
-      [id, monthKey, date, deptId || null, lineId || null, poNumber, qty, note, me.username]
+      `INSERT INTO marib_prod (id, month_key, date, dept_id, dept_name, line_id, po_number, qty, note, actor)
+       VALUES ($1, $2, $3::date, NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), $7, $8, $9, $10)`,
+      [id, monthKey, date, deptId || null, deptName || null, lineId || null, poNumber, qty, note, me.username]
     );
-    await audit(me.username, "create", "entries:production", id, { date, dept_id: deptId, qty });
-    lg.info("prod entry created", { by: me.username, date, qty, po: poNumber });
+    await audit(me.username, "create", "entries:production", id, { date, dept: deptName || deptId, qty });
+    lg.info("prod entry created", { by: me.username, date, qty, po: poNumber, dept: deptName || deptId });
     return NextResponse.json({ ok: true, id });
   } catch (e) {
     return serverFail("entries:production", "POST", e);

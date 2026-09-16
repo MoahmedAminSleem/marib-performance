@@ -879,5 +879,17 @@ ent_unmatched:{ ar: "غير متطابق", en: "unmatched", tr: "eşleşmedi" },
 ent_download_tpl: { ar: "تنزيل تيمبلت الغياب", en: "Download absence template", tr: "Devamsızlık şablonu indir" },
 ent_upload_tpl:    { ar: "رفع تيمبلت الغياب", en: "Upload absence template", tr: "Devamsızlık şablonu yükle" },
 ent_unmatched_list:{ ar: "السجلات اللي ملقيتش لها موظف:", en: "Records with no matching employee:", tr: "Eşleşmeyen kayıtlar:" },
+
+  /* ---------- R50: بوابة + داتا إنتري + استيراد الشيت-هو-الحقيقة ---------- */
+mg_entry_sub:    { ar: "الإنتاج · الغياب · الأوفر تايم", en: "Production · absence · overtime", tr: "Üretim · devamsızlık · fazla mesai" },
+ent_person:      { ar: "الموظف — اكتب الاسم أو الكود", en: "Employee — type name or code", tr: "Çalışan — ad veya kod yazın" },
+ent_person_picked:{ ar: "الموظف المختار", en: "Picked employee", tr: "Seçilen çalışan" },
+ent_add_code:    { ar: "إضافة كرقم", en: "Add as code", tr: "Kod olarak ekle" },
+ent_add_code_hint:{ ar: "الشخص مش في الاتزان — اضغط ليتم تسجيله بالرقم اللي كتبته في القسم والخط المختارين", en: "Not in balance — will be recorded under the selected section & line", tr: "Dengede yok — seçilen bölüm ve hatta kaydedilecek" },
+ent_sec_prod:    { ar: "قسم الإنتاج", en: "Production section", tr: "Üretim bölümü" },
+ent_line_n:      { ar: "الخط", en: "Line", tr: "Hat" },
+mp_pv_out:       { ar: "هيتشالوا من الموقع (مش في الشيت)", en: "will be removed (not in sheet)", tr: "kaldırılacak (çalışma sayfasında yok)" },
+mp_sheet_truth:  { ar: "الشيت هو الحقيقة: اللي مش موجود فيه هيتشال من الموقع. فيه تراجع 15 دقيقة بعد التنفيذ.", en: "The sheet is the truth: anyone missing from it will be removed. 15-minute undo available.", tr: "Çalışma sayfası gerçektir: içinde olmayan herkes kaldırılır. 15 dakika geri alma vardır." },
+mp_tr_hint:      { ar: "أعمدة «بالتركي» اختيارية — لو فاضية بيفضل المخزن", en: "Turkish columns are optional — blank keeps stored value", tr: "Türkçe sütunlar isteğe bağlı — boşsa kayıtlı değer kalır" },
 };
 

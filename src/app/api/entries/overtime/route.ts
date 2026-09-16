@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     if (!/^\d{4}-\d{2}$/.test(month)) return fail("month", 400);
 
     const rows = await q(
-      `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, emp_id, emp_code, emp_name, dept_id, line_id, hours, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
+      `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, emp_id, emp_code, emp_name, dept_id, dept_name, line_id, hours, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
        FROM marib_overtime WHERE month_key = $1 ORDER BY date ASC, created_at ASC`,
       [month]
     );
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
           emp_name: r.emp_name || (emp?.name || ""),
           job: emp?.job || "",
           dept_id: r.dept_id || (emp?.dept_id || ""),
-          dept_name: (r.dept_id as string) ? (deptMap[r.dept_id as string] || "") : "",
+          dept_name: (r.dept_name as string) || ((r.dept_id as string) ? (deptMap[r.dept_id as string] || "") : ""),
           line_id: r.line_id || "",
           hours: r.hours,
           note: r.note || "",
@@ -80,8 +80,10 @@ export async function POST(req: NextRequest) {
     const date = String(body.date || "");
     const empCode = String(body.emp_code || "").trim();
     const empName = String(body.emp_name || "").trim();
+    /* R50: القسم والخط بقوا نص — أقسام الأرضية الخمسة وخطوط 1..5 */
     const deptId = String(body.dept_id || "");
-    const lineId = String(body.line_id || "");
+    const deptName = String(body.dept || "").trim().slice(0, 60);
+    const lineId = String(body.line || body.line_id || "").trim().slice(0, 20);
     const hours = parseFloat(String(body.hours || "0"));
     const note = String(body.note || "").trim().slice(0, 200);
 
@@ -104,12 +106,12 @@ export async function POST(req: NextRequest) {
     const monthKey = date.slice(0, 7);
     const id = crypto.randomUUID();
     await q(
-      `INSERT INTO marib_overtime (id, month_key, date, emp_id, emp_code, emp_name, dept_id, line_id, hours, note, actor)
-       VALUES ($1, $2, $3::date, NULLIF($4, ''), $5, $6, NULLIF($7, ''), NULLIF($8, ''), $9, $10, $11)`,
-      [id, monthKey, date, empId || null, empCode, empName, resolvedDeptId || null, lineId || null, hours, note, me.username]
+      `INSERT INTO marib_overtime (id, month_key, date, emp_id, emp_code, emp_name, dept_id, dept_name, line_id, hours, note, actor)
+       VALUES ($1, $2, $3::date, NULLIF($4, ''), $5, $6, NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12)`,
+      [id, monthKey, date, empId || null, empCode, empName, resolvedDeptId || null, deptName || null, lineId || null, hours, note, me.username]
     );
-    await audit(me.username, "create", "entries:overtime", id, { date, emp: empCode || empName, hours, matched: !!empId });
-    lg.info("overtime entry created", { by: me.username, date, emp: empCode || empName, hours, matched: !!empId });
+    await audit(me.username, "create", "entries:overtime", id, { date, emp: empCode || empName, hours, matched: !!empId, dept: deptName });
+    lg.info("overtime entry created", { by: me.username, date, emp: empCode || empName, hours, matched: !!empId, dept: deptName });
 
     return NextResponse.json({ ok: true, id, matched: !!empId });
   } catch (e) {

@@ -50,7 +50,7 @@ type Node = {
   kids: Node[]; emps: Emp[]; vacs: Emp[];
   count: number; rows: number; own: number | null; eff: number;
 };
-type Emp = { code: string; name: string; job: string; hire: string; vac: boolean; mach: string; note: string };
+type Emp = { code: string; name: string; job: string; hire: string; vac: boolean; mach: string; note: string; name_tr?: string | null; job_tr?: string | null };  /* R50: التركي */
 
 /* SEWING's numeric lines display as "خط N" on the site — same here.
    R46-10: applies the active translation (set per-request from GET) when
@@ -100,24 +100,21 @@ export async function GET(req: NextRequest) {
     const g = await requireUser(req, "manpower", "EXPORT");
     if (g.res) return g.res;
 
-    /* ---------- R46-10: ?lang=ar|en|tr — اختيار لغة الـ export ----------
-       الـ default هو en (الأسماء زي ما هي متخزنة في DB). لو lang=ar أو
-       lang=tr، بنطبّق الترجمات المتاحة في marib_i18n على الأسماء قبل
-       كتابتها في الشيت. الكلمات اللي ملهاش ترجمة بت favorei زي ما هي. */
+    /* ---------- R50: ?lang=ar|tr — الترجمة من أعمدة الشيت ----------
+       مفيش marib_i18n ولا ترجمة فورية — التركي بقى من label_tr
+       للأقسام (الجداول المحورية والهيكل) ومن name_tr/job_tr
+       للموظفين (شيت الموظفين). الافتراضي عربي زي ما هو مخزن. */
     const sp = new URL(req.url).searchParams;
-    const wantLang = (sp.get("lang") || "en").toLowerCase() === "ar" ? "ar"
-                   : (sp.get("lang") || "en").toLowerCase() === "tr" ? "tr"
-                   : "en";
-    /* load translations if a non-default lang is requested */
-    let trMap = new Map<string, string>();
-    if (wantLang !== "en") {
-      const trRows = await q("SELECT term, tr FROM marib_i18n WHERE lang = $1", [wantLang]);
-      for (const r of trRows) trMap.set(r.term as string, r.tr as string);
+    const wantLang = (sp.get("lang") || "ar").toLowerCase() === "tr" ? "tr" : "ar";
+    let deptTrMap = new Map<string, string>();
+    if (wantLang === "tr") {
+      const dRows = await q("SELECT name, label_tr FROM marib_dept WHERE label_tr IS NOT NULL AND label_tr <> ''");
+      for (const r of dRows) deptTrMap.set(r.name as string, r.label_tr as string);
     }
     /* helper: apply translation if available, else return original */
     const trName = (s: string): string => {
-      if (!s || wantLang === "en") return s;
-      return trMap.get(s) || s;
+      if (!s || wantLang !== "tr") return s;
+      return deptTrMap.get(s) || s;
     };
     /* set the module-level translation function so dispName() and emp
        cells pick up the active language automatically. */
@@ -128,40 +125,46 @@ export async function GET(req: NextRequest) {
        مليان بالموظفين الحاليين عشان اللي بيحب يشتغل على الإكسل يعدّل
        ويرفع. التعليمات شيت جوه الملف نفسه. */
     if (sp.get("template") === "1") {
-      const deptRows = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
+      /* R50: التيمبلت بقى 15 عمود — عمود تركي جنب كل حاجة فيها حروف
+         (الاسم/الادارة/القسم/القسم الداخلي/الوظيفة) والأرقام زي الكود
+         والماكينة من غير تركي. الأعمدة القديمة «بالعربي» اتحذفت —
+         العربي هو العمود الأساسي دلوقتي. */
+      const deptRows = await q("SELECT id, name, parent_id, ord, label_tr FROM marib_dept ORDER BY ord ASC");
       const empRows = await q(
-        "SELECT code, name, job, dept_id, hire, vac, mach, note, name_ar, job_ar FROM marib_emp ORDER BY ord ASC"
+        "SELECT code, name, job, dept_id, hire, vac, mach, note, name_tr, job_tr FROM marib_emp ORDER BY ord ASC"
       );
-      const pById = new Map<string, { name: string; parent: string }>();
-      for (const d of deptRows) pById.set(d.id as string, { name: trName(d.name as string), parent: (d.parent_id as string) || "" });
-      const chainOf = (id: string | null): [string, string, string] => {
+      const pById = new Map<string, { name: string; nameTr: string; parent: string }>();
+      for (const d of deptRows) pById.set(d.id as string, { name: (d.name as string) || "", nameTr: (d.label_tr as string) || "", parent: (d.parent_id as string) || "" });
+      const chainOf = (id: string | null): { ar: [string, string, string]; tr: [string, string, string] } => {
         const parts: string[] = [];
+        const trParts: string[] = [];
         let cur = id ? pById.get(id) : undefined;
         let guard = 0;
-        while (cur && guard++ < 10) { parts.unshift(cur.name); cur = cur.parent ? pById.get(cur.parent) : undefined; }
-        return [parts[0] || "", parts[1] || "", parts.slice(2).join(" - ")];
+        while (cur && guard++ < 10) { parts.unshift(cur.name); trParts.unshift(cur.nameTr); cur = cur.parent ? pById.get(cur.parent) : undefined; }
+        return {
+          ar: [parts[0] || "", parts[1] || "", parts.slice(2).join(" - ")],
+          tr: [trParts[0] || "", trParts[1] || "", trParts.slice(2).join(" - ")],
+        };
       };
       const twb = new XBook();
-      /* R47: عمودين جداد — «الأسم بالعربي» بعد الأسم و«الوظيفة بالعربي»
-         بعد الوظيفة. الاستيراد بياخدهم تلقائيًا (map.nameAr / map.jobAr)،
-         ولو حد رفع الشيت من غيرهم (تيمبلت قديم) مفيش مشكلة — الأعمدة
-         الناقصة مش بتفرّغ القيم المخزنة. */
-      const db = twb.sheet("Database", { rtl: true, freezeRows: 1, widths: [5, 10, 34, 24, 17, 15, 17, 22, 20, 10, 18, 7], defaultRowHeight: 18 });
-      const th = ["p", "الكود", "الأسم", "الأسم بالعربي", "الادارة", "القسم", "القسم الداخلي", "الوظيفة", "الوظيفة بالعربي", "الماكينة", "ملاحظات", "حذف؟"];
+      const db = twb.sheet("Database", { rtl: true, freezeRows: 1, widths: [5, 10, 30, 24, 17, 15, 17, 15, 17, 15, 22, 20, 10, 18, 7], defaultRowHeight: 18 });
+      const th = ["p", "الكود", "الاسم", "الاسم TR", "الادارة", "الادارة TR", "القسم", "القسم TR", "القسم الداخلي", "القسم الداخلي TR", "الوظيفة", "الوظيفة TR", "الماكينة", "ملاحظات", "حذف؟"];
       th.forEach((h, i) => {
         db.cell(1, i + 1, h, {
           font: { size: 11, bold: true, color: "FFFFFFFF" },
           fill: C.denim2,
-          align: { h: i === 2 || i === 3 || i === 7 || i === 8 || i === 10 ? "right" : "center", v: "middle" },
+          align: { h: i >= 2 && i <= 11 || i === 13 ? "right" : "center", v: "middle" },
           border: C.line,
         });
       });
       db.row(1, { height: 22 });
-      db.filter("A1:L1");
+      db.filter("A1:O1");
       let tr = 2;
       let p = 0;
       for (const e of empRows) {
-        const [a, b, c] = chainOf(e.dept_id as string | null);
+        const ch = chainOf(e.dept_id as string | null);
+        const [a, b, c] = ch.ar;
+        const [aTr, bTr, cTr] = ch.tr;
         const vac = !!e.vac;
         const band = p % 2 === 1 ? C.band : "";
         const st = (font?: Partial<XStyle["font"]>): XStyle => ({
@@ -175,19 +178,22 @@ export async function GET(req: NextRequest) {
         p++;
         db.cell(tr, 1, p, st());
         db.cell(tr, 2, vac ? "" : ((e.code as string) || ""), st(vac ? { color: C.faint } : undefined));
-        db.cell(tr, 3, vac ? "" : trName((e.name as string) || ""), stR(vac ? { color: C.faint } : undefined));
-        db.cell(tr, 4, vac ? "" : ((e.name_ar as string) || ""), stR(vac ? { color: C.faint } : undefined));
+        db.cell(tr, 3, vac ? "" : ((e.name as string) || ""), stR(vac ? { color: C.faint } : undefined));
+        db.cell(tr, 4, vac ? "" : ((e.name_tr as string) || ""), stR(vac ? { color: C.faint } : undefined));
         db.cell(tr, 5, a, stR());
-        db.cell(tr, 6, b, stR());
-        db.cell(tr, 7, c, stR());
-        db.cell(tr, 8, trName((e.job as string) || ""), stR());
-        db.cell(tr, 9, vac ? "" : ((e.job_ar as string) || ""), stR(vac ? { color: C.faint } : undefined));
-        db.cell(tr, 10, (e.mach as string) || "", st());
-        db.cell(tr, 11, (e.note as string) || "", stR());
-        db.cell(tr, 12, "", st());
+        db.cell(tr, 6, aTr, stR());
+        db.cell(tr, 7, b, stR());
+        db.cell(tr, 8, bTr, stR());
+        db.cell(tr, 9, c, stR());
+        db.cell(tr, 10, cTr, stR());
+        db.cell(tr, 11, (e.job as string) || "", stR());
+        db.cell(tr, 12, (e.job_tr as string) || "", stR());
+        db.cell(tr, 13, (e.mach as string) || "", st());
+        db.cell(tr, 14, (e.note as string) || "", stR());
+        db.cell(tr, 15, "", st());
         if (vac) {
           db.cell(tr, 3, "", st({ italic: true, color: C.red, bold: true }));
-          db.cell(tr, 8, trName((e.job as string) || ""), stR({ italic: true, color: C.red, bold: true }));
+          db.cell(tr, 11, (e.job as string) || "", stR({ italic: true, color: C.red, bold: true }));
         }
         tr++;
       }
@@ -201,15 +207,15 @@ export async function GET(req: NextRequest) {
         ["", false],
         ["إضافة موظف: صف جديد — اكتب الكود والاسم والوظيفة والإدارة/القسم. (الكود ممكن يفضل فاضي — هيطلع في الموقع «جديد»)", false],
         ["تعديل موظف: دور على كوده وغيّر أي خانة (الاسم/الوظيفة/القسم/الماكينة/ملاحظات).", false],
-        ["الاسم بالعربي / الوظيفة بالعربي (R47): اختياري — اكتب فيهم النص العربي، وه يظهر في الموقع بزرار AR جنب الاسم. لو غيّرت الاسم من عربي لإنجليزي وسيبت العربي فاضي، الموقع هيحفظ العربي القديم تلقائيًا في حقله.", false],
+        ["أعمدة TR (التركي): اختياري — اكتب الاسم/الادارة/القسم/الوظيفة بالتركي جنب العربي، وهيظهر في الموقع لما تختار لغة TR. الخانة الفاضية مش بتمسح التركي المخزن.", false],
         ["نقل موظف: غيّر الادارة/القسم/القسم الداخلي في صفه — النقل هيتسجل في الأرشيف تلقائيًا.", false],
-        ["شاغر (وظيفة مطلوبة من غير حد): سيب خانة «الأسم» فاضي واكتب الوظيفة — الموقع هيحطه «شاغر» مكانه.", false],
+        ["شاغر (وظيفة مطلوبة من غير حد): سيب خانة «الاسم» فاضي واكتب الوظيفة — الموقع هيحطه «شاغر» مكانه.", false],
         ["حذف موظف: اكتب «نعم» في عمود «حذف؟» في صفه — الحذف هيتسجل في الأرشيف كخروج.", false],
         ["", false],
         ["ملاحظات مهمة:", true],
+        ["· الشيت هو الحقيقة: أي موظف موجود على الموقع ومش موجود في الملف هيتشال من الموقع لما ترفع الشيت (فيه تراجع 15 دقيقة بعد الرفع).", false],
         ["· تواريخ التعيين محفوظة على الموقع ومش بتتأثر بالملف (العمود مش موجود هنا أصلًا).", false],
         ["· الأقسام بتتفهم بالذكاء: لو غيّرت اسم قسم في الموقع، الشيت بيلقاه بأي اسم قديم أو جديد.", false],
-        ["· الموظف اللي مش موجود في الملف بيفضل زي ما هو على الموقع — مبيتمسحش غير لو معلّم «نعم».", false],
         ["· عمود p مجرد ترقيم — متغيّرهش.", false],
       ];
       lines.forEach(([txt, bold], i) => {
@@ -232,8 +238,9 @@ export async function GET(req: NextRequest) {
     }
 
     /* ---------- data → tree (client math, replicated) ---------- */
-    const deptRows = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
-    const empRows = await q("SELECT code, name, job, dept_id, hire, vac, mach, note FROM marib_emp ORDER BY ord ASC");
+    /* R50: label_tr للأقسام (شيت المحورية/الهيكل) + name_tr/job_tr (شيت الموظفين) */
+    const deptRows = await q("SELECT id, name, parent_id, ord, label_tr FROM marib_dept ORDER BY ord ASC");
+    const empRows = await q("SELECT code, name, job, dept_id, hire, vac, mach, note, name_tr, job_tr FROM marib_emp ORDER BY ord ASC");
     const reqRows = await q("SELECT node_key, required FROM marib_req");
 
     const reqMap = new Map<string, number>();
@@ -256,6 +263,7 @@ export async function GET(req: NextRequest) {
         code: (e.code as string) || "", name: (e.name as string) || "",
         job: (e.job as string) || "", hire: (e.hire as string) || "", vac: !!e.vac,
         mach: (e.mach as string) || "", note: (e.note as string) || "",
+        name_tr: (e.name_tr as string) || "", job_tr: (e.job_tr as string) || "",   /* R50 */
       };
       const n = e.dept_id ? byId.get(e.dept_id as string) : undefined;
       if (!n) { (emp.vac ? root.vacs : root.emps).push(emp); continue; }
@@ -537,8 +545,9 @@ export async function GET(req: NextRequest) {
           font: isNew ? f({ bold: true, color: C.amber }) : f(),
           border: C.line, ...(band ? { fill: band } : {}),
         });
-        es.cell(r3, 3, e.name, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
-        es.cell(r3, 4, e.job, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
+        /* R50: عند lang=tr بيستخدم name_tr/job_tr (لو موجودين) */
+        es.cell(r3, 3, (wantLang === "tr" && (e.name_tr as string)) || e.name, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
+        es.cell(r3, 4, (wantLang === "tr" && (e.job_tr as string)) || e.job, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
         es.cell(r3, 5, a0, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
         es.cell(r3, 6, b0, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });
         es.cell(r3, 7, c0, { align: { h: "right", v: "middle" }, font: f(), border: C.line, ...(band ? { fill: band } : {}) });

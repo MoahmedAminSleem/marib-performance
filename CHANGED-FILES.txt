@@ -1,47 +1,44 @@
-Marib R49 — تنظيف الـ dependencies + مسح GitHub (تسليم مباشر — مش ZIP)
+Marib R50 — عربي/تركي + إيموجي + الشيت هو الحقيقة + داتا إنتري جديدة
 ====================================================================================
 
-الجولة 49 (16 سبتمبر 2026) — أول جولة تتدفع مباشرة على GitHub بتوكن
-مؤقت من المالك. مش محتاج أي رفع منك — كله موجود على main.
+الجولة 50 (16 سبتمبر 2026) — 8 طلبات في جولة واحدة، اتدفعت مباشرة على
+GitHub (زي R49). مش محتاج أي رفع منك.
 
-  1. مسح الـ 21 ملف الميتة من GitHub (commit ba4287a) — بعد التأكد إن
-     رفع R48 نزل كامل 100%. الملفات كلها 404 دلوقتي.
-  2. package.json: من 79 لـ 15 حزمة (بإذن المالك):
-     - dependencies (5): next · react · react-dom · pg · @electric-sql/pglite
-     - devDependencies (10): typescript · @types/react · @types/react-dom ·
-       @types/pg · bun-types · eslint · eslint-config-next · tailwindcss ·
-       @tailwindcss/postcss · tw-animate-css
-     - اتشالوا 63: prisma + @prisma/client · radix ×26 · dnd-kit ×3 ·
-       tanstack ×2 · framer-motion · recharts · next-auth · next-intl ·
-       next-themes · docx · sharp · zod · uuid · z-ai-web-dev-sdk … (كلهم
-       صفر مراجع في الكود — فحص آلي + يدوي)
-  3. حذف: prisma/ (schemas ×2) + tailwind.config.ts (ميت في Tailwind v4)
-     + سكريبتات db:* الأربعة + rename الحزمة → marib-performance
-  4. الاختبار: tsc نضيف 100% · build 15 routes · E2E على الإنتاج
-     standalone: login + 10 routes حية 200 (فيهم export 75KB) + 9 محذوفة
-     404 + health 810 موظف + صفر أخطاء سيرفر
+  1. إيموجي في كل الزراير بدل SVG (حل جذري لمشكلة الأيقونات)
+  2. عربي/تركي بس — عربي افتراضي RTL / تركي LTR، الإنجليزي اتشال
+  3. شريطا التحديد بقوا بوب-أب بيظهر لما فيه تحديد بس
+  4. كارت الزيادة = مجموع الأقسام الفعلية (+2 أمن و+1 صيانة = 3) + تجميل
+     صفحات الزيادة والشواغر
+  5. تيمبلت 15 عمود: عمود تركي جنب كل حاجة حرفية + التخزين والعرض بالتركي
+  6. الاستيراد: الشيت هو الحقيقة — اللي مش فيه بيتشال (معاينة + تراجع 15 د)
+  7. داتا إنتري: بطاقة في البوابة + إنتاج 5 أقسام × 5 خطوط + أوفر تايم
+     بكومبوبوكس بحث + «إضافة كرقم»
+  8. الترجمة الفورية اتشالت خالص (كانت بترجم غلط)
 
-Files (2 + 3 محذوفات + docs + 1 جديد):
-  .gitignore                                      (NEW — حماية: .env/node_modules/.next/db مش بيترفعوا أبدًا)
-  package.json                                    (R49: 15 حزمة + rename + بدون سكريبتات prisma)
-  bun.lock                                        (R49: اتولد جديد — 15 حزمة)
+Files (12 معدل + 2 محذوف):
+  src/app/skeleton.ts                              (إيموجي + بوابة + عربي/TR + شيل زراير)
+  public/app/i18n_core.js                          (عربي RTL + كل السطور)
+  public/app/i18n_dict.js                          (+11 مفتاح R50)
+  public/app/app_main.js                           (بوابة + فورمات + كومبوبوكس)
+  public/app/app_manpower.js                       (زيادة + تركي + استيراد + شريط)
+  public/app/app.css                               (طبقة R50 في الآخر)
+  src/app/api/manpower/route.ts                    (GET بالتركي + استيراد جديد)
+  src/app/api/manpower/export/route.ts             (تيمبلت 15 عمود + label_tr)
+  src/app/api/entries/production/route.ts          (قسم نصي)
+  src/app/api/entries/overtime/route.ts            (قسم نصي)
+  src/lib/marib/db.ts                              (5 أعمدة IF NOT EXISTS)
+  src/app/page.tsx + src/app/layout.tsx            (?v=r50)
 
   DELETED:
-  prisma/schema.prisma                            (مفيش كود بيستخدمه)
-  prisma/schema.postgres.prisma                   (مفيش كود بيستخدمه)
-  tailwind.config.ts                              (ميت في Tailwind v4 — مفيش @config)
+  src/app/api/translate/route.ts                   (الترجمة الفورية)
+  src/lib/marib/translate.ts                       (gtx + MyMemory)
 
   Docs:
-  docs/01-ARCHITECTURE.md                         (جدول + شجرة من غير prisma)
-  docs/04-FILES-MAP.md                            (صفوف محدثة)
-  docs/05-CURRENT-STATE.md                        (R49 + تحديث ملاحظة الحذف)
-  docs/06-ROUNDS.md                               (مدخل R49)
-  docs/سير-العمل-R49.md                           (NEW — الجولة كاملة)
-  سير-العمل.html                                  (بلوك R49 + الفوتر)
-  CHANGED-FILES.txt                               (الملف ده)
-  DELETED-FILES-R48.txt                           (حالة «تمت المهمة»)
+  docs/سير-العمل-R50.md                            (NEW)
+  docs/05-CURRENT-STATE.md + 06-ROUNDS.md + سير-العمل.html + CHANGED-FILES.txt
 
 ملاحظات:
-  - الترتيب على GitHub: d68c1c9 (رفعك R48) → ba4287a (مسح الـ 21) → R49
-  - Vercel هينشر تلقائيًا — بعد النشر افتح الموقع بـ Ctrl+Shift+R
-  - ESLint فيه خطأ واحد قديم موروث (no-sync-scripts — تصميم متعمد) مش من R49
+  - بعد النشر: Ctrl+Shift+R (كاش r50 جديد كليًا)
+  - الدخول عادي Amin / 2872002 — الواجهة هتفتح عربي RTL
+  - أول مرة تدوس TR هتلاقي الأسماء التركي فاضية — نزل التيمبلت الجديد،
+    املأ أعمدة TR وارفعه (الشيت هو الحقيقة — متقلقش، فيه تراجع 15 دقيقة)

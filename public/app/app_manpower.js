@@ -423,19 +423,12 @@ var MaribManpower = (function () {
   }
 
   function TT(term) {
+    /* R50: الترجمة الفورية اتشالت — الجلوسار وبس، والتركي البيدي
+       من name_tr/job_tr/label_tr (أعمدة الشيت) في أماكنها */
     var g = GLOSS[term];
     var L = I18N.lang();
-    if (g) return g[L] || g.en || String(term);
-    /* R42: الترجمات التلقائية من السيرفر (الأقسام/الوظايف اللي المستخدم
-       ضيفها — مترجمة مجانًا ومتخزنة في marib_i18n) */
-    if (DATA && DATA.tr && DATA.tr[term]) {
-      var t = DATA.tr[term];
-      if (t[L]) return t[L];
-      /* الكلمة الأصلية عربي (زي «تعويض نسب غياب») — العرض العربي
-         يفضل بيها زي ما هي، مش بالترجمة الإنجليزية */
-      if (L === "ar") return String(term);
-      return t.en || t.ar || String(term);
-    }
+    if (L === "ar") return term == null ? "" : String(term);
+    if (g) return g[L] || g.ar || String(term);
     /* R45: فكّ المصطلحات — أسماء الوظايف المركّبة (تنشين جيب ساعة …) */
     var jt = termTranslate(term);
     if (jt) return jt;
@@ -445,7 +438,7 @@ var MaribManpower = (function () {
   function rootLabel() {
     var def = { ar: "\u0645\u0623\u0631\u0628 3", en: "Marib 3", tr: "Marib 3" };
     var r = (DATA && DATA.root) || def;
-    return r[I18N.lang()] || r.en || r.ar || "Marib 3";
+    return r[I18N.lang()] || r.ar || r.en || "Marib 3";
   }
   /* sewing lines show as خط 1 / Line 1 / Hat 1 */
   function lineLabel(n) {
@@ -455,6 +448,8 @@ var MaribManpower = (function () {
   }
   function deptLabel(node) {
     if (/^\d+$/.test(node.label) && node.parentLabel === "SEWING") return lineLabel(node.label);
+    /* R50: وضع التركي بيستخدم label_tr من الشيت لو موجود */
+    if (I18N.lang() === "tr" && node.labelTr) return node.labelTr;
     return TT(node.label);
   }
   /* original + translated haystack (search hits both) */
@@ -479,12 +474,8 @@ var MaribManpower = (function () {
   var jobOpen = {};               /* مفتوحية صفوف الوظائف (وضع الوظيفة-أولًا) */
   var cardMode = null;            /* emps|req|var|vacs|depts — صفحة تفاصيل الكارت */
   var cardQ = "";
-  /* R46-3: علامة الـ toggle للأسماء العربية. per-session — الأدمن بيدوس
-     على زرار صغير جنبه، بيشوف الـ name_ar/job_ar بدل الـ EN. */
-  var arShow = {};
-  /* R46-6: علامة الـ toggle لترجمة الأقسام مؤقتاً. per-session — الزرار الصغير
-     بيجيب الترجمة العربية من الـ cache (DATA.tr) ويوريها بدل الاسم الأصلي. */
-  var deptArShow = {};
+  /* R50: الترجمة الفورية اتشالت — مفيش arShow/deptArShow.
+     العربي هو الأصل، والتركي من أعمدة الشيت. */
   var archSel = {};                /* R42: تحديد سجلات الأرشيف (id → true) */
   var loading = false;
   var on = false;
@@ -521,6 +512,7 @@ var MaribManpower = (function () {
   /* ---------------- data → tree ---------------- */
   function mkDept(row) {
     return { key: "d:" + row[0], id: row[0], label: row[1], parent: row[2] || "", ord: row[3] || 0,
+             labelTr: row[4] || "",   /* R50: الاسم بالتركي من الشيت */
              depth: 0, parentLabel: "", kids: [], emps: [], vacs: [],
              count: 0, rows: 0, own: null, eff: null, tCount: 0, tRows: 0 };
   }
@@ -718,10 +710,24 @@ var MaribManpower = (function () {
     return t;
   }
   function excessNodes() {
+    /* R50: بننزل لأعمق قسم ليه «مطلوب» يدوي — لو الأب عنده مطلوب
+       وولاده كمان عندهم مطلوب، بنعرض الولاد (الأقسام الفعلية)
+       مش الأب — زي ما المالك شاف: الأمن +2 والصيانة +1 = الكارت 3
+       مش رقم الإدارة المجمع. */
     var out = [];
     if (!ROOT) return out;
+    function hasOwnKid(n) {
+      for (var k = 0; k < n.kids.length; k++) {
+        if (n.kids[k].own !== null) return true;
+        if (hasOwnKid(n.kids[k])) return true;
+      }
+      return false;
+    }
     (function walk(n) {
-      if (n.own !== null) { if (n.tCount > n.own) out.push({ n: n, x: n.tCount - n.own }); return; }
+      if (n.own !== null && !hasOwnKid(n)) {
+        if (n.tCount > n.own) out.push({ n: n, x: n.tCount - n.own });
+        return;   /* القسم ده هو الأعمق — مفيش أعمق منه بمطلوب */
+      }
       for (var k = 0; k < n.kids.length; k++) walk(n.kids[k]);
     })(ROOT);
     out.sort(function (a, b) { return b.x - a.x || natCmp(deptLabel(a.n), deptLabel(b.n)); });
@@ -810,23 +816,10 @@ var MaribManpower = (function () {
       ? '<button class="tw' + (isOpen ? " open" : "") + '" type="button" aria-expanded="' + (isOpen ? "true" : "false") + '" aria-label="' + esc(n.label) + '">' + ICO_CHEV + "</button>"
       : '<span class="tw ghost"></span>';
     var ico = '<span class="mi dept">' + ICO_DEPT + "</span>";
-    /* R46-6: اسم القسم يبان زي ما هو (RAW) افتراضياً، مع زرار صغير جنبه
-       يوريك الترجمة العربية مؤقتاً. لو فيه ترجمة cached في DATA.tr،
-       بناخدها على طول؛ غير كده، الزرار بيعمل fetch من /api/translate
-       (Google gtx + MyMemory، مجاني بدون مفتاح) ويخزنها للمرّة الجاية. */
-    var deptAr = (DATA && DATA.tr && DATA.tr[n.label] && DATA.tr[n.label].ar) ? DATA.tr[n.label].ar : "";
-    /* R46-6 live: حتى لو مفيش cached، الزرار يبان — عشان اليوزر يقدر
-       يطلب ترجمة فورية لأي قسم. */
-    var showAr = !!deptArShow[n.key];
-    var dispLabel = showAr ? (deptArShow[n.key] === "__loading__" ? "…" : (deptAr || n.label)) : n.label;
-    if (showAr && deptAr) dispLabel = deptAr;
-    if (showAr && !deptAr && deptArShow[n.key] !== "__loading__") dispLabel = n.label;
-    var arToggle = '<i class="mar-btn' + (showAr ? " on" : "") + '" role="button" tabindex="0" title="' + esc(T("mp_show_ar")) + '" data-dar="' + esc(n.id) + '" data-term="' + esc(n.label) + '" aria-pressed="' + (showAr ? "true" : "false") + '">' + ICO_AR + "</i>";
-      /* R47: رجّعنا النسخة live — الزرار بيظهر دايمًا حتى لو مفيش ترجمة
-         cached، وأول ضغطة بتجيب الترجمة من /api/translate (كانت ضاعت
-         في رفع R46-v4 فالأقسام الجديدة ملقتش زرار الترجمة) */
-    var label = '<span class="ml"><b class="mln' + (showAr && deptAr ? " ar" : "") + '">' + hl(dispLabel, needle) + "</b>" +
-      (n.own !== null ? '<i class="mls ov" title="' + esc(T("mp_req_own")) + '">✎</i>' : "") + arToggle + "</span>";
+    /* R50: الترجمة الفورية اتشالت — الاسم يظهر بالعربي زي ما هو،
+       وفي وضع التركي بيستخدم label_tr من الشيت (deptLabel). */
+    var label = '<span class="ml"><b class="mln">' + hl(deptLabel(n), needle) + "</b>" +
+      (n.own !== null ? '<i class="mls ov" title="' + esc(T("mp_req_own")) + '">✎</i>' : "") + "</span>";
     /* R39: زرار واحد بس — نفس المودال بيعمل التسمية والنقل مع بعض
        R41: + سلة حمرا لمسح القسم الفاضي (نسخ الإضافة المتكررة) */
     var adm = ADMIN
@@ -841,8 +834,8 @@ var MaribManpower = (function () {
   /* employee row — الاسم والكود مع بعض (Expand ⇒ الوظيفة) */
   function empRow(e, needle, anim, delay) {
     var id = e[0], code = String(e[1] || ""), name = String(e[2] || "");
-    var nameAr = String(e[9] || "");  /* R46-3: Arabic name */
-    var jobAr = String(e[10] || ""); /* R46-3: Arabic job title */
+    var nameTr = String(e[11] || ""); /* R50: التركي من الشيت */
+    var jobTr = String(e[12] || "");  /* R50: التركي من الشيت */
     var isOpen = !!empOpen[id];
     var isNew = !code || code === "جديد";
     var trs = transfersOf(id);
@@ -851,18 +844,15 @@ var MaribManpower = (function () {
     var codeChip = isNew
       ? '<i class="mlc newc">' + esc(T("mp_code_new")) + "</i>"
       : '<i class="mlc num">' + hl(code, needle) + "</i>";
-    /* R46-3: زرار صغير جنبه يوريك الاسم بالعربي (لو موجود) — خفيف ومتناسق */
-    var arToggle = nameAr
-      ? '<i class="mar-btn' + (arShow[id] ? " on" : "") + '" role="button" tabindex="0" title="' + esc(T("mp_show_ar")) + '" data-ar="' + esc(id) + '" aria-pressed="' + (arShow[id] ? "true" : "false") + '">' + ICO_AR + "</i>"
-      : "";
-    var displayName = arShow[id] && nameAr ? nameAr : name;
-    var displayJob = (e[3] || "");
-    if (arShow[id] && jobAr) displayJob = jobAr;
-    var label = '<span class="ml"><b class="mln' + (arShow[id] && nameAr ? " ar" : "") + '">' + hl(displayName, needle) + "</b>" + codeChip +
+    /* R50: العربي هو الأصل — ووضع التركي بيعرض name_tr/job_tr من الشيت */
+    var Lng = I18N.lang();
+    var displayName = (Lng === "tr" && nameTr) ? nameTr : name;
+    var displayJob = (Lng === "tr" && jobTr) ? jobTr : (e[3] || "");
+    var label = '<span class="ml"><b class="mln">' + hl(displayName, needle) + "</b>" + codeChip +
       /* R40: مؤشر صغير — الوقوف على الصف بيطلع الماكينة والملاحظات
          (من غير title عشان ميتعملش تولتيبين فوق بعض) */
       ((e[8] || e[7]) ? '<i class="mtag" aria-hidden="true">' + ICO_MACH + "</i>" : "") +
-      arToggle + "</span>";
+      "</span>";
     var pen = ADMIN ? '<span class="mo" role="button" tabindex="0" title="' + esc(T("mp_edit")) + '" data-ei="' + esc(id) + '">' + ICO_PEN + "</span>" : "";
     /* R43: تشيك بوكس دايم جنب كل موظف (للأدمن) — من غير وضع تحديد */
     var chk = ADMIN ? '<span class="mchk' + (selSet[id] ? " on" : "") + '" data-chk="' + esc(id) + '" role="checkbox" aria-checked="' + (selSet[id] ? "true" : "false") + '" tabindex="0">' + (selSet[id] ? '\u2713' : "") + "</span>" : "";
@@ -1960,7 +1950,7 @@ var MaribManpower = (function () {
     var acnt = $("mpArchCount");
     if (acnt) acnt.textContent = String(an);
     var abar = $("mpArchBar");
-    if (abar) abar.classList.toggle("on", an > 0);
+    if (abar) abar.classList.toggle("on", view === "arch" && an > 0);   /* R50: بوب-أب في وضع الأرشيف بس */
     /* R44: زرار تحديد الكل بيتبدل حالته مع التحديد */
     var asb = $("mpArchSelBtn");
     if (asb) {
@@ -2173,9 +2163,15 @@ var MaribManpower = (function () {
               for (var c = 0; c < row.length; c++) {
                 var h = String(row[c] || "").trim();
                 if (!h) continue;
-                /* R47: أعمدة العربي الأول — لازم قبل «الأسم/الوظيفة» العادية
-                   عشان «الأسم بالعربي» ميتلحقش كاسم أساسي (البحث بـ indexOf) */
-                if (h.indexOf("الأسم بالعربي") >= 0 || h.indexOf("الاسم بالعربي") >= 0) map.nameAr = c;
+                /* R50: أعمدة التركي الأول — قبل العربية والعادية
+                   (كل بحث indexOf — الأدق لازم يسبق) */
+                if (h.indexOf("الاسم TR") >= 0 || h.indexOf("الأسم TR") >= 0 || h.indexOf("الاسم بالتركي") >= 0) map.nameTr = c;
+                else if (h.indexOf("الوظيفة TR") >= 0 || h.indexOf("الوظيفة بالتركي") >= 0) map.jobTr = c;
+                else if (h.indexOf("الادارة TR") >= 0 || h.indexOf("الإدارة TR") >= 0 || h.indexOf("الادارة بالتركي") >= 0) map.deptTr = c;
+                else if (h.indexOf("القسم الداخلي TR") >= 0) map.subTr = c;
+                else if (h.indexOf("القسم TR") >= 0 || h.indexOf("القسم بالتركي") >= 0) map.secTr = c;
+                /* R47: أعمدة العربي (التيمبلتات القديمة) */
+                else if (h.indexOf("الأسم بالعربي") >= 0 || h.indexOf("الاسم بالعربي") >= 0) map.nameAr = c;
                 else if (h.indexOf("الوظيفة بالعربي") >= 0) map.jobAr = c;
                 else if (h.indexOf("الكود") >= 0) map.code = c;
                 else if (h.indexOf("الأسم") >= 0 || h.indexOf("الاسم") >= 0 || h.indexOf("الموظف") >= 0) map.name = c;
@@ -2218,17 +2214,28 @@ var MaribManpower = (function () {
               if (!name && !job) continue; /* garbage row */
               var vac = !name ? 1 : 0;
               if (vac) vacs++; else filled++;
+              /* R50: الصف بقى 16 عنصر — التركي جنب العربي
+                 [code, name, nameTr, dept, deptTr, sec, secTr, sub, subTr,
+                  job, jobTr, note, hire, vac, mach, del, nameAr, jobAr] */
               rows.push([
                 String(get("code") == null ? "" : get("code")).trim().slice(0, 20),
-                name.slice(0, 90), dept.slice(0, 90), sec.slice(0, 90), sub.slice(0, 90),
+                name.slice(0, 90),
+                String(get("nameTr") == null ? "" : get("nameTr")).trim().slice(0, 90),
+                dept.slice(0, 90),
+                String(get("deptTr") == null ? "" : get("deptTr")).trim().slice(0, 90),
+                sec.slice(0, 90),
+                String(get("secTr") == null ? "" : get("secTr")).trim().slice(0, 90),
+                sub.slice(0, 90),
+                String(get("subTr") == null ? "" : get("subTr")).trim().slice(0, 90),
                 job.slice(0, 90),
+                String(get("jobTr") == null ? "" : get("jobTr")).trim().slice(0, 90),
                 String(get("note") == null ? "" : get("note")).trim().slice(0, 60),
                 xlsxDate(get("hire")),
                 vac,
-                String(get("mach") == null ? "" : get("mach")).trim().slice(0, 30),  /* R40 */
-                String(get("del") == null ? "" : get("del")).trim().slice(0, 10),    /* R42: حذف؟ */
-                String(get("nameAr") == null ? "" : get("nameAr")).trim().slice(0, 90),  /* R47: الاسم بالعربي */
-                String(get("jobAr") == null ? "" : get("jobAr")).trim().slice(0, 90)    /* R47: الوظيفة بالعربي */
+                String(get("mach") == null ? "" : get("mach")).trim().slice(0, 30),
+                String(get("del") == null ? "" : get("del")).trim().slice(0, 10),
+                String(get("nameAr") == null ? "" : get("nameAr")).trim().slice(0, 90),
+                String(get("jobAr") == null ? "" : get("jobAr")).trim().slice(0, 90)
               ]);
             } else {
               var code = String(get("code") == null ? "" : get("code")).trim();
@@ -2249,7 +2256,10 @@ var MaribManpower = (function () {
             hireCol: best.map.hire !== undefined,
             machCol: best.map.mach !== undefined,
             noteCol: best.map.note !== undefined,
-            arCol: best.map.nameAr !== undefined || best.map.jobAr !== undefined   /* R47: أعمدة العربي موجودة؟ */
+            arCol: best.map.nameAr !== undefined || best.map.jobAr !== undefined,   /* R47: أعمدة العربي (تيمبلت قديم) */
+            trCol: best.map.nameTr !== undefined || best.map.jobTr !== undefined ||
+                   best.map.deptTr !== undefined || best.map.secTr !== undefined ||
+                   best.map.subTr !== undefined                                    /* R50: أعمدة التركي */
           };
           var liveByCode = {};
           var liveByName = {};
@@ -2260,21 +2270,36 @@ var MaribManpower = (function () {
               if (le[2]) liveByName[le[2]] = le;   /* صفوف «جديد» بيتطابقوا بالاسم سيرفر-side */
             }
           }
-          var pNew = 0, pJob = 0, pDel = 0, pKeep = 0;
-          var jobEx = [], delEx = [];
+          var pNew = 0, pJob = 0, pDel = 0, pKeep = 0, pOut = 0;
+          var jobEx = [], delEx = [], outEx = [];
+          var seenCodes = {}, seenNames = {};
           for (var pi = 0; pi < rows.length; pi++) {
             var pr = rows[pi];
             var pcode = String(pr[0] || "");
-            var pdelMark = norm(pr[10]);
+            var pdelMark = norm(pr[15]);
             var isDel = ["نعم", "yes", "x", "حذف", "1", "true"].indexOf(pdelMark) >= 0;
+            if (pcode && pcode !== "جديد") seenCodes[pcode] = 1;
+            if (pr[1]) seenNames[pr[1]] = 1;
             if (isDel && pcode && pcode !== "جديد") { pDel++; if (delEx.length < 5) delEx.push(pr[1]); continue; }
             if (!pr[1]) continue; /* شاغر */
             var live = liveByCode[pcode] || liveByName[pr[1]];
             if (!live) { pNew++; continue; }
-            if (pr[5] && pr[5] !== (live[3] || "")) {
+            if (pr[9] && pr[9] !== (live[3] || "")) {
               pJob++;
-              if (jobEx.length < 5) jobEx.push(pr[1] + ": " + (live[3] || "—") + " ← " + pr[5]);
+              if (jobEx.length < 5) jobEx.push(pr[1] + ": " + (live[3] || "—") + " ← " + pr[9]);
             } else pKeep++;
+          }
+          /* R50: الشيت هو الحقيقة — عدّ اللي على الموقع ومش في الشيت */
+          if (DATA) {
+            for (var oi = 0; oi < DATA.emps.length; oi++) {
+              var oe = DATA.emps[oi];
+              if (oe[6]) continue; /* شاغر — بيتحل لوحده */
+              var ocode = String(oe[1] || "");
+              if (ocode === "جديد") ocode = "";
+              if ((ocode && seenCodes[ocode]) || (oe[2] && seenNames[oe[2]])) continue;
+              pOut++;
+              if (outEx.length < 5) outEx.push(oe[2] || ocode);
+            }
           }
           var pvHtml =
             '<div class="pv-grid">' +
@@ -2283,21 +2308,23 @@ var MaribManpower = (function () {
             '<div class="pv-i"><b>' + pJob + "</b><span>" + esc(T("mp_pv_jobs")) + "</span></div>" +
             '<div class="pv-i"><b>' + vacs + "</b><span>" + esc(T("mp_pv_vacs")) + "</span></div>" +
             (pDel ? '<div class="pv-i bad"><b>-' + pDel + "</b><span>" + esc(T("mp_pv_dels")) + "</span></div>" : "") +
+            (pOut ? '<div class="pv-i bad"><b>-' + pOut + "</b><span>" + esc(T("mp_pv_out")) + "</span></div>" : "") +
             "</div>" +
             (jobEx.length ? '<div class="pv-ex"><b>' + esc(T("mp_pv_jobex")) + ":</b> " + jobEx.map(esc).join(" · ") + "</div>" : "") +
             (delEx.length ? '<div class="pv-ex bad"><b>' + esc(T("mp_pv_delex")) + ":</b> " + delEx.map(esc).join(" · ") + "</div>" : "") +
-            '<div class="cf-warn">' + esc(T("mp_pv_note")) + "</div>";
+            (outEx.length ? '<div class="pv-ex bad"><b>' + esc(T("mp_pv_out")) + ":</b> " + outEx.map(esc).join(" · ") + "</div>" : "") +
+            '<div class="cf-warn">' + esc(T("mp_sheet_truth")) + "</div>";
           confirmBox({
             title: T("mp_confirm_import_t"),
             html: pvHtml,
             okText: T("mp_import_go")
           }).then(function (yes) {
             if (!yes) return;
-            save({ action: "import", rows: rows, hireCol: colFlags.hireCol, machCol: colFlags.machCol, noteCol: colFlags.noteCol, arCol: colFlags.arCol }, "", false).then(function (r) {
+            save({ action: "import", rows: rows, hireCol: colFlags.hireCol, machCol: colFlags.machCol, noteCol: colFlags.noteCol, arCol: colFlags.arCol, trCol: colFlags.trCol }, "", false).then(function (r) {
               var bits = [T("mp_import_done") + " — " + (r ? r.total : rows.length)];
               if (r && r.codeFilled) bits.push(T("mp_code_filled") + " " + r.codeFilled);
               if (r && r.moved) bits.push(T("mp_moved_n") + " " + r.moved);
-              if (r && r.keptOut) bits.push(T("mp_kept_out") + " " + r.keptOut);
+              if (r && r.removed) bits.push(T("mp_pv_out") + " " + r.removed);
               if (r && r.deleted) bits.push(T("mp_pv_dels") + " " + r.deleted);
               toast(bits.join(" · "), "ok");
               /* R46-7: persistent undo notification — 15-min window */
@@ -2316,48 +2343,18 @@ var MaribManpower = (function () {
     }).catch(function () { toast(T("toast_sync_err"), "err"); });
   }
 
-  /* ---------------- R42: ترجمة تلقائية — مسح المصطلحات الناقصة ----------------
-     بعد كل تحميل: نجمع الأقسام والوظايف اللي ملهاش ترجمة (مش في
-     الجلوسار ولا في خريطة السيرفر) ونبعتها دفعة واحدة — السيرفر
-     بيرجّع الخريطة متحدثة وكل حاجة بترسم نفسها. صامتة تمامًا. */
-  function trScan(round) {
-    round = round || 1;
-    if (!DATA || !ADMIN) return;
-    var tr = DATA.tr || {};
-    var need = {};
-    var i;
-    for (i = 0; i < DATA.depts.length; i++) {
-      var nm = DATA.depts[i][1];
-      if (nm && !GLOSS[nm] && !tr[nm]) need[nm] = 1;
-    }
-    for (i = 0; i < DATA.emps.length; i++) {
-      var jb2 = DATA.emps[i][3];
-      if (jb2 && !GLOSS[jb2] && !tr[jb2]) need[jb2] = 1;
-    }
-    var terms = Object.keys(need);
-    if (!terms.length) return;
-    /* R43: 100 مصطلح في الجولة — ولحد 4 جولات ورا بعض عشان المتراكم يخلص */
-    MaribCloud.manpowerPost("trSync", { terms: terms.slice(0, 100) }).then(function (r) {
-      if (r && r.tr && (r.tr.length || Object.keys(r.tr).length)) {
-        DATA.tr = r.tr;
-        buildTree();
-        renderAll();
-        if (round < 4 && terms.length > 100) setTimeout(function () { trScan(round + 1); }, 500);
-      }
-    }).catch(function () { });
-  }
+  /* R50: trScan اتشالت مع الترجمة الفورية — التركي من الشيت دلوقتي */
 
   /* ---------------- reload ---------------- */
   function reload() {
     loading = true;
     renderTree();
     return MaribCloud.manpowerGet().then(function (r) {
-      DATA = { depts: r.depts || [], emps: r.emps || [], req: r.req || {}, transfers: r.transfers || [], root: r.root, tr: r.tr || {} };
+      DATA = { depts: r.depts || [], emps: r.emps || [], req: r.req || {}, transfers: r.transfers || [], root: r.root };
       loaded = true;
       loading = false;
       buildTree();
       renderAll(true);
-      trScan();
     }).catch(function () {
       loading = false;
       renderTree();
@@ -2703,7 +2700,6 @@ var MaribManpower = (function () {
           '<div class="cf-body">' +
             '<div class="mp-lang-grid">' +
               '<button type="button" class="mp-lang-opt" data-lang="ar"><b>عربي</b><small>Arabic</small></button>' +
-              '<button type="button" class="mp-lang-opt" data-lang="en"><b>English</b><small>الإنجليزية</small></button>' +
               '<button type="button" class="mp-lang-opt" data-lang="tr"><b>Türkçe</b><small>التركية</small></button>' +
             '</div>' +
           '</div>' +
@@ -2767,68 +2763,7 @@ var MaribManpower = (function () {
     var tree = $("mpTree");
     if (tree) tree.addEventListener("click", function (e) {
       var el = e.target;
-      /* R46-3: زرار التبديل للعربي — قبل أي handler تاني عشان الـ .mar-btn
-         جوه .ml (نفس مكان الـ pen/mach tag) */
-      var arBtn = el.closest ? el.closest(".mar-btn[data-ar]") : null;
-      if (arBtn) {
-        e.stopPropagation();
-        var arId = arBtn.getAttribute("data-ar");
-        if (arId) {
-          arShow[arId] = !arShow[arId];
-          renderTree();
-        }
-        return;
-      }
-      /* R46-6: زرار التبديل لترجمة القسم — نفس النمط */
-      var darBtn = el.closest ? el.closest(".mar-btn[data-dar]") : null;
-      if (darBtn) {
-        e.stopPropagation();
-        var darId = darBtn.getAttribute("data-dar");
-        var darTerm = darBtn.getAttribute("data-term") || "";
-        if (darId) {
-          var node = findByKey("d:" + darId);
-          if (node) {
-            /* toggle off → just remove the flag */
-            if (deptArShow[node.key] && deptArShow[node.key] !== "__loading__") {
-              delete deptArShow[node.key];
-              renderTree();
-            } else {
-              /* toggle on — check cache first */
-              var cached = (DATA && DATA.tr && DATA.tr[node.label] && DATA.tr[node.label].ar) ? DATA.tr[node.label].ar : "";
-              if (cached) {
-                deptArShow[node.key] = cached;
-                renderTree();
-              } else {
-                /* fetch live translation via /api/translate */
-                deptArShow[node.key] = "__loading__";
-                renderTree();
-                fetch("/api/translate?term=" + encodeURIComponent(node.label) + "&to=ar", { credentials: "include" })
-                  .then(function (r) { if (!r.ok) throw new Error("tr" + r.status); return r.json(); })
-                  .then(function (data) {
-                    var tr = (data && data.tr) || "";
-                    if (tr) {
-                      /* cache it client-side so next click is instant */
-                      if (!DATA.tr) DATA.tr = {};
-                      if (!DATA.tr[node.label]) DATA.tr[node.label] = {};
-                      DATA.tr[node.label].ar = tr;
-                      deptArShow[node.key] = tr;
-                    } else {
-                      delete deptArShow[node.key];
-                      toast(T("toast_sync_err"), "err");
-                    }
-                    renderTree();
-                  })
-                  .catch(function () {
-                    delete deptArShow[node.key];
-                    toast(T("toast_sync_err"), "err");
-                    renderTree();
-                  });
-              }
-            }
-          }
-        }
-        return;
-      }
+      /* R50: أزرار الترجمة الفورية (data-ar/data-dar) اتشالت */
       /* R42: تعديل اسم الجذر (مأرب 3) — أول شرط: الزرار ده عليه class
          mo rn فأي فحص تاني (dept edit / pen) بياخده ويسكت */
       var rted = el.closest ? el.closest("[data-rootedit]") : null;

@@ -17,10 +17,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requireUser, requireRoleBody } from "@/lib/marib/http";
-/* R48 (refactoring): الترجمة التلقائية بقت من الـ lib المشتركة — كانت
-   متكررة هنا وفي lib/marib/translate.ts (الاستخراج حصل في R46
-   لكن النسخة الخاصة لسه موجودة). نفس السلوك بالظبط، من مكان واحد. */
-import { translateAndStore } from "@/lib/marib/translate";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -89,17 +85,17 @@ function hasArabic(s: unknown): boolean {
   return ARABIC_RE.test(String(s || ""));
 }
 
-/* (R48) كود الترجمة التلقائية (gtx + MyMemory + translateAndStore)
-   انتقل لـ src/lib/marib/translate.ts — نفس السلوك، مكان واحد. */
+/* (R50) الترجمة الفورية اتشالت خالص — التركي من أعمدة الشيت */
 
 export async function GET(req: NextRequest) {
   try {
     const g = await requireUser(req, "manpower", "GET");
     if (g.res) return g.res;
 
-    const depts = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
+    /* R50: label_tr للأقسام + name_tr/job_tr للموظفين (التركي من الشيت) */
+    const depts = await q("SELECT id, name, parent_id, ord, label_tr FROM marib_dept ORDER BY ord ASC");
     const emps = await q(
-      `SELECT id, code, name, job, dept_id, hire, vac, note, mach, name_ar, job_ar FROM marib_emp
+      `SELECT id, code, name, job, dept_id, hire, vac, note, mach, name_ar, job_ar, name_tr, job_tr FROM marib_emp
        ORDER BY ord ASC`
     );
     const reqRows = await q("SELECT node_key, required FROM marib_req");
@@ -113,15 +109,10 @@ export async function GET(req: NextRequest) {
       rootRow[0] && typeof rootRow[0].value === "object"
         ? (rootRow[0].value as Record<string, string>)
         : null;
-    const trRows = await q("SELECT term, lang, tr FROM marib_i18n");
-    const tr: Record<string, Record<string, string>> = {};
-    for (const r of trRows) {
-      const term = r.term as string;
-      (tr[term] = tr[term] || {})[r.lang as string] = r.tr as string;
-    }
+    /* R50: خريطة ترجمات marib_i18n اتشالت مع الترجمة الفورية */
     return NextResponse.json({
-      depts: depts.map((r) => [r.id, r.name, r.parent_id || "", r.ord]),
-      emps: emps.map((r) => [r.id, r.code || "", r.name || "", r.job || "", r.dept_id || "", r.hire || "", r.vac ? 1 : 0, r.note || "", r.mach || "", r.name_ar || "", r.job_ar || ""]),
+      depts: depts.map((r) => [r.id, r.name, r.parent_id || "", r.ord, r.label_tr || ""]),
+      emps: emps.map((r) => [r.id, r.code || "", r.name || "", r.job || "", r.dept_id || "", r.hire || "", r.vac ? 1 : 0, r.note || "", r.mach || "", r.name_ar || "", r.job_ar || "", r.name_tr || "", r.job_tr || ""]),
       req: reqRows.reduce<Record<string, number>>((acc, r) => {
         acc[r.node_key as string] = r.required as number;
         return acc;
@@ -130,7 +121,6 @@ export async function GET(req: NextRequest) {
         t.at, t.actor, t.code, t.name, t.from_dept, t.from_job, t.to_dept, t.to_job, t.kind, t.note || "", t.id || "",
       ]),
       root: root || { ar: "مأرب 3", en: "Marib 3", tr: "Marib 3" },
-      tr,
     });
   } catch (e) {
     return serverFail("manpower", "GET", e);
@@ -231,27 +221,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, deleted: gone });
     }
 
-    /* ---------- R42: ترجمة تلقائية دفعة واحدة ----------
-       العميل بيبعت المصطلحات اللي ملهاش ترجمة (أقسام/وظايف جديدة) —
-       السيرفر يترجمها بالخدمة المجانية ويخزنها ويرجّع الخريطة كلها. */
-    if (action === "trSync") {
-      const terms = Array.isArray(body.terms)
-        ? (body.terms as unknown[]).map((x) => cleanStr(x, 90)).filter(Boolean).slice(0, 100)
-        : [];
-      const have = new Set((await q("SELECT term FROM marib_i18n")).map((r) => r.term as string));
-      const todo = terms.filter((t) => !have.has(t));
-      /* R43: 8 مصطلحات بالتوازي — أسرع بكتير من التتابع (Vercel-safe) */
-      for (let i = 0; i < todo.length; i += 8) {
-        await Promise.all(todo.slice(i, i + 8).map((t) => translateAndStore(t).catch(() => {})));
-      }
-      const trRows = await q("SELECT term, lang, tr FROM marib_i18n");
-      const tr: Record<string, Record<string, string>> = {};
-      for (const r of trRows) {
-        const term = r.term as string;
-        (tr[term] = tr[term] || {})[r.lang as string] = r.tr as string;
-      }
-      return NextResponse.json({ ok: true, tr });
-    }
+    /* R50: trSync اتشالت مع الترجمة الفورية — التركي من أعمدة الشيت */
 
     /* ---------- add one employee (code optional — blank = جديد) ---------- */
     if (action === "add") {
@@ -433,9 +403,6 @@ export async function POST(req: NextRequest) {
       );
       const p = await deptPath(id);
       await audit(actor, "create", "manpower-dept", name, { path: p });
-      /* R42: القسم الجديد بيتترجم فورًا للغتين التانيتين (مجاني) —
-         الفشل صامت: الاسم يفضل ظاهر زي ما هو */
-      void translateAndStore(name).catch(() => {});
       return NextResponse.json({ ok: true, id });
     }
 
@@ -451,8 +418,6 @@ export async function POST(req: NextRequest) {
       const newPath = await deptPath(id);
       const n = await q("SELECT COUNT(*)::int AS n FROM marib_emp WHERE dept_id = $1", [id]);
       await logTransfer(actor, "—", cur[0].name as string, oldPath, null, newPath, null, "dept-rename");
-      /* R42: الاسم الجديد بيتترجم للغتين التانيتين */
-      void translateAndStore(name).catch(() => {});
       await audit(actor, "edit", "manpower-dept", name, { from: oldPath, to: newPath });
       void n;
       return NextResponse.json({ ok: true });
@@ -561,6 +526,7 @@ export async function POST(req: NextRequest) {
         mach: body.machCol !== false,
         note: body.noteCol !== false,
         ar: !!body.arCol,
+        tr: !!body.trCol,   /* R50: أعمدة التركي موجودة في الشيت؟ */
       };
 
       const allDepts0 = await q("SELECT id, name, parent_id FROM marib_dept");
@@ -592,10 +558,14 @@ export async function POST(req: NextRequest) {
         return out || "";
       }
 
-      async function ensureChain(parts: string[]): Promise<string> {
+      /* R50: ensureChain بقى بياخد أسماء التركي جنب العربية —
+         القسم الجديد يتخزن بـ label_tr، والموجود بيتحدث لو الشيت
+         معبّي عمود التركي (القاعدة: القيمة الفاضية متفرّغش المخزن). */
+      async function ensureChain(parts: string[], partsTr: string[] = []): Promise<string> {
         let parent = "";
-        for (const raw of parts) {
-          const name = cleanStr(raw, 90);
+        for (let pi = 0; pi < parts.length; pi++) {
+          const name = cleanStr(parts[pi], 90);
+          const nameTr = cleanStr(partsTr[pi] || "", 90);
           if (!name) continue;
           const nm = normName(name);
           let id = byId.get(parent + "|" + nm);
@@ -610,22 +580,56 @@ export async function POST(req: NextRequest) {
               [parent]
             );
             id = crypto.randomUUID();
-            await q(`INSERT INTO marib_dept (id, name, parent_id, ord) VALUES ($1, $2, NULLIF($3,''), $4)`, [id, name, parent, ord[0]?.n ?? 1]);
+            await q(`INSERT INTO marib_dept (id, name, parent_id, ord, label_tr) VALUES ($1, $2, NULLIF($3,''), $4, NULLIF($5,''))`, [id, name, parent, ord[0]?.n ?? 1, nameTr || null]);
             byId.set(parent + "|" + nm, id);
             if (!byNorm.has(nm)) byNorm.set(nm, []);
             byNorm.get(nm)!.push(id);
-            void translateAndStore(name).catch(() => {});
+          } else if (nameTr) {
+            /* موجود + الشيت فيه تركي → حدّث label_tr */
+            await q("UPDATE marib_dept SET label_tr = $2 WHERE id = $1", [id, nameTr]);
           }
           parent = id;
         }
         return parent;
       }
 
-      /* normalize both formats → {code,name,chain,job,note,hire,vac,mach,del,nameAr,jobAr} */
-      const clean: { code: string; name: string; chain: string[]; job: string; note: string; hire: string; vac: boolean; mach: string; del: boolean; nameAr: string; jobAr: string }[] = [];
+      /* R50: normalize — فورمات جديد 18 عنصر (بأعمدة التركي) + القديم 13 + القديم جدًا 5
+         الجديد: [code, name, nameTr, dept, deptTr, sec, secTr, sub, subTr,
+                  job, jobTr, note, hire, vac, mach, del, nameAr, jobAr] */
+      type CleanRow = { code: string; name: string; nameTr: string; chain: string[]; chainTr: string[]; job: string; jobTr: string; note: string; hire: string; vac: boolean; mach: string; del: boolean; nameAr: string; jobAr: string };
+      const clean: CleanRow[] = [];
       for (const r0 of rows) {
         const r = Array.isArray(r0) ? (r0 as unknown[]) : [];
-        if (r.length >= 8) {
+        if (r.length >= 16) {
+          /* R50: الفورمات الجديد بأعمدة التركي */
+          const vac = !!(r[13] === 1 || r[13] === true || r[13] === "1");
+          const name = cleanStr(r[1], 90);
+          const dept = cleanStr(r[3], 90);
+          const sec = cleanStr(r[5], 90);
+          const sub = cleanStr(r[7], 90);
+          const chain = [dept, sec, sub].filter((x) => !!x);
+          if (!chain.length) continue;
+          if (!name && !cleanStr(r[9], 90)) continue; /* garbage row */
+          let hire = cleanStr(r[12], 10);
+          if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) hire = "";
+          const delMark = normName(r[15]).replace(/[\u064B-\u065F\u0640]/g, "");
+          const del = ["نعم", "yes", "x", "حذف", "1", "true"].includes(delMark);
+          /* سلسلة التركي توازي سلسلة العربية (الفاضي بيفضل فاضي) */
+          const chainTrRaw = [cleanStr(r[4], 90), cleanStr(r[6], 90), cleanStr(r[8], 90)];
+          const chainTr: string[] = [];
+          let ti = 0;
+          for (const part of [dept, sec, sub]) {
+            if (part) { chainTr.push(chainTrRaw[ti] || ""); ti++; }
+          }
+          clean.push({
+            code: normCode(r[0]), name, nameTr: cleanStr(r[2], 90),
+            chain, chainTr,
+            job: cleanStr(r[9], 90), jobTr: cleanStr(r[10], 90),
+            note: cleanStr(r[11], 60), hire, vac: vac || !name, mach: cleanStr(r[14], 30), del,
+            nameAr: cleanStr(r[16], 90), jobAr: cleanStr(r[17], 90),
+          });
+        } else if (r.length >= 8) {
+          /* R47/48 legacy: [code, name, dept, sec, sub, job, note, hire, vac, mach, del, nameAr, jobAr] */
           const vac = !!(r[8] === 1 || r[8] === true || r[8] === "1");
           const name = cleanStr(r[1], 90);
           const dept = cleanStr(r[2], 90);
@@ -633,16 +637,16 @@ export async function POST(req: NextRequest) {
           const sub = cleanStr(r[4], 90);
           const chain = [dept, sec, sub].filter((x) => !!x);
           if (!chain.length) continue;
-          if (!name && !cleanStr(r[5], 90)) continue; /* garbage row */
+          if (!name && !cleanStr(r[5], 90)) continue;
           let hire = cleanStr(r[7], 10);
           if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) hire = "";
-          /* R42: عمود "حذف؟" (عنصر 10 في التيمبلت) */
           const delMark = normName(r[10]).replace(/[\u064B-\u065F\u0640]/g, "");
           const del = ["نعم", "yes", "x", "حذف", "1", "true"].includes(delMark);
           clean.push({
-            code: normCode(r[0]), name, chain, job: cleanStr(r[5], 90),
+            code: normCode(r[0]), name, nameTr: "", chain, chainTr: [],
+            job: cleanStr(r[5], 90), jobTr: "",
             note: cleanStr(r[6], 60), hire, vac: vac || !name, mach: cleanStr(r[9], 30), del,
-            nameAr: cleanStr(r[11], 90), jobAr: cleanStr(r[12], 90),   /* R47: بالعربي */
+            nameAr: cleanStr(r[11], 90), jobAr: cleanStr(r[12], 90),
           });
         } else {
           /* old format: [code, name, job, deptPath, hire] */
@@ -653,15 +657,13 @@ export async function POST(req: NextRequest) {
           if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) hire = "";
           const chain = cleanStr(r[3], 190).split(" - ").map((x) => x.trim()).filter(Boolean);
           if (!chain.length) continue;
-          /* (R48) nameAr/jobAr فاضيين للفورمات القديم — نفس معنى العمود
-             الفاضي في الفورمات الجديد: finalAr بيرجع للمخزن/الحفظ التلقائي */
-          clean.push({ code, name, chain, job: cleanStr(r[2], 90), note: "", hire, vac: false, mach: "", del: false, nameAr: "", jobAr: "" });
+          clean.push({ code, name, nameTr: "", chain, chainTr: [], job: cleanStr(r[2], 90), jobTr: "", note: "", hire, vac: false, mach: "", del: false, nameAr: "", jobAr: "" });
         }
       }
       if (!clean.length) return fail("rows", 400);
 
-      /* R47: name_ar/job_ar في الـ SELECT — أساس الحفظ التلقائي */
-      const existing = await q("SELECT id, code, name, job, dept_id, hire, vac, note, mach, name_ar, job_ar FROM marib_emp");
+      /* R50: name_tr/job_tr كمان — أساس منطق finalTr */
+      const existing = await q("SELECT id, code, name, job, dept_id, hire, vac, note, mach, name_ar, job_ar, name_tr, job_tr FROM marib_emp");
       type EmpRow = (typeof existing)[number];
       const byCode = new Map<string, EmpRow>();
       const byName = new Map<string, EmpRow>();
@@ -690,11 +692,11 @@ export async function POST(req: NextRequest) {
              تلقى "الصدر". الموقع أعرف بمكانهم من الشيت.
          (3) مفيش قرار؟ السلسلة تتحل بالـ greedy للصفوف الجديدة،
              والموجودين يفضلوا أماكنهم. */
-      const chainGroups = new Map<string, { parts: string[]; codes: string[] }>();
+      const chainGroups = new Map<string, { parts: string[]; partsTr: string[]; codes: string[] }>();
       for (const c of clean) {
         if (c.del) continue;
         const key = c.chain.map((x) => normName(x)).join("|");
-        if (!chainGroups.has(key)) chainGroups.set(key, { parts: c.chain, codes: [] });
+        if (!chainGroups.has(key)) chainGroups.set(key, { parts: c.chain, partsTr: c.chainTr, codes: [] });
         if (c.code && c.code && c.code !== "جديد" && deptOfCode.has(c.code)) {
           chainGroups.get(key)!.codes.push(c.code);
         }
@@ -755,10 +757,10 @@ export async function POST(req: NextRequest) {
           let old: EmpRow | undefined = undefined;
           if (c.code && c.code !== "جديد") old = byCode.get(c.code);
           if (!old) {
-            /* no code match — try the same name (the جديد flow: the owner
-               re-uploads the sheet with the code typed in) */
+            /* R50: الشيت هو الحقيقة — نفس الاسم = نفس الشخص حتى لو
+               الكود فاضي في الشيت (بيحفظ الكود المخزن بدل ما يضيع) */
             const cand = byName.get(c.name);
-            if (cand && (!cand.code || cand.code === "جديد")) old = cand;
+            if (cand) old = cand;
           }
           /* R47: قيمة العربي النهائية للصف —
              (1) الشيت فيه عمود العربي وقيمته مش فاضية → ناخدها
@@ -771,14 +773,16 @@ export async function POST(req: NextRequest) {
             if (!colFlags.ar && newMain !== oldMain && hasArabic(oldMain) && !oldVal) return oldMain;
             return oldVal || null;
           };
+          /* R50: التركي — الشيت المعبّاا بكسب، الفاضي بيسيب المخزن */
+          const finalTr = (sheetVal: string, oldVal: string | null): string | null => sheetVal || oldVal || null;
           if (!old) {
             const gKey = c.chain.map((x) => normName(x)).join("|");
-            const deptId = chainTarget.get(gKey) || (await ensureChain(c.chain));
-            /* R47: موظف جديد — العربي من عمود الشيت لو موجود */
+            const deptId = chainTarget.get(gKey) || (await ensureChain(c.chain, c.chainTr));
+            /* R50: موظف جديد — العربي والتركي من أعمدة الشيت */
             await q(
-              `INSERT INTO marib_emp (code, name, job, dept_id, note, hire, vac, ord, mach, name_ar, job_ar)
-               VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $9, $10)`,
-              [c.code || "جديد", c.name, c.job, deptId, colFlags.note ? c.note : "", c.hire, clean.indexOf(c) + 1, colFlags.mach ? c.mach : "", c.nameAr || null, c.jobAr || null]
+              `INSERT INTO marib_emp (code, name, job, dept_id, note, hire, vac, ord, mach, name_ar, job_ar, name_tr, job_tr)
+               VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $9, $10, $11, $12)`,
+              [c.code || "جديد", c.name, c.job, deptId, colFlags.note ? c.note : "", c.hire, clean.indexOf(c) + 1, colFlags.mach ? c.mach : "", c.nameAr || null, c.jobAr || null, c.nameTr || null, c.jobTr || null]
             );
             inserted++;
           } else {
@@ -792,7 +796,12 @@ export async function POST(req: NextRequest) {
                الحالي (إعادة تنظيم الموقع أحكم من الشيت) */
             const gKey2 = c.chain.map((x) => normName(x)).join("|");
             let deptId = chainTarget.get(gKey2) || (old.dept_id as string) || "";
-            if (!deptId) deptId = await ensureChain(c.chain);
+            if (!deptId) deptId = await ensureChain(c.chain, c.chainTr);
+            else if (c.chainTr.some((x) => !!x)) {
+              /* R50: القسم موجود — حدّث التركي لو الشيت معبّاا */
+              const gg = chainGroups.get(gKey2);
+              if (gg) await ensureChain(gg.parts, gg.partsTr);
+            }
             const oldPath = await deptPath(old.dept_id as string);
             const newPath = await deptPath(deptId);
             const hadNoCode = !old.code || old.code === "جديد";
@@ -800,8 +809,11 @@ export async function POST(req: NextRequest) {
             /* R47: العربي النهائي بالمنطق التلاتي (شيت → حفظ تلقائي → مخزن) */
             const finalNameAr = finalAr(c.nameAr, (old.name_ar as string) || null, (old.name as string) || "", c.name);
             const finalJobAr = finalAr(c.jobAr, (old.job_ar as string) || null, (old.job as string) || "", c.job);
+            /* R50: التركي النهائي (شيت → مخزن) */
+            const finalNameTr = finalTr(c.nameTr, (old.name_tr as string) || null);
+            const finalJobTr = finalTr(c.jobTr, (old.job_tr as string) || null);
             await q(
-              `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, note=$6, hire=$7, vac=false, mach=$8, name_ar=$9, job_ar=$10, updated_at=now() WHERE id=$1`,
+              `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, note=$6, hire=$7, vac=false, mach=$8, name_ar=$9, job_ar=$10, name_tr=$11, job_tr=$12, updated_at=now() WHERE id=$1`,
               [
                 old.id,
                 c.code && c.code !== "جديد" ? c.code : (old.code as string) || "جديد",
@@ -811,6 +823,8 @@ export async function POST(req: NextRequest) {
                 colFlags.mach ? c.mach : ((old.mach as string) || ""),
                 finalNameAr,
                 finalJobAr,
+                finalNameTr,
+                finalJobTr,
               ]
             );
             if (hadNoCode && c.code && c.code !== "جديد") codeFilled++;
@@ -827,10 +841,19 @@ export async function POST(req: NextRequest) {
         throw e;
       }
 
-      const kept = existing.filter((r) => !r.vac && !seenIds.has(r.id as string) && r.code && r.code !== "جديد");
-      await audit(actor, "upload", "manpower", null, { rows: clean.length, inserted, updated, moved, codeFilled, keptOut: kept.length, deleted });
-      lg.info("manpower import", { rows: clean.length, inserted, updated, moved, codeFilled, keptOut: kept.length, deleted });
-      return NextResponse.json({ ok: true, inserted, updated, moved, codeFilled, total: clean.length, keptOut: kept.length, deleted, undoToken });
+      /* R50: الشيت هو الحقيقة — اللي على الموقع ومش في الشيت يتشال
+         (بسجل خروج في الأرشيف زي أي حذف، والـ undo لسه شغال 15 دقيقة) */
+      const missing = existing.filter((r) => !r.vac && !seenIds.has(r.id as string));
+      let removed = 0;
+      for (const old of missing) {
+        const p = await deptPath(old.dept_id as string);
+        await q("DELETE FROM marib_emp WHERE id = $1", [old.id]);
+        await logTransfer(actor, (old.code as string) || "جديد", (old.name as string) || "", p, old.job as string, "—", "—", "out", "مش موجود في الشيت");
+        removed++;
+      }
+      await audit(actor, "upload", "manpower", null, { rows: clean.length, inserted, updated, moved, codeFilled, removed, deleted });
+      lg.info("manpower import", { rows: clean.length, inserted, updated, moved, codeFilled, removed, deleted });
+      return NextResponse.json({ ok: true, inserted, updated, moved, codeFilled, total: clean.length, removed, deleted, undoToken });
     }
 
     /* R46-7: undo an import — restore the snapshot taken before the

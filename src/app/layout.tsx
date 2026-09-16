@@ -37,9 +37,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        {/* R48: ?v=r48 — cache-busting: يجبر أي متصفح/CDN على جلب النسخة
+        {/* R48: ?v=r50 — cache-busting: يجبر أي متصفح/CDN على جلب النسخة
             الجديدة بعد أي رفع (المالك كان شايف أيقونات قديمة بسبب الكاش) */}
-        <link rel="stylesheet" href="/app/app.css?v=r48" />
+        <link rel="stylesheet" href="/app/app.css?v=r50" />
         <meta name="color-scheme" content="dark" />
       </head>
       {/* R25: the vanilla app scripts tag <body> with lg-locked (scroll

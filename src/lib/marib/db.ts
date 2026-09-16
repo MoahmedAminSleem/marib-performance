@@ -292,6 +292,14 @@ const BOOT_SQL: string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS marib_overtime_month_idx ON marib_overtime (month_key)`,
   `CREATE INDEX IF NOT EXISTS marib_overtime_date_idx ON marib_overtime (date)`,
+  /* R50 — التركي من الشيت: أعمدة الترجمة اليدوية بجانب العربية.
+     الاسم/الوظيفة للموظف، والاسم للقسم، والقسم النصي لسجلات الإنتاج
+     والأوفر تايم (أقسام الأرضية الخمسة مش من شجرة الاتزان). */
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS name_tr TEXT`,
+  `ALTER TABLE marib_emp ADD COLUMN IF NOT EXISTS job_tr TEXT`,
+  `ALTER TABLE marib_dept ADD COLUMN IF NOT EXISTS label_tr TEXT`,
+  `ALTER TABLE marib_prod ADD COLUMN IF NOT EXISTS dept_name TEXT`,
+  `ALTER TABLE marib_overtime ADD COLUMN IF NOT EXISTS dept_name TEXT`,
 ];
 
 let booting: Promise<void> | null = null;
