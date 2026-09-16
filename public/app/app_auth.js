@@ -783,7 +783,7 @@ var MaribAuth = (function () {
        next open asks for the login again. */
     /* R45: تسجيل الخروج بقى في الصفحة الرئيسية (البوابة) وفي هيدر الاتزان —
        زرار الشريط الجانبي اتشال من صفحة التحليل */
-    ["btnLogout", "mgLogout", "mpLogout"].forEach(function (id) {
+    ["btnLogout", "mgLogout", "mpLogout", "tbLogoutBtn"].forEach(function (id) {
       var lo = $(id);
       if (lo) lo.addEventListener("click", function () {
         var done = function () {
@@ -909,7 +909,7 @@ var MaribAuth = (function () {
     /* real company logo on the login leather patch (static file) */
     try {
       var lgLogo = $("lgCoLogo");
-      if (lgLogo) { lgLogo.src = "/app/logo.png"; lgLogo.alt = ""; }
+      if (lgLogo) { lgLogo.src = "/app/icons/factory.png"; lgLogo.alt = ""; }
     } catch (e) { }
     pwVisible = false;
     $("lgPwField").classList.add("sewn");

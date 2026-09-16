@@ -4260,3 +4260,72 @@ html[data-theme="light"] .ent-cb-list{background:#FFFDF8}
   border-color:rgba(74,222,128,.45);
   color:#7EE2A0;
 }
+
+/* ================== R51 — أيقونات 3D + مربعات الثيمات + بطاقة الصلاحيات + مربعات الهيدر المثبتة ================== */
+
+/* ---- الأيقونات 3D (Fluent) — الأساس ---- */
+img.ic3d{display:block;width:22px;height:22px;flex:0 0 auto;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.30))}
+
+/* بطاقات البوابة (تحليل الأداء / الاتزان / إدخال البيانات) */
+.mg-ico .ic3d{width:48px;height:48px}
+
+/* أزرار البوابة السريعة */
+.mg-utils .ic3d{width:20px;height:20px}
+
+/* زرار الصفحة الرئيسية في التوب بار */
+.ctrl-swap .ic3d{width:20px;height:20px}
+
+/* ---- التوب بار (تحليل الأداء) — الأربعة مربعات المثبتة: إعدادات/مستخدمين/بيانات/خروج ---- */
+.tb-mini.sq{width:40px;height:40px;padding:0;border-radius:12px;display:inline-flex;align-items:center;justify-content:center}
+.tb-mini.sq .ic3d{width:23px;height:23px}
+.tb-mini.sq.out{border-color:rgba(239,31,37,.38)}
+.tb-mini.sq.out:hover{background:rgba(239,31,37,.12);border-color:rgba(239,31,37,.62);color:#F08080}
+
+/* ---- هيدر الاتزان — نفس الأربعة مربعات ---- */
+.mp-mini.mp-hdr{width:44px;height:44px;padding:0;border-radius:12px;display:inline-flex;align-items:center;justify-content:center}
+.mp-mini.mp-hdr .ic3d{width:25px;height:25px}
+.mp-mini.mp-hdr.out:hover{background:rgba(239,31,37,.10);border-color:rgba(239,31,37,.48)}
+.mp-back .ic3d{width:20px;height:20px}
+
+/* ---- الثيمات في مربعات ---- */
+#setView-theme .theme-grid{display:flex;gap:20px;flex-wrap:wrap;padding:8px 4px 4px}
+.theme-card{display:flex;flex-direction:column;align-items:center;gap:12px;width:152px;padding:16px 12px 14px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(217,168,107,.20);position:relative;cursor:pointer;font-family:inherit;color:inherit;transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.theme-card:hover{transform:translateY(-3px);border-color:rgba(217,168,107,.55);background:rgba(217,168,107,.07)}
+.theme-card .tc-sw{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:108px;height:108px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 12px 26px rgba(0,0,0,.38)}
+.theme-card .tc-sw i{display:block;width:100%;height:100%}
+.theme-card b{font-size:13px;letter-spacing:.2px}
+.theme-card small{display:none}
+.theme-card .tc-check{position:absolute;top:11px;inset-inline-end:11px;width:23px;height:23px;border-radius:50%;background:#4FD98D;color:#0C1420;font-size:13px;font-weight:800;display:none;align-items:center;justify-content:center;line-height:1;box-shadow:0 3px 9px rgba(79,217,141,.55)}
+.theme-card.on{border-color:rgba(79,217,141,.65);background:rgba(79,217,141,.08)}
+.theme-card.on .tc-check{display:inline-flex}
+[data-theme="light"] .theme-card{background:#FFFFFF;border-color:rgba(20,33,61,.14)}
+[data-theme="light"] .theme-card:hover{border-color:rgba(20,33,61,.35);background:#F7FAFD}
+[data-theme="light"] .theme-card .tc-sw{border-color:rgba(20,33,61,.12);box-shadow:0 10px 22px rgba(15,23,42,.16)}
+[data-theme="light"] .theme-card.on{border-color:#27AE60;background:#F2FBF5}
+
+/* ---- بطاقة الصلاحيات الفاضية (بدل الرسالة الميتة) ---- */
+.pm-empty-card{display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center;padding:30px 20px 24px;margin:14px auto 0;max-width:560px;border:1px dashed rgba(217,168,107,.38);border-radius:18px;background:rgba(217,168,107,.05)}
+.pm-empty-card[hidden]{display:none}
+.pm-empty-ic{width:58px;height:58px}
+.pm-empty-card b{font-size:15px}
+.pm-empty-card p{margin:0;font-size:13px;line-height:1.8;opacity:.72;max-width:420px}
+.pm-roles{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:2px}
+.pm-role-chip{font-size:12px;font-weight:700;padding:5px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.16)}
+.pm-role-chip.dev{color:#F2A65A;border-color:rgba(242,166,90,.45)}
+.pm-role-chip.admin{color:#6FB3FF;border-color:rgba(111,179,255,.45)}
+.pm-role-chip.user{color:#7CE3A1;border-color:rgba(124,227,161,.45)}
+.pm-add-btn{margin-top:6px;padding:11px 26px;border-radius:13px;border:1px solid rgba(217,168,107,.55);background:rgba(217,168,107,.15);color:#E8C896;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit;transition:background .2s,transform .2s}
+.pm-add-btn:hover{background:rgba(217,168,107,.26);transform:translateY(-1px)}
+[data-theme="light"] .pm-empty-card{background:#FBF7EF;border-color:rgba(185,138,79,.45)}
+[data-theme="light"] .pm-empty-card p{opacity:.85}
+[data-theme="light"] .pm-role-chip{border-color:rgba(20,33,61,.16)}
+[data-theme="light"] .pm-add-btn{background:rgba(217,168,107,.12);color:#8A6428}
+
+/* ---- صفحة الدخول — تنظيف الرسومات المرسومة + اللوجو 3D الجديد ---- */
+svg.lg-mach-bg,svg.lg-spool-bg,svg.lg-thread-bg{display:none!important}
+.lg-leather{background:linear-gradient(170deg,rgba(255,255,255,.055),rgba(255,255,255,.015))!important;border:1px solid rgba(217,168,107,.38);border-radius:20px;box-shadow:0 20px 44px rgba(0,0,0,.4);padding:18px 34px 16px}
+.lg-leather .lg-label{width:98px;height:98px;border-radius:22px;margin-bottom:10px;background:linear-gradient(172deg,#FAF4E4 0%,#F1E7CD 58%,#E8DABF 100%);border:1px solid #C9B78E;box-shadow:inset 0 -3px 9px rgba(120,95,55,.16),0 9px 22px rgba(0,0,0,.3)}
+.lg-leather .lg-label img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 3px 7px rgba(90,64,20,.25))}
+
+/* اللوجو في التوب بار — أيقونة المصنع 3D */
+.logo{height:42px;width:auto;border-radius:9px;filter:drop-shadow(0 3px 10px rgba(0,0,0,.35))}

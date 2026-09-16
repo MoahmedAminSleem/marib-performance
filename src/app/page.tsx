@@ -6,16 +6,16 @@
 
 import { SKELETON } from "./skeleton";
 
-/* R48: ?v=r50 على كل سكريبت — cache-busting بعد كل رفع (نفس فكرة app.css) */
+/* R48: ?v=r51 على كل سكريبت — cache-busting بعد كل رفع (نفس فكرة app.css) */
 const SCRIPTS = [
-  "/app/app_core.js?v=r50",      // MaribCore — parsing + the 42 measures
-  "/app/i18n_dict.js?v=r50",     // AR / EN / TR dictionary
-  "/app/i18n_core.js?v=r50",     // i18n engine
-  "/app/app_charts.js?v=r50",    // MaribCharts
-  "/app/marib_cloud.js?v=r50",   // server sync client (R23)
-  "/app/app_main.js?v=r50",      // App module (a+b+c concatenated — one closure)
-  "/app/app_auth.js?v=r50",      // MaribAuth — server login gate
-  "/app/app_manpower.js?v=r50",  // R37 — الاتزان (manpower balance)
+  "/app/app_core.js?v=r51",      // MaribCore — parsing + the 42 measures
+  "/app/i18n_dict.js?v=r51",     // AR / EN / TR dictionary
+  "/app/i18n_core.js?v=r51",     // i18n engine
+  "/app/app_charts.js?v=r51",    // MaribCharts
+  "/app/marib_cloud.js?v=r51",   // server sync client (R23)
+  "/app/app_main.js?v=r51",      // App module (a+b+c concatenated — one closure)
+  "/app/app_auth.js?v=r51",      // MaribAuth — server login gate
+  "/app/app_manpower.js?v=r51",  // R37 — الاتزان (manpower balance)
 ];
 /* xlsx.full.min.js (~950KB) is NOT loaded upfront anymore: App.ensureXLSX()
    pulls it on first upload/export (R24 perf — the first paint got heavy). */

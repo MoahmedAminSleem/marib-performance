@@ -748,6 +748,14 @@ nav_tt_swap: { ar: "التبديل بين الواجهتين", en: "Switch betwe
   pm_lg_edit_d:  { ar: "صلاحية كاملة", en: "full access", tr: "tam erişim" },
   pm_empty:      { ar: "مفيش يوزرات تانيين لسه — ضيف يوزر من نافذة المستخدمين الأول", en: "No other users yet — add users first from the Users modal", tr: "Henüz başka kullanıcı yok — önce Kullanıcılar penceresinden ekleyin" },
   pm_saved:      { ar: "الصلاحية اتغيرت", en: "Permission updated", tr: "İzin güncellendi" },
+  /* R51: حالة الصلاحيات الفاضية — بطاقة مفيدة بدل رسالة ميتة */
+  pm_empty_t:    { ar: "لسه مفيش مستخدمين تانيين", en: "No other users yet", tr: "Henüz başka kullanıcı yok" },
+  pm_empty_d:    { ar: "الصفحة دي بتظبط صلاحيات كل مستخدم على حدة — ضيف فريقك الأول من نافذة المستخدمين، وبعدين ارجع هنا وحدد كل واحد يشوف إيه ويقدر يعدّل إيه", en: "This page tunes what each user can see and edit — add your team first, then come back and fine-tune each account", tr: "Bu sayfa her kullanıcının neyi görebileceğini ve düzenleyebileceğini ayarlar — önce ekibinizi ekleyin, sonra buraya dönüp ince ayar yapın" },
+  pm_add_user:   { ar: "＋ إضافة مستخدم", en: "＋ Add user", tr: "＋ Kullanıcı ekle" },
+  /* R51: حالة الصلاحيات الفاضية — بطاقة مفيدة بدل رسالة ميتة */
+  pm_empty_t:    { ar: "لسه مفيش مستخدمين تانيين", en: "No other users yet", tr: "Henüz başka kullanıcı yok" },
+  pm_empty_d:    { ar: "الصفحة دي بتظبط صلاحيات كل مستخدم على حدة — ضيف فريقك الأول من نافذة المستخدمين، وبعدين ارجع هنا وحدد كل واحد يشوف إيه ويقدر يعدّل إيه", en: "This page tunes what each user can see and edit — add your team first, then come back and fine-tune each account", tr: "Bu sayfa her kullanıcının neyi görebileceğini ve düzenleyebileceğini ayarlar — önce ekibinizi ekleyin, sonra buraya dönüp ince ayar yapın" },
+  pm_add_user:   { ar: "＋ إضافة مستخدم", en: "＋ Add user", tr: "＋ Kullanıcı ekle" },
   pm_role_dev:   { ar: "مطور", en: "Developer", tr: "Geliştirici" },
   pm_role_admin: { ar: "أدمن", en: "Admin", tr: "Yönetici" },
   pm_role_user:  { ar: "يوزر", en: "User", tr: "Kullanıcı" },

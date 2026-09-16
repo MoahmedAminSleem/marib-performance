@@ -4194,7 +4194,7 @@ var App = (function () {
 
   function init() {
     /* logo (static file — no EMBED) */
-    $("brandLogo").src = "/app/logo.png";
+    $("brandLogo").src = "/app/icons/factory.png";
 
     /* R42: الثيمات — تفعيل المحفوظ قبل أي رسم + ربط كروت الثيمات
        + زراير البوابة (إعدادات / بيانات) من غير دخول تحليل الأداء */
@@ -4344,9 +4344,16 @@ var App = (function () {
     }
     /* R50: التوب بار بقى إعدادات + مستخدمين بس (بالأيموجي) —
        الداتا والداتا إنتري بقوا بطاقات في البوابة (الصفحة الرئيسية) */
-    var tbS = $("tbSetBtn"), tbU = $("tbUsersBtn");
+    var tbS = $("tbSetBtn"), tbU = $("tbUsersBtn"), tbD = $("tbDataBtn");
     if (tbS) tbS.addEventListener("click", function () { openSettings(); });
     if (tbU) tbU.addEventListener("click", function () {
+      if (window.MaribAuth && MaribAuth.openUsers) MaribAuth.openUsers();
+    });
+    /* R51: زرار البيانات في التوب بار — نفس بوب-أب البوابة */
+    if (tbD) tbD.addEventListener("click", function () { openDataPop(); });
+    /* R51: زرار إضافة مستخدم من صفحة الصلاحيات الفاضية */
+    var pmAdd = $("pmAddUser");
+    if (pmAdd) pmAdd.addEventListener("click", function () {
       if (window.MaribAuth && MaribAuth.openUsers) MaribAuth.openUsers();
     });
 
