@@ -540,6 +540,20 @@
       </ul>
     </div>
 
+<!-- ⬇️ R49 — تنظيف dependencies + مسح GitHub (تسليم مباشر) ⬇️ -->
+    <div class="upd-block">
+      <div class="upd-head">🟢 الجولة 49 — تنظيف الـ dependencies (79→15 حزمة) + مسح ملفات GitHub الميتة<span class="upd-date">16 سبتمبر 2026</span></div>
+      <ul>
+        <li><b>أول تسليم مباشر على GitHub:</b> المالك رفع R48 (اتأكدنا إنه نزل كامل 100%) وبعته توكن مؤقت → مسحنا الـ <b>21 ملف الميتة</b> كلهم في commit واحد (ba4287a) — زي القاعدة: كله أو مفيش. كلهم بيرجعوا 404 دلوقتي.</li>
+        <li><b>package.json من 79 لـ 15 حزمة (بإذن صريح من المالك):</b> 63 حزمة ميتة من عهد التيمبلت اتشالوا — radix ×26 · prisma ×2 · dnd-kit · tanstack · framer-motion · recharts · next-auth · next-intl · docx · sharp · z-ai-web-dev-sdk … كلهم صفر مراجع (فحص آلي + فحص يدوي للحالات الحرجة). الفاضل: next · react · react-dom · pg · PGlite + أدوات البناء (tailwind v4 · typescript · eslint · الأنواع).</li>
+        <li><b>حذف prisma/ بالكامل</b> (كان فاضل عمدًا في R48 عشان قاعدة «package.json ممنوع» — المالك فك القاعدة للجولة دي) + <b>tailwind.config.ts</b> (ميت في Tailwind v4 — مفيش @config في globals.css) + سكريبتات db:* الأربعة + إعادة تسمية الحزمة → marib-performance.</li>
+        <li><b>مصايد التحليل اللي اتصادت:</b> react-dom طلعت «غير مستخدمة» وهي أساسية (Next بيستخدمها داخليًا) — فضلت. @dnd-kit/core و @reactuses/core طلعوا «مستخدمين» بالغلط (كلمة core جوه nextCoreWebVitals في الكونفيج) — اتشالوا. tailwindcss-animate مستوردة بس من الملف الميت → اتشالت معاه.</li>
+        <li><b>E2E كامل على سيرفر الإنتاج standalone:</b> login Amin ✓ + 10 routes حية كلها 200 (فيهم export بـ 75KB إكسل من المولّد الداخلي) + 9 مسارات/ملفات محذوفة كلها 404 + health (810 موظف — نفس R48) + صفر أخطاء سيرفر + tsc نضيف 100% + build 15 routes.</li>
+        <li><b>الفائدة المباشرة:</b> تثبيت أسرع بكتير على Vercel (15 حزمة بدل 79) → نشر أسرع + سطح هجوم أصغر (مفيش حزم ميتة محتاجة تحديثات أمان) + الريبو أوضح لأي حد هيقراه.</li>
+      </ul>
+      <p class="upd-note">ملفات: package.json + bun.lock + 3 محذوفات (prisma ×2 + tailwind.config.ts) + docs — اتدفعوا مباشرة (مفيش ZIP). التفاصيل: <code>docs/سير-العمل-R49.md</code>. ملاحظة تشغيل: السيرفر في بيئة الاختبار بيموت بين الأوامر حتى مع setsid — الـ E2E لازم يكون أمر واحد متكامل.</p>
+    </div>
+
 <!-- ⬇️ R48 — Refactoring: تنظيف شامل بدون تغيير سلوك ⬇️ -->
     <div class="upd-block">
       <div class="upd-head">🟢 الجولة 48 — Refactoring: مسح 3.9MB كود ميت + نظام واحد + tsc نضيف 100%<span class="upd-date">16 سبتمبر 2026</span></div>
@@ -599,7 +613,7 @@
   </div>
 
   <footer>
-    MARIB GARMENTS — PERFORMANCE STUDIO · سير العمل والحسابات والمنطق — آخر تحديث: الجولة 47 (2026-09-16)
+    MARIB GARMENTS — PERFORMANCE STUDIO · سير العمل والحسابات والمنطق — آخر تحديث: الجولة 49 (2026-09-16)
   </footer>
 </div>
 

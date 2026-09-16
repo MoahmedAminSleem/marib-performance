@@ -1,0 +1,26 @@
+# ── Marib Performance — R49: حماية من رفع الملفات المحلية ──
+# (اتضاف بعد ما git add -A كاد يزوّج node_modules و .env في commit)
+
+# أسرار — ممنوع نهائيًا
+.env
+.env.*
+
+# dependencies
+/node_modules/
+
+# build output
+/.next/
+/out/
+/build/
+
+# بيانات محلية (PGlite) — مقدسة ومش بتترفع أبدًا
+/db/
+
+# logs
+logs/
+dev.log
+server.log
+*.log
+
+# typescript cache
+*.tsbuildinfo

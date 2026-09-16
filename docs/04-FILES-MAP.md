@@ -69,10 +69,11 @@
 
 | File | Role |
 |------|------|
-| `سير-العمل.html` | سجل الجولات التاريخي (R28→R48) |
+| `سير-العمل.html` | سجل الجولات التاريخي (R28→R49) |
 | `README.md` | وصف المشروع |
 | `next.config.ts` | CSP headers + standalone output |
-| `package.json` | dependencies + scripts (ممنوع في الـ ZIP أبدًا) |
+| `package.json` | R49: 15 حزمة بس (next·react·react-dom·pg·PGlite + أدوات بناء) — ممنوع في الـ ZIP أبدًا |
 | `.env` | DATABASE_URL + AUTH_SECRET + DEV_BOOT_PASSWORD |
-| `prisma/schema.prisma` | R48: مش مستخدم من الكود — فاضل لتوافق package.json |
+| ~~`prisma/`~~ | R49: اتمسح بالكامل (schema.prisma + schema.postgres.prisma) — مفيش كود بيستخدمه |
+| ~~`tailwind.config.ts`~~ | R49: اتمسح — Tailwind v4 مش بيقرأه (مفيش @config في globals.css) |
 | `src/server/seed/manpower-seed.ts` | بيانات الاتزان (828 موظف) — يستخدمه ensureBoot |

@@ -2,6 +2,24 @@
 
 > ملخص كل جولة. التفاصيل الكاملة في `سير-العمل.html` + ملف لكل جولة حديثة في `docs/`.
 
+## R49 (16 سبتمبر 2026) — تنظيف dependencies + مسح GitHub (تسليم مباشر)
+
+- **أول تسليم مباشر على GitHub** بتوكن مؤقت من المالك (بدون ZIP)
+- **مسح الـ 21 ملف الميتة من GitHub** (commit ba4287a) بعد التأكد إن رفع R48
+  نزل كامل 100% — الملفات كلها بترجع 404 دلوقتي
+- **package.json: 79 → 15 حزمة** (بإذن صريح — قاعدة «ممنوع اللمس» اتفكت للجولة دي):
+  63 حزمة ميتة من التيمبلت اتشالوا (radix ×26 · prisma ×2 · dnd-kit ·
+  tanstack · framer · recharts · next-auth · next-intl · docx · sharp …)
+- **حذف prisma/ بالكامل + tailwind.config.ts** (ميت في Tailwind v4 — مفيش
+  @config) + سكريبتات db:* الأربعة + rename الحزمة → marib-performance
+- **مصايد التحليل:** react-dom طلعت «مش مستخدمة» وهي أساسية (فضلت) ·
+  @dnd-kit/core و @reactuses/core طلعوا «مستخدمين» بالغلط (كلمة core في
+  nextCoreWebVitals) — اتشالوا
+- **E2E على الإنتاج standalone:** login ✓ + 10 routes حية 200 (فيهم export
+  75KB) + 9 محذوفة 404 + health 810 موظف + صفر أخطاء + tsc نضيف + build 15 routes
+
+**التفاصيل:** `docs/سير-العمل-R49.md` · **الفائدة:** تثبيت ونشر أسرع على Vercel + سطح هجوم أصغر
+
 ## R48 (16 سبتمبر 2026) — Refactoring: تنظيف شامل بدون تغيير سلوك
 
 - **مسح 3.9MB كود ميت:** i18n.js · marib-core.js · marib-charts.js · embed.js ·

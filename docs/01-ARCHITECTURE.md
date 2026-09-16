@@ -8,9 +8,12 @@
 | React | 19 | الواجهة |
 | PGlite | 0.5.8 | Postgres WASM للتطوير المحلي (file-based at `db/pglite/`) |
 | pg | 8.23 | Postgres للإنتاج (Vercel + Neon) |
-| Prisma | 6.11 | R48: مش مستخدم في أي كود — الـ dep + `prisma/schema.prisma` فاضلين للتوافق مع package.json (ممنوع نلمسه) |
 | XLSX (in-house) | — | مولّد Excel بدون مكتبات خارجية (`src/lib/marib/xlsx-writer.ts`) |
-| z-ai-web-dev-sdk | 0.0.18 | SDK للترجمة + VLM + LLM |
+| Tailwind | 4 | CSS pipeline لـ globals.css بس (SPA الستايل بتاعه في app.css) |
+| الترجمة | — | Google gtx + MyMemory عبر fetch مباشر (`lib/marib/translate.ts`) |
+
+> **R49:** الـ dependencies اتنضفت من 79 لـ 15 حزمة (بإذن المالك) — prisma
+> وz-ai-web-dev-sdk و63 حزمة تيمبلت ميتة اتشالوا. شوف `سير-العمل-R49.md`.
 
 ## بنية المشروع
 
@@ -59,13 +62,11 @@ marib-performance-main/
 │       └── app.css               ← كل الستايل (600KB+)
 │   └── (R48: i18n.js / marib-core.js / marib-charts.js / embed.js / xlsx.js
 │        + Marib_Performance_Studio.html الأوفلاين — كلهم اتمسحوا: ميتين بلا أي مرجع)
-├── prisma/
-│   └── schema.prisma             ← R48: فاضي من الكود — فاضل لتوافق package.json
 ├── docs/                         ← هذا الفولدر
 ├── سير-العمل.html                ← السجل التاريخي (R28→R46)
 ├── README.md
 ├── next.config.ts                ← CSP headers + standalone output
-├── package.json
+├── package.json                 ← R49: 15 حزمة بس (اتنضفت 63 ميتة)
 └── .env                          ← DATABASE_URL + AUTH_SECRET + DEV_BOOT_PASSWORD
 ```
 

@@ -1,62 +1,47 @@
-Marib R48 upload — Refactoring: مسح 3.9MB كود ميت + نظام واحد + tsc نضيف 100%
+Marib R49 — تنظيف الـ dependencies + مسح GitHub (تسليم مباشر — مش ZIP)
 ====================================================================================
 
-الجولة 48 (16 سبتمبر 2026) — تنظيف شامل بدون أي تغيير في السلوك الظاهر:
-  1. مسح 8 ملفات ميتة (3.44MB): xlsx.js (951KB) · Marib_Performance_Studio.html
-     الأوفلاين (1.87MB) · marib-app.css (515KB) · i18n.js · marib-core.js ·
-     marib-charts.js · embed.js · skeleton-html.ts — كلهم صفر مراجع
-  2. مسح نظام Prisma القديم بالكامل: 7 routes ميتة + lib/{db,auth,bootstrap}.ts
-     + seeds الشهور القديمة — الفرونت عمره ما نده عليهم. نظام واحد: marib
-  3. /api/health اتعادت على جداول marib الحية → {ok, users, months, employees}
-  4. إلغاء تكرار كود الترجمة في manpower/route.ts → lib/marib/translate.ts
-     + توحيد hasArabic المكررة
-  5. إصلاح 11 خطأ أنواع موروثة من R46/R47 — tsc --noEmit نضيف 100% لأول مرة
-  6. cache-busting ?v=r47 → ?v=r48 (page.tsx + layout.tsx)
-  7. الاختبار الأقوى في تاريخ المشروع: build + tsc + curl E2E 35/35 على
-     سيرفر الإنتاج standalone + متصفح E2E كامل (اتزان 810 / يوزرز / إدخال
-     بفورم 64 قسم) + صفر أخطاء console
+الجولة 49 (16 سبتمبر 2026) — أول جولة تتدفع مباشرة على GitHub بتوكن
+مؤقت من المالك. مش محتاج أي رفع منك — كله موجود على main.
 
-Files (7 code + docs):
-  src/app/api/health/route.ts                     (R48: rewritten on marib tables)
-  src/app/api/manpower/route.ts                   (translate dedup + hasArabic + old-format type fix)
-  src/app/api/entries/absence/route.ts            (template tuple type + BodyInit cast)
-  src/lib/marib/db.ts                             (PgPool type alias — types only)
-  src/lib/marib/undo.ts                           ((string|null)[] type fix)
-  src/app/page.tsx                                (scripts ?v=r48)
-  src/app/layout.tsx                              (app.css?v=r48)
+  1. مسح الـ 21 ملف الميتة من GitHub (commit ba4287a) — بعد التأكد إن
+     رفع R48 نزل كامل 100%. الملفات كلها 404 دلوقتي.
+  2. package.json: من 79 لـ 15 حزمة (بإذن المالك):
+     - dependencies (5): next · react · react-dom · pg · @electric-sql/pglite
+     - devDependencies (10): typescript · @types/react · @types/react-dom ·
+       @types/pg · bun-types · eslint · eslint-config-next · tailwindcss ·
+       @tailwindcss/postcss · tw-animate-css
+     - اتشالوا 63: prisma + @prisma/client · radix ×26 · dnd-kit ×3 ·
+       tanstack ×2 · framer-motion · recharts · next-auth · next-intl ·
+       next-themes · docx · sharp · zod · uuid · z-ai-web-dev-sdk … (كلهم
+       صفر مراجع في الكود — فحص آلي + يدوي)
+  3. حذف: prisma/ (schemas ×2) + tailwind.config.ts (ميت في Tailwind v4)
+     + سكريبتات db:* الأربعة + rename الحزمة → marib-performance
+  4. الاختبار: tsc نضيف 100% · build 15 routes · E2E على الإنتاج
+     standalone: login + 10 routes حية 200 (فيهم export 75KB) + 9 محذوفة
+     404 + health 810 موظف + صفر أخطاء سيرفر
 
-DELETED (20 files — see DELETED-FILES-R48.txt for the GitHub steps):
-  public/app/xlsx.js                              (951KB — duplicate of xlsx.full.min.js)
-  public/app/i18n.js                              (72KB — old generation)
-  public/app/marib-core.js                        (46KB — old generation)
-  public/app/marib-charts.js                      (40KB — old generation)
-  public/app/embed.js                             (37KB — old embed mode)
-  public/Marib_Performance_Studio.html            (1.87MB — old offline edition)
-  src/app/skeleton-html.ts                        (51KB — zero imports)
-  src/app/marib-app.css                           (515KB — zero imports)
-  src/app/api/auth/login/route.ts                 (dead — Prisma legacy)
-  src/app/api/auth/me/route.ts                    (dead)
-  src/app/api/auth/logout/route.ts                (dead)
-  src/app/api/months/route.ts                     (dead)
-  src/app/api/months/[key]/route.ts               (dead)
-  src/app/api/users/[id]/route.ts                 (dead)
-  src/app/api/users/[id]/password/route.ts        (dead)
-  src/lib/db.ts                                   (dead — Prisma client)
-  src/lib/auth.ts                                 (dead — Prisma auth)
-  src/lib/bootstrap.ts                            (dead — Prisma boot)
-  src/server/seed/2026-07.json                    (dead — old system seed)
-  src/server/seed/2026-08.json                    (dead)
-  src/server/seed/2026-09.json                    (dead)
+Files (2 + 3 محذوفات + docs + 1 جديد):
+  .gitignore                                      (NEW — حماية: .env/node_modules/.next/db مش بيترفعوا أبدًا)
+  package.json                                    (R49: 15 حزمة + rename + بدون سكريبتات prisma)
+  bun.lock                                        (R49: اتولد جديد — 15 حزمة)
 
-Docs:
-  docs/00-START-HERE.md          (R48 + single-system line)
-  docs/01-ARCHITECTURE.md        (new tree + single auth + standalone tip)
-  docs/03-API-ROUTES.md          (legacy section → deleted note)
-  docs/04-FILES-MAP.md           (deleted files removed + R48 notes)
-  docs/05-CURRENT-STATE.md       (R48 section + updated pending)
-  docs/06-ROUNDS.md              (R48 entry)
-  docs/سير-العمل-R48.md          (NEW — full R48 worklog)
-  سير-العمل.html                 (R48 block)
-  DELETED-FILES-R48.txt          (NEW — GitHub deletion guide)
+  DELETED:
+  prisma/schema.prisma                            (مفيش كود بيستخدمه)
+  prisma/schema.postgres.prisma                   (مفيش كود بيستخدمه)
+  tailwind.config.ts                              (ميت في Tailwind v4 — مفيش @config)
 
-NOT in the ZIP (قاعدة ثابتة): package.json · bun.lock · .env
+  Docs:
+  docs/01-ARCHITECTURE.md                         (جدول + شجرة من غير prisma)
+  docs/04-FILES-MAP.md                            (صفوف محدثة)
+  docs/05-CURRENT-STATE.md                        (R49 + تحديث ملاحظة الحذف)
+  docs/06-ROUNDS.md                               (مدخل R49)
+  docs/سير-العمل-R49.md                           (NEW — الجولة كاملة)
+  سير-العمل.html                                  (بلوك R49 + الفوتر)
+  CHANGED-FILES.txt                               (الملف ده)
+  DELETED-FILES-R48.txt                           (حالة «تمت المهمة»)
+
+ملاحظات:
+  - الترتيب على GitHub: d68c1c9 (رفعك R48) → ba4287a (مسح الـ 21) → R49
+  - Vercel هينشر تلقائيًا — بعد النشر افتح الموقع بـ Ctrl+Shift+R
+  - ESLint فيه خطأ واحد قديم موروث (no-sync-scripts — تصميم متعمد) مش من R49
