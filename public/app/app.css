@@ -197,16 +197,7 @@ input,select{font-family:inherit}
   border-radius:3px;background:var(--accent);box-shadow:0 0 12px var(--accent)}
 .nav-btn:active{transform:scale(.97)}
 .sidebar .spacer{flex:1 0 0;min-height:8px}
-.data-wrap{position:relative;display:flex;flex-direction:column;flex:0 0 auto}
-.data-btn{
-  display:flex;align-items:center;justify-content:center;text-align:center;
-  min-height:47px;padding:10px 4px;border-radius:var(--r-sm);
-  color:var(--muted);background:rgba(255,255,255,.03);border:1px dashed rgba(239,31,37,.3);
-  transition:all .22s;position:relative;
-}
-.data-btn span{font-size:12px;font-weight:800;line-height:1.35}
-.data-btn:hover{color:var(--txt);border-color:var(--brd-hov);background:var(--accent-soft)}
-.data-btn.busy{color:var(--accent-2)}
+
 @keyframes spin{to{transform:rotate(360deg)}}
 /* data menu opens as a CENTERED modal dialog (same pattern as the drill
    modal). Full-screen overlay → never clipped by the sidebar scroll,
@@ -225,14 +216,7 @@ input,select{font-family:inherit}
 .dp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
 .dp-head h3{font-size:19px;font-weight:800;letter-spacing:.2px}
 .dp-head .sub{font-size:9.5px;color:var(--faint);letter-spacing:2.4px;margin-top:3px;display:block}
-.dp-act{
-  display:flex;flex-direction:column;align-items:stretch;gap:3px;width:100%;
-  background:var(--card);border:1px solid var(--brd-soft);border-radius:var(--r-sm);
-  padding:13px 15px;margin-bottom:10px;text-align:start;transition:.18s;
-}
-.dp-act:hover{border-color:var(--brd-hov);background:var(--accent-soft);transform:translateY(-1px)}
-.dp-act .dp-act-t{font-size:13.5px;font-weight:800;color:var(--txt)}
-.dp-act small{font-size:11px;font-weight:600;color:var(--muted);line-height:1.55}
+
 /* ---- targets settings modal ---- */
 .tg-grid{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
 .tg-row{
@@ -576,7 +560,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
     border-inline-start:none;border-top:1px solid var(--brd-soft);order:2;padding:10px}
   .sidebar .spacer{display:none}
   .nav-btn{min-height:0;padding:9px 12px}
-  .data-btn{min-height:0;padding:9px 14px}
   .content{order:1;padding:14px}
   .kpi-grid{grid-template-columns:1fr}
   .brand{min-width:0}
@@ -587,7 +570,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
 }
-
 
 /* ============ round 8: compare ⇄ + goal-line hover + drillable KPI ============ */
 .cmp-btn{
@@ -679,13 +661,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 
 /* ---------- background layer ---------- */
 .lg-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.lg-mach-bg{
-  position:absolute;bottom:-34px;inset-inline-start:-46px;
-  width:min(430px,62vw);height:auto;color:#8E9AA6;opacity:.13;
-  filter:drop-shadow(0 12px 34px rgba(0,0,0,.55));
-  transform:translate(calc(var(--px,0)*20px),calc(var(--py,0)*13px));
-  transition:transform .7s cubic-bezier(.2,.7,.3,1);
-}
+
 .lg-pocket{
   position:absolute;top:7%;inset-inline-end:-78px;width:min(330px,42vw);aspect-ratio:1/1.16;
   border-radius:16px 16px 46px 46px;
@@ -710,16 +686,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 }
 .pk-rivet.ra{inset-inline-start:26px}
 .pk-rivet.rb{inset-inline-end:26px}
-.lg-spool-bg{
-  position:absolute;bottom:6%;inset-inline-end:5%;width:92px;height:auto;opacity:.24;
-  transform:translate(calc(var(--px,0)*9px),calc(var(--py,0)*7px));
-  transition:transform .7s cubic-bezier(.2,.7,.3,1);
-}
-.lg-thread-bg{
-  position:absolute;top:-4%;inset-inline-start:-6%;width:min(880px,92vw);height:auto;opacity:.17;
-  transform:translate(calc(var(--px,0)*-7px),calc(var(--py,0)*5px));
-  transition:transform .7s cubic-bezier(.2,.7,.3,1);
-}
+
 .lg-glow{
   position:absolute;top:-22%;inset-inline-start:50%;transform:translateX(-50%);
   width:720px;height:520px;
@@ -1004,10 +971,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
   .lg-leather .lg-co{font-size:14px}
   .lg-sign{letter-spacing:3.2px;margin-bottom:12px}
   .lg-lang{top:12px;left:12px;transform:scale(.94);transform-origin:top left}
-  .lg-mach-bg{width:250px;bottom:-52px;inset-inline-start:-58px;opacity:.09}
   .lg-pocket{display:none}
-  .lg-spool-bg{width:64px;opacity:.18}
-  .lg-thread-bg{opacity:.12}
   .lg-submit{padding:14px 14px;font-size:15px}
 }
 @media (max-height:640px){
@@ -1047,22 +1011,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 @media (max-width:1250px){ .user-chip b{display:none} }
 
 /* ============================================================
-   Sidebar side buttons (users / logout)
-   ============================================================ */
-.data-wrap{gap:6px}
-.side-btn{
-  display:flex;align-items:center;justify-content:center;text-align:center;
-  min-height:47px;padding:10px 4px;border-radius:var(--r-sm);
-  color:var(--muted);background:rgba(255,255,255,.03);
-  border:1px solid var(--brd-soft);transition:all .22s;flex:0 0 auto;
-}
-.side-btn span{font-size:12px;font-weight:800;line-height:1.35}
-.side-btn:hover{color:var(--txt);border-color:var(--brd-hov);background:var(--accent-soft)}
-.side-btn:focus-visible{outline:2px solid var(--accent-2);outline-offset:1px}
-.side-btn.out{color:#E8A7AA;border:1px dashed rgba(248,113,113,.32)}
-.side-btn.out:hover{color:#FFB3B6;border-color:rgba(248,113,113,.55);background:rgba(248,113,113,.10)}
-
-/* ============================================================
    No-data empty state (app starts empty each open)
    ============================================================ */
 .content{position:relative}
@@ -1089,10 +1037,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 }
 .nd-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .nd-btn:active{transform:scale(.97)}
-.dp-empty-note{display:none;margin:4px 0 2px;padding:9px 12px;border-radius:9px;
-  font-size:11.5px;font-weight:700;color:var(--muted);line-height:1.6;
-  background:rgba(245,185,60,.08);border:1px dashed rgba(245,185,60,.35)}
-.dp-empty-note.on{display:block}
 
 /* ============================================================
    Users & roles modal
@@ -1218,7 +1162,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
   .us-row{gap:9px;padding:9px 10px}
   .us-acts{gap:5px}
   .us-add-row{flex-direction:column}
-  .side-btn{min-height:0;padding:9px 14px}
   .user-chip{padding:3px 8px}
   .uc-role{display:none}
 }
@@ -1318,9 +1261,7 @@ body{
   background:linear-gradient(180deg,#D9A86B,#A87F4E);
   box-shadow:0 0 12px rgba(217,168,107,.85);
 }
-.data-btn{border:1px dashed rgba(217,168,107,.35)}
-.data-btn:hover{border-color:rgba(217,168,107,.6);background:rgba(217,168,107,.09)}
-.data-btn.busy{color:#E9C68A}
+
 .content::-webkit-scrollbar-thumb{background:rgba(217,168,107,.24)}
 .content::-webkit-scrollbar-thumb:hover{background:rgba(217,168,107,.45)}
 
@@ -1409,7 +1350,7 @@ body{
 /* ---------- modals / overlays: denim panels with gold glow ---------- */
 .data-pop,.drill{background:rgba(6,10,17,.76)}
 .dp-panel,.drill-panel{box-shadow:var(--sh), 0 0 60px rgba(217,168,107,.09)}
-.dp-act:hover{border-color:var(--brd-hov);background:rgba(217,168,107,.08)}
+
 .cmp-pop{background:#16243A;border-color:rgba(217,168,107,.28)}
 .cmp-pop .cp-opt.on{border-color:#A87F4E;background:rgba(217,168,107,.14)}
 .cmp-strip{background:rgba(217,168,107,.05);border:1px dashed rgba(217,168,107,.25)}
@@ -1623,7 +1564,7 @@ button:disabled, .us-ic:disabled, .us-sw input:disabled { cursor: not-allowed; }
   border: 1.5px dashed rgba(217,168,107,.4); border-radius: 14px;
   background: rgba(13,23,38,.45); padding: 44px 20px; text-align: center;
 }
-.su-prompt .sp-ic { font-size: 30px; margin-bottom: 10px; opacity: .85; }
+
 .su-prompt h4 { color: #E9C68A; font-size: 15.5px; margin-bottom: 8px; }
 .su-prompt p { color: #A9B7C7; font-size: 12.5px; line-height: 1.7; max-width: 420px; margin: 0 auto; }
 .su-empty-note {
@@ -1642,17 +1583,7 @@ button:disabled, .us-ic:disabled, .us-sw input:disabled { cursor: not-allowed; }
   border: 1px solid rgba(217,168,107,.3); border-radius: 16px;
   padding: 22px 24px 26px; box-shadow: 0 24px 60px rgba(0,0,0,.5);
 }
-.set-sec { border-top: 1px dashed rgba(169,183,199,.22); padding-top: 16px; margin-top: 18px; }
-.set-sec:first-of-type { border-top: none; margin-top: 6px; padding-top: 0; }
-.set-sec-head {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  background: transparent; border: none; text-align: start; padding: 4px 0;
-  color: #E9C68A; font-weight: 800; font-size: 14.5px; font-family: inherit;
-}
-.set-sec-head .chev { margin-inline-start: auto; transition: transform .2s; color: #A9B7C7; font-size: 12px; }
-.set-sec.closed .chev { transform: rotate(-90deg); }
-.set-sec.closed .set-sec-body { display: none; }
-.set-sec-body { padding-top: 10px; }
+
 .set-hint { color: #A9B7C7; font-size: 11.5px; line-height: 1.7; margin: 6px 0 10px; }
 
 /* targets retro radios */
@@ -1809,9 +1740,6 @@ button:disabled, .us-ic:disabled, .us-sw input:disabled { cursor: not-allowed; }
 input[type="date"] { color-scheme: dark; }
 ::selection { background: rgba(217,168,107,.35); }
 
-/* rp-labs row alignment (labels من/إلى above the date inputs) */
-.range-pick .rp-labs { margin: 0; }
-.range-pick .rp-labs .sep { visibility: hidden; }
 .range-pick { gap: 0; }
 
 /* ============================================================
@@ -1835,37 +1763,11 @@ a.su-tab:focus-visible,a.att-tab:focus-visible,a.nav-btn:focus-visible{
   outline:2px solid rgba(217,168,107,.6);outline-offset:2px;
 }
 
-/* ---------- R26-2 recap: every pointer replaced by the needle-thread
-   PNG above — the hand never shows on a clickable element again. ---------- */
-
-/* ---------- R26-4: (R31) me-badge next to the page title removed —
-   the topbar user chip (top-left) already shows photo + name.
-   The .me-av circle below stays: the settings profile row uses it. ---------- */
-.me-av{
-  width:52px;height:52px;border-radius:50%;position:relative;
-  display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(175deg,#22344B,#101A29);color:#E9C68A;
-  font-weight:800;font-size:19px;font-family:var(--ff-num);
-  border:1px solid rgba(217,168,107,.42);
-  box-shadow:0 4px 16px rgba(0,0,0,.42);
-}
-/* stitched gold ring around the circle */
-.me-av::before{
-  content:"";position:absolute;inset:-4.5px;border-radius:50%;
-  border:1.5px dashed rgba(217,168,107,.55);pointer-events:none;
-}
-.me-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
-.me-av.lg{width:64px;height:64px;font-size:24px}
-
 /* photo version of the little topbar / users-modal circles */
 .uc-av.photo,.us-av.photo{
   background-size:cover;background-position:center;color:transparent;
 }
 
-/* ---------- R26-4: settings → صورتك الشخصية ---------- */
-.pf-row{display:flex;align-items:center;gap:16px;padding:4px 2px 10px}
-.pf-row .me-av{flex:0 0 auto}
-.pf-mid{min-width:0;flex:1 1 auto}
 .pf-btns{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap}
 .pf-btn{
   padding:7px 16px;border-radius:9px;border:1px solid transparent;
@@ -2101,7 +2003,6 @@ input:disabled, select:disabled { cursor: var(--cur-needle) !important; }
 body.pg-mhome .fgroup[data-fg="mhmy"]{display:flex;flex:1 1 260px}
 body.pg-mhome .fgroup[data-fg="dates"]{display:none !important}
 
-
 /* ================================================================
    R37 — الاتزان (manpower balance) · mode gate · swap button
    ================================================================ */
@@ -2119,7 +2020,6 @@ body.pg-mhome .fgroup[data-fg="dates"]{display:none !important}
   background:rgba(217,168,107,.16);border-color:rgba(217,168,107,.6);
   transform:translateY(-1px);
 }
-
 
 /* ============ R44: لوجوهات سريعة جنب زرار الصفحة الرئيسية ============
    إعدادات / بيانات / مستخدمين — بيظهروا في الصفحة الرئيسية بس
@@ -2971,9 +2871,7 @@ html[data-theme="light"] .dp-head h3{color:#F1E4C9}
 html[data-theme="light"] .dp-head .sub{color:#C9B583}
 html[data-theme="light"] .dp-head .icon-btn{color:#E7DDC8}
 html[data-theme="light"] .set-pop .set-panel{background:#FFFFFF}
-html[data-theme="light"] .set-sec{border-top:1px dashed rgba(15,23,42,.14)}
-html[data-theme="light"] .set-sec-head{color:#1D3A5F}
-html[data-theme="light"] .set-sec-head .chev{color:#5B6472}
+
 html[data-theme="light"] .set-hint{color:#5B6472}
 html[data-theme="light"] .set-box{background:#F7F9FC;border-color:rgba(20,33,61,.16);color:#1F2937}
 html[data-theme="light"] .set-box:hover{border-color:rgba(176,126,63,.6)}
@@ -3062,7 +2960,6 @@ html[data-theme="light"] .cmp-strip{background:#F7F9FC;border-color:rgba(15,23,4
 html[data-theme="light"] .cmp-strip b.down{color:#C0321F}
 html[data-theme="light"] .cmp-strip b.flat{color:#5B6472}
 
-
 /* ============ R43: كروت الاتزان — القابل للضغط بس اللي بيتحرك ============ */
 .mph-card{transition:transform .18s cubic-bezier(.2,.8,.3,1.25),box-shadow .2s ease,border-color .2s ease}
 .mph-card.click{cursor:pointer}
@@ -3074,7 +2971,6 @@ html[data-theme="light"] .cmp-strip b.flat{color:#5B6472}
 .mph-card:not(.click){cursor:default}
 .mpr .mchk{cursor:pointer}
 .mp-mini.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-
 
 /* ============================================================
    R46 — Light theme contrast fixes + UI element polish
@@ -3161,10 +3057,7 @@ html[data-theme="light"] .mp-search:hover::-webkit-search-cancel-button{
   z-index:30;
   font-size:12.5px;
 }
-.mp-selbar .sb-count,.mp-archbar .sb-count{
-  font-weight:700;color:#D9A86B;letter-spacing:.02em;
-}
-.mp-selbar .sb-spacer,.mp-archbar .sb-spacer{flex:1 1 auto}
+
 .mp-selbar button,.mp-archbar button{
   appearance:none;border:1px solid rgba(217,168,107,.45);
   background:rgba(217,168,107,.10);color:#F1E4C9;
@@ -3175,18 +3068,7 @@ html[data-theme="light"] .mp-search:hover::-webkit-search-cancel-button{
 .mp-selbar button:hover,.mp-archbar button:hover{
   background:rgba(217,168,107,.22);border-color:rgba(217,168,107,.75);color:#F5E4BB;
 }
-.mp-selbar button.sb-del,.mp-archbar button.sb-del{
-  border-color:rgba(248,113,113,.45);color:#F5C6C8;background:rgba(248,113,113,.10);
-}
-.mp-selbar button.sb-del:hover,.mp-archbar button.sb-del:hover{
-  background:rgba(248,113,113,.22);border-color:rgba(248,113,113,.75);color:#FFD3D5;
-}
-.mp-selbar button.sb-clear,.mp-archbar button.sb-clear{
-  border-color:rgba(255,255,255,.20);color:#C9D4E4;background:rgba(255,255,255,.04);
-}
-.mp-selbar button.sb-clear:hover,.mp-archbar button.sb-clear:hover{
-  background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.40);color:#E7E2D5;
-}
+
 /* Light theme: light background + dark text for the selection bar */
 html[data-theme="light"] .mp-selbar,
 html[data-theme="light"] .mp-archbar{
@@ -3195,8 +3077,7 @@ html[data-theme="light"] .mp-archbar{
   border-top:1px solid rgba(176,126,63,.45);
   box-shadow:0 -8px 24px rgba(15,23,42,.08);
 }
-html[data-theme="light"] .mp-selbar .sb-count,
-html[data-theme="light"] .mp-archbar .sb-count{color:#A66B24}
+
 html[data-theme="light"] .mp-selbar button,
 html[data-theme="light"] .mp-archbar button{
   background:#FFFFFF;border-color:rgba(20,33,61,.22);color:#1F2937;
@@ -3204,22 +3085,6 @@ html[data-theme="light"] .mp-archbar button{
 html[data-theme="light"] .mp-selbar button:hover,
 html[data-theme="light"] .mp-archbar button:hover{
   background:#F7F9FC;border-color:rgba(176,126,63,.65);color:#A66B24;
-}
-html[data-theme="light"] .mp-selbar button.sb-del,
-html[data-theme="light"] .mp-archbar button.sb-del{
-  background:#FFFFFF;border-color:rgba(192,50,31,.45);color:#C0321F;
-}
-html[data-theme="light"] .mp-selbar button.sb-del:hover,
-html[data-theme="light"] .mp-archbar button.sb-del:hover{
-  background:rgba(192,50,31,.10);border-color:rgba(192,50,31,.7);color:#A02814;
-}
-html[data-theme="light"] .mp-selbar button.sb-clear,
-html[data-theme="light"] .mp-archbar button.sb-clear{
-  background:#FFFFFF;border-color:rgba(20,33,61,.20);color:#3D4A5C;
-}
-html[data-theme="light"] .mp-selbar button.sb-clear:hover,
-html[data-theme="light"] .mp-archbar button.sb-clear:hover{
-  background:#F7F9FC;border-color:rgba(20,33,61,.40);color:#1F2937;
 }
 
 /* ---------- 6) Card-view .mo SVGs (Vacant +/-, No-code pen) — size to 14px ---------- */
@@ -3262,7 +3127,6 @@ html[data-theme="light"] .mp-thead .mph-th{
   background:#1B2A44 !important;
   border-bottom:1px solid rgba(217,168,107,.30) !important;
 }
-
 
 /* ============================================================
    R46-2 — Permissions panel CSS (settings popup → setView-perms)
@@ -3398,43 +3262,6 @@ html[data-theme="light"] .pm-lg b{color:#1F2937}
 html[data-theme="light"] .pm-lg small{color:#5B6472}
 html[data-theme="light"] .pm-empty{background:#F7F9FC;border-color:rgba(176,126,63,.22);color:#5B6472}
 
-
-/* ============================================================
-   R46-3 — Arabic name toggle button + Arabic name styling
-   ============================================================ */
-
-/* small toggle icon — sits next to the name + machine tag, lighter than
-   the action .mo icons so it doesn't compete visually */
-.mar-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:18px;height:18px;
-  margin-inline-start:5px;
-  color:var(--faint,#5B6472);
-  background:rgba(217,168,107,.10);
-  border:1px solid rgba(217,168,107,.22);
-  border-radius:6px;
-  cursor:pointer;
-  vertical-align:middle;
-  transition:background .14s,color .14s,border-color .14s,transform .14s;
-}
-.mar-btn svg{width:11px;height:11px;display:block}
-.mar-btn:hover{
-  color:var(--accent-2,#D9A86B);
-  background:rgba(217,168,107,.20);
-  border-color:rgba(217,168,107,.55);
-  transform:translateY(-1px);
-}
-.mar-btn.on{
-  color:#F5E4BB;
-  background:linear-gradient(135deg,#D9A86B,#B07E3F);
-  border-color:#B07E3F;
-  box-shadow:0 1px 4px rgba(176,126,63,.45);
-}
-.mar-btn.on:hover{
-  color:#FFFFFF;
-  background:linear-gradient(135deg,#E5C585,#C9A268);
-}
-
 /* the name itself when in Arabic mode — switches font + a subtle accent */
 .mpr .mln.ar{
   font-family:"Tajawal","Cairo","Segoe UI","Noto Sans Arabic",system-ui,sans-serif;
@@ -3443,24 +3270,7 @@ html[data-theme="light"] .pm-empty{background:#F7F9FC;border-color:rgba(176,126,
   color:var(--accent-2,#D9A86B);
 }
 
-/* light theme overrides */
-html[data-theme="light"] .mar-btn{
-  color:#5B6472;
-  background:rgba(176,126,63,.08);
-  border-color:rgba(176,126,63,.30);
-}
-html[data-theme="light"] .mar-btn:hover{
-  color:#A66B24;
-  background:rgba(176,126,63,.16);
-  border-color:rgba(176,126,63,.55);
-}
-html[data-theme="light"] .mar-btn.on{
-  color:#FFF;
-  background:linear-gradient(135deg,#A66B24,#8A5A2B);
-  border-color:#8A5A2B;
-}
 html[data-theme="light"] .mpr .mln.ar{color:#A66B24}
-
 
 /* ============================================================
    R46-7 — Import & Export unified dropdown + Undo notification
@@ -3604,7 +3414,6 @@ html[data-theme="light"] .mp-undo-toast .ut-count{color:#5B6472}
 html[data-theme="light"] .mp-undo-toast .ut-count b{color:#A66B24}
 html[data-theme="light"] .mp-undo-toast .ut-count.done{color:#C0321F}
 
-
 /* ============================================================
    R46-10 — Export language picker modal + buttons
    ============================================================ */
@@ -3646,7 +3455,6 @@ html[data-theme="light"] .mp-lang-opt:hover{
 }
 html[data-theme="light"] .mp-lang-opt b{color:#8A5A2B}
 html[data-theme="light"] .mp-lang-opt small{color:#5B6472}
-
 
 /* ============================================================
    R46-fix — Defensive fix for empty topbar mini buttons
@@ -3701,8 +3509,6 @@ html[data-theme="light"] .tb-mini:hover svg{
   stroke:#F5E4BB !important;
 }
 
-
-
 /* ============================================================
    R47 — tb-mini: ليبلات نصية جنب أيقونات التوب بار
    المالك طلب «لوجو بيدل الزرار بتاع ايه» — أيقونة + كلمة واضحة
@@ -3725,7 +3531,6 @@ html[data-theme="light"] .tb-mini:hover svg{
 /* الثيم الفاتح: الليبل بيرث لون الزرار (#E5C585) — زياده للوضوح */
 html[data-theme="light"] .tb-mini span{color:#B98A4F}
 
-
 /* ============================================================
    R47 — حقول العربي في مودال الموظف (name_ar / job_ar)
    شكل خفيف مميز: أصغر شوية + حد جانبي ذهبي رفيع — يبين إنها
@@ -3742,7 +3547,6 @@ html[data-theme="light"] .tb-mini span{color:#B98A4F}
   background:rgba(217,168,107,.08);
 }
 html[data-theme="light"] .mpm-ar input{background:rgba(217,168,107,.07)}
-
 
 /* ============================================================
    R46-8 — Data entry popup CSS
@@ -4110,13 +3914,7 @@ html[dir="rtl"] .cc-row.jump:hover::after{transform:translateY(-50%) translateX(
 .cc-row.vac .cc-main{color:var(--faint,#B9C4D4)}
 .cc-row.vac .cc-main .vln{font-weight:600}
 .cc-row .cc-act{display:flex;gap:6px;margin-top:2px}
-/* رأس صفحة الكروت (زرار الرجوع + العنوان + البحث) */
-#mpViewCards .cards-head,
-.mp-cards-head{
-  display:flex;align-items:center;gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:14px;
-}
+
 #mpCardsTitle{
   font-size:16px;font-weight:800;color:var(--accent-2,#D9A86B);
 }
@@ -4321,8 +4119,6 @@ img.ic3d{display:block;width:22px;height:22px;flex:0 0 auto;object-fit:contain;f
 [data-theme="light"] .pm-role-chip{border-color:rgba(20,33,61,.16)}
 [data-theme="light"] .pm-add-btn{background:rgba(217,168,107,.12);color:#8A6428}
 
-/* ---- صفحة الدخول — تنظيف الرسومات المرسومة + اللوجو 3D الجديد ---- */
-svg.lg-mach-bg,svg.lg-spool-bg,svg.lg-thread-bg{display:none!important}
 .lg-leather{background:linear-gradient(170deg,rgba(255,255,255,.055),rgba(255,255,255,.015))!important;border:1px solid rgba(217,168,107,.38);border-radius:20px;box-shadow:0 20px 44px rgba(0,0,0,.4);padding:18px 34px 16px}
 .lg-leather .lg-label{width:98px;height:98px;border-radius:22px;margin-bottom:10px;background:linear-gradient(172deg,#FAF4E4 0%,#F1E7CD 58%,#E8DABF 100%);border:1px solid #C9B78E;box-shadow:inset 0 -3px 9px rgba(120,95,55,.16),0 9px 22px rgba(0,0,0,.3)}
 .lg-leather .lg-label img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 3px 7px rgba(90,64,20,.25))}

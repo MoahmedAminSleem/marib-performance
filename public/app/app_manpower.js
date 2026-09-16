@@ -587,18 +587,6 @@ var MaribManpower = (function () {
     }
     jobsAll.sort();
   }
-
-  /* full path of a dept node (original terms — as stored in the archive) */
-  function nodePath(n) {
-    var parts = [];
-    var cur = n;
-    var guard = 0;
-    while (cur && cur !== ROOT && guard++ < 30) {
-      parts.unshift(cur.label);
-      cur = parentOf(cur);
-    }
-    return parts.join(" - ");
-  }
   function parentOf(n) {
     if (!n || n === ROOT || !n.parent) return ROOT;
     for (var i = 0; i < DATA.depts.length; i++) {
