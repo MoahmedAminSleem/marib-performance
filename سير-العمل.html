@@ -539,6 +539,30 @@
         <li><b>إصلاح صامت:</b> زراير تعيين/مسح الشاغر في صفحة الكروت (كارت الشواغر) كانوا ميتين من الجولة 42 — بقوا شغالين، ومعاهم قلم تعديل الموظف من أي كارت.</li>
       </ul>
     </div>
+
+<!-- ⬇️ R46 — أكبر جولة في تاريخ المشروع (16 ميزة/إصلاح) ⬇️ -->
+    <div class="upd-block">
+      <div class="upd-head">🟢 الجولة 46 — نظام الصلاحيات + الترجمة الفورية + إدخال البيانات + Import&Export موحد + Undo + الثيم + الأسماء ثنائية اللغة<span class="upd-date">16 سبتمبر 2026</span></div>
+      <ul>
+        <li><b>نظام الصلاحيات الكامل (R46-2):</b> جدول <code>marib_perm</code> جديد (user_id × feature × level). الأدمن بيفتح Settings → Permissions ويلقى مصفوفة: كل يوزر × كل ميزة (11 ميزة: manpower.view/edit/import/export · data.view/upload · users.manage · settings.view/edit · audit.view · storage.view). كل خلية dropdown: <b>inherit</b> (افتراضي حسب role: dev=edit، admin=edit، user=view) · <b>hidden</b> (مخفي تماماً) · <b>view</b> (قراية بس) · <b>edit</b> (صلاحية كاملة). التغيير بيتسجل فوراً + في audit log. مسار <code>/api/perms</code> جديد (GET/PUT/DELETE). <code>/api/audit</code> بقى يحترم الصلاحيات بدل ما يكون dev-only. مكتبة <code>src/lib/marib/perms.ts</code> مشتركة بين السيرفر والعميل.</li>
+        <li><b>الأسماء ثنائية اللغة (R46-3):</b> عمودين جداد في <code>marib_emp</code>: <code>name_ar</code> و <code>job_ar</code>. الاسم الإنجليزي بيتعرض افتراضياً، وجنبه زرار صغير (مار ذهبي) لما تدوس عليه بيوريك الاسم بالعربي مؤقتاً. نفس الشيء للوظيفة. الـ toggle بيكعكش النتيجة عشان النداء التاني يكون فوري.</li>
+        <li><b>الترجمة الفورية (R46-6):</b> مسار <code>/api/translate</code> جديد — بياخد <code>?term=X&to=ar|en|tr</code> ويرجع الترجمة. بيستخدم <b>Google gtx</b> (مجاني بدون مفتاح، بدون حدود) + <b>MyMemory</b> (مجاني، 5000 حرف/يوم) كاحتياطي. النتايج بتتخزن في <code>marib_i18n</code> عشان النداء التاني يكون فوري. مكتبة <code>src/lib/marib/translate.ts</code> مشتركة. زرار الترجمة بقت دايماً ظاهرة جنب كل قسم — لو مفيش ترجمة cached، بيعمل fetch فوري.</li>
+        <li><b>زر Import & Export موحد (R46-7):</b> بدل 3 أزرار منفصلة (Upload/Export/Template)، بقى زرار واحد بـ dropdown. لما تدوس عليه تختار: Export current sheet · Export template · Import sheet. بعد الاستيراد بتظهر <b>إشعار ثابت</b> (مش toast عادي) فيه ملخص اللي اتعمل + زرار <b>Undo</b> (بيرجّع كل حاجة في transaction واحد) + زرار إغلاق. الإشعار بيفضل <b>15 دقيقة</b> وبعدها الـ undo بيتلغي. جدول <code>marib_undo</code> جديد بياخد snapshot كامل قبل أي استيراد. مكتبة <code>src/lib/marib/undo.ts</code>.</li>
+        <li><b>اختيار لغة Excel (R46-10):</b> لما تختار Export أو Template، بيظهر modal يسألك بلغة ايه: عربي · English · Türkçe. الـ export بيطبّق الترجمات من <code>marib_i18n</code> على الأسماء في الشيت. اسم الملف بياخد suffix (-AR / -TR).</li>
+        <li><b>صفحات إدخال البيانات (R46-8):</b> 3 جداول جداد: <code>marib_prod</code> (الإنتاج بالـ PO) · <code>marib_absence</code> (الغياب) · <code>marib_overtime</code> (الأوفر تايم). 3 مسارات API: <code>/api/entries/production|absence|overtime</code> — كل واحد GET (list by month) + POST (create) + DELETE. الغياب عنده Excel template (تنزيل + رفع) — العمود: كود + اسم + سبب. الـ matching بيتم بالكود الأول بعدين بالاسم. لو ملقيتش الموظف بيتسجل كعدد لحد ما يترفع على الاتزان. زرار <b>Data Entry</b> جديد في الـ topbar (#tbEntriesBtn) بيفتح modal فيه 3 tabs.</li>
+        <li><b>تنظيف الإعدادات (R46-1):</b> اتشال الشرح اللي تحت كل زرار في الإعدادات (Themes/Targets/Groups/Audit/Mhome/Storage) + جملة «Tap the section you want to edit». الإعدادات بقت نظيفة بس بالأسماء.</li>
+        <li><b>الثيم الفاتح (R46-5):</b> 4 أيزاءات اتصلحت: (1) الـ 4 أزرار المصغرة جنب Home كانوا مش باينين — بقى ليهم خلفية ذهبية + حد + أيقونة ذهبية بـ <code>!important</code>. (2) التشيك بوكس جنب الموظفين كان باهت — بقى مربع ذهبي بعلامة ✓ لما يتداس. (3) علامة X في شريط البحث كانت مش باينة — بقى SVG صريح. (4) النص في الهيدر كان بلون الخلفية — بقى غامق على أرضية فاتحة.</li>
+        <li><b>كارت الزيادة (R46-4):</b> كارت «Excess staff» بقى «Extra staff». لما تدوس عليه بيرجّعلك الأقسام اللي فيها surplus فقط (من <code>excessNodes</code>) — كل قسم كارت مستقل باسمه + رقم الزيادة (+N) + مسار الأب. مفيش عرض للأقسام الداخلية أو الوظايف — سيمبل ومباشر.</li>
+        <li><b>شريط التحديد (R46-9):</b> <code>.mp-selbar</code> كان ملوش أي CSS خالص — كان بيتعرض كنص عادي. بقى sticky bar في الأسفل بخلفية غامقة + أزرار ذهبية (Move/Delete/Clear) + override للثيم الفاتح.</li>
+        <li><b>أيقونات Vacant (R46-11):</b> أيقونات +/- في كارت Vacant كانت بتتعرض بحجم 300×150 (default SVG). بقى ليها قاعدة <code>.cc-row .mo svg{width:14px;height:14px}</code> + أزرار صغيرة (24×24).</li>
+        <li><b>الريفرش بيفضل في نفس الصفحة (R46-fix):</b> لما تعمل ريفرش، الموقع كان بيرجع لبوابة الاختيار (Dashboard/Balance). بقى بيحفظ آخر اختيار في <code>localStorage.marib_last_mode</code> وبيسترجعه تلقائياً بعد الـ session check.</li>
+      </ul>
+      <div class="note" style="margin-top:8px;padding:8px 12px;background:rgba(217,168,107,.08);border:1px dashed rgba(217,168,107,.22);border-radius:8px">
+        <b>الملفات اللي اتغيرت في R46 (19 ملف):</b><br>
+        <b>جديدة:</b> <code>src/lib/marib/perms.ts</code> · <code>src/lib/marib/undo.ts</code> · <code>src/lib/marib/translate.ts</code> · <code>src/app/api/perms/route.ts</code> · <code>src/app/api/translate/route.ts</code> · <code>src/app/api/entries/production/route.ts</code> · <code>src/app/api/entries/absence/route.ts</code> · <code>src/app/api/entries/overtime/route.ts</code><br>
+        <b>معدلة:</b> <code>src/lib/marib/db.ts</code> (5 جداول جديدة: perm/undo/prod/absence/overtime + name_ar/job_ar columns) · <code>src/lib/marib/http.ts</code> (requirePerm/requirePermBody) · <code>src/app/api/manpower/route.ts</code> (undoToken + undo action) · <code>src/app/api/manpower/export/route.ts</code> (?lang= param) · <code>src/app/api/audit/route.ts</code> (perm-aware) · <code>src/app/skeleton.ts</code> (perms button + entries button + ImpExp dropdown) · <code>public/app/app_manpower.js</code> (AR toggle + excess card + ImpExp + undo toast) · <code>public/app/app_main.js</code> (openEntries + perms panel + lang picker) · <code>public/app/app_auth.js</code> (page persistence via localStorage) · <code>public/app/app.css</code> (R46 blocks: light theme + perms + AR toggle + ImpExp + undo + lang picker + entries + defensive .tb-mini) · <code>public/app/i18n_dict.js</code> (~50 مفتاح جديد ×3 لغات)
+      </div>
+    </div>
 <div class="note" style="margin-top:8px">
       <b>الملف ده هو نقطة البداية لأي جلسة جديدة.</b> أقدم بلوك فوق = أول حاجة اتعملت · آخر بلوك = آخر حاجة اتعملت.
       </ul>
@@ -547,7 +571,7 @@
   </div>
 
   <footer>
-    MARIB GARMENTS — PERFORMANCE STUDIO · سير العمل والحسابات والمنطق — آخر تحديث: الجولة 44+45 (2026-09-15)
+    MARIB GARMENTS — PERFORMANCE STUDIO · سير العمل والحسابات والمنطق — آخر تحديث: الجولة 46 (2026-09-16)
   </footer>
 </div>
 

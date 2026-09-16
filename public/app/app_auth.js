@@ -366,7 +366,19 @@ var MaribAuth = (function () {
     if (fresh && me) toast(T("us_hello") + me.username, "ok");
     /* R37: after login the user picks the surface — تحليل الأداء (the
        existing dashboard) or الاتزان (the manpower hierarchy). The
-       gate re-opens any time from the topbar ⇄ button. */
+       gate re-opens any time from the topbar ⇄ button.
+       R46: نحفظ آخر اختيار في localStorage عشان الريفرش ما يرجعش
+       للبوابة — اليوزر يفضل في نفس الصفحة اللي كان فيها. */
+    var lastMode = null;
+    try { lastMode = localStorage.getItem("marib_last_mode"); } catch (e) { }
+    if (lastMode === "dashboard" && window.App && App.enterDash) {
+      App.enterDash();
+      return;
+    }
+    if (lastMode === "balance" && window.MaribManpower && MaribManpower.show) {
+      MaribManpower.show();
+      return;
+    }
     showModeGate();
   }
 
@@ -395,10 +407,12 @@ var MaribAuth = (function () {
   function bindModeGate() {
     var d = $("mgDash"), m = $("mgMp");
     if (d) d.addEventListener("click", function () {
+      try { localStorage.setItem("marib_last_mode", "dashboard"); } catch (e) { }
       hideModeGate();
       if (window.App && App.enterDash) App.enterDash();
     });
     if (m) m.addEventListener("click", function () {
+      try { localStorage.setItem("marib_last_mode", "balance"); } catch (e) { }
       hideModeGate();
       if (window.MaribManpower && MaribManpower.show) MaribManpower.show();
     });

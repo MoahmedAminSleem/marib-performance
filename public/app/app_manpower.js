@@ -1229,64 +1229,17 @@ var MaribManpower = (function () {
           "</div>");
       }
     } else if (cardMode === "excess") {
-      /* R46-fix: بدل عرض الأقسام الأم (اللي ليها override + surplus)،
-         بنعرض الأقسام الداخلية اللي فيها موظفين (leaf depts) تحت كل أب
-         ليه surplus. كل قسم داخلي يبقى كارت مستقل باسمه + عدد الموظفين
-         جواه + مسار الأب. ده اللي المستخدم عايزه: يشوف الأقسام
-         الداخلية اللي قبل الاسم علطول (اللي شايلين الزيادة فعلاً). */
+      /* R46-final: اعرض الأقسام اللي فيها surplus فقط (من excessNodes).
+         كل قسم يبقى كارت مستقل باسمه + رقم الزيادة (+N) + مسار الأب.
+         مفيش عرض للأقسام الداخلية أو الوظايف — سيمبل ومباشر. */
       var exn = excessNodes();
       for (var ix = 0; ix < exn.length; ix++) {
         var xn = exn[ix].n, xx = exn[ix].x;
         if (N && norm(hay(xn.label) + " " + nodePathTT(xn)).indexOf(N) < 0) continue;
-        /* R46-fix: نوّل على كل الأقسام الداخلية اللي جوه xn اللي فيها
-           موظفين مباشرين (leaf depts — مفيش أبناء تحتهم عندهم موظفين).
-           كل واحد فيهم يبقى كارت مستقل. */
-        var leafDepts = [];
-        (function findLeaves(n) {
-          /* لو القسم ده عنده موظفين مباشرين (في n.emps) ومفيش أبناء
-             عندهم موظفين، اعتبره leaf. */
-          var hasEmpKids = false;
-          for (var q = 0; q < n.kids.length; q++) {
-            if (n.kids[q].emps.length > 0 || n.kids[q].kids.length > 0) {
-              hasEmpKids = true;
-              break;
-            }
-          }
-          if (n.emps.length > 0 && !hasEmpKids) {
-            /* ده leaf dept — فيه موظفين مباشرين ومفيش أقسام فرعية */
-            leafDepts.push({
-              name: deptLabel(n),
-              count: n.emps.length,
-              id: n.id,
-              parent: parentOf(n),
-              node: n
-            });
-            return;
-          }
-          /* مش leaf — نلف على الأبناء */
-          for (var q2 = 0; q2 < n.kids.length; q2++) {
-            findLeaves(n.kids[q2]);
-          }
-        })(xn);
-        /* رتّب بعدد الموظفين (الأكتر الأول) بعدين بالاسم */
-        leafDepts.sort(function (a, b) { return b.count - a.count || natCmp(a.name, b.name); });
-        /* لو مفيش leaf depts، اعرض الأب نفسه ككارت */
-        if (!leafDepts.length) {
-          leafDepts.push({ name: deptLabel(xn), count: xx, id: xn.id, parent: parentOf(xn) });
-        }
-        /* اعرض كل قسم داخلي ككارت مستقل */
-        for (var s = 0; s < leafDepts.length; s++) {
-          var sd = leafDepts[s];
-          if (N && norm(hay(sd.name) + " " + nodePathTT(sd.parent)).indexOf(N) < 0) continue;
-          var sdParentPath = (function () {
-            try { return nodePathTT(sd.parent) || rootLabel(); } catch (e) { return rootLabel(); }
-          })();
-          html.push('<div class="cc-row jump" data-jump="' + esc(sd.id) + '">' +
-            '<span class="cc-main">' + hl(sd.name, needle) + '</span>' +
-            '<div class="cc-sub faint">' + esc(sdParentPath) + '</div>' +
-            '<b class="mv pos"><bdi>' + sd.count + '</bdi></b>' +
-            '</div>');
-        }
+        html.push('<div class="cc-row jump" data-jump="' + esc(xn.id) + '">' +
+          '<span class="cc-main">' + hl(deptLabel(xn), needle) + ' <b class="mv pos"><bdi>+' + xx + '</bdi></b></span>' +
+          '<div class="cc-sub faint">' + esc(nodePathTT(parentOf(xn)) || rootLabel()) + '</div>' +
+          '</div>');
       }
     } else if (cardMode === "vacs") {
       /* كل الشواغر — الوظيفة والمكان، وزرار التعيين للأدمن */
