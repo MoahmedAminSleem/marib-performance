@@ -709,12 +709,12 @@ var MaribManpower = (function () {
      عشان مفيش عدّ مضاعف. العقد اللي من غير override مبتجيبش زيادة أبدًا
      (المطلوب فيها = الموجود + الشواغر) فبنزل للأبناء بس */
   function excessTotal() {
-    if (!ROOT) return 0;
+    /* R46-final: بسيط ومباشر — اجمع surplus من excessNodes نفسها.
+       excessNodes بيرجّع القايمة اللي اليوزر بيشوفها (+1, +2) — نجمعها
+       ونرجّع المجموع. ده يضمن إن الرقم في الكارت = مجموع اللي في الكروت. */
+    var nodes = excessNodes();
     var t = 0;
-    (function walk(n) {
-      if (n.own !== null) { if (n.tCount > n.own) t += n.tCount - n.own; return; }
-      for (var k = 0; k < n.kids.length; k++) walk(n.kids[k]);
-    })(ROOT);
+    for (var i = 0; i < nodes.length; i++) t += nodes[i].x;
     return t;
   }
   function excessNodes() {
