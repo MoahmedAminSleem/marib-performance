@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
     if (sp.get("template") === "1") {
       const deptRows = await q("SELECT id, name, parent_id, ord FROM marib_dept ORDER BY ord ASC");
       const empRows = await q(
-        "SELECT code, name, job, dept_id, hire, vac, mach, note FROM marib_emp ORDER BY ord ASC"
+        "SELECT code, name, job, dept_id, hire, vac, mach, note, name_ar, job_ar FROM marib_emp ORDER BY ord ASC"
       );
       const pById = new Map<string, { name: string; parent: string }>();
       for (const d of deptRows) pById.set(d.id as string, { name: trName(d.name as string), parent: (d.parent_id as string) || "" });
@@ -142,18 +142,22 @@ export async function GET(req: NextRequest) {
         return [parts[0] || "", parts[1] || "", parts.slice(2).join(" - ")];
       };
       const twb = new XBook();
-      const db = twb.sheet("Database", { rtl: true, freezeRows: 1, widths: [5, 10, 34, 17, 15, 17, 22, 10, 18, 7], defaultRowHeight: 18 });
-      const th = ["p", "الكود", "الأسم", "الادارة", "القسم", "القسم الداخلي", "الوظيفة", "الماكينة", "ملاحظات", "حذف؟"];
+      /* R47: عمودين جداد — «الأسم بالعربي» بعد الأسم و«الوظيفة بالعربي»
+         بعد الوظيفة. الاستيراد بياخدهم تلقائيًا (map.nameAr / map.jobAr)،
+         ولو حد رفع الشيت من غيرهم (تيمبلت قديم) مفيش مشكلة — الأعمدة
+         الناقصة مش بتفرّغ القيم المخزنة. */
+      const db = twb.sheet("Database", { rtl: true, freezeRows: 1, widths: [5, 10, 34, 24, 17, 15, 17, 22, 20, 10, 18, 7], defaultRowHeight: 18 });
+      const th = ["p", "الكود", "الأسم", "الأسم بالعربي", "الادارة", "القسم", "القسم الداخلي", "الوظيفة", "الوظيفة بالعربي", "الماكينة", "ملاحظات", "حذف؟"];
       th.forEach((h, i) => {
         db.cell(1, i + 1, h, {
           font: { size: 11, bold: true, color: "FFFFFFFF" },
           fill: C.denim2,
-          align: { h: i === 2 || i === 6 || i === 8 ? "right" : "center", v: "middle" },
+          align: { h: i === 2 || i === 3 || i === 7 || i === 8 || i === 10 ? "right" : "center", v: "middle" },
           border: C.line,
         });
       });
       db.row(1, { height: 22 });
-      db.filter("A1:J1");
+      db.filter("A1:L1");
       let tr = 2;
       let p = 0;
       for (const e of empRows) {
@@ -172,16 +176,18 @@ export async function GET(req: NextRequest) {
         db.cell(tr, 1, p, st());
         db.cell(tr, 2, vac ? "" : ((e.code as string) || ""), st(vac ? { color: C.faint } : undefined));
         db.cell(tr, 3, vac ? "" : trName((e.name as string) || ""), stR(vac ? { color: C.faint } : undefined));
-        db.cell(tr, 4, a, stR());
-        db.cell(tr, 5, b, stR());
-        db.cell(tr, 6, c, stR());
-        db.cell(tr, 7, trName((e.job as string) || ""), stR());
-        db.cell(tr, 8, (e.mach as string) || "", st());
-        db.cell(tr, 9, (e.note as string) || "", stR());
-        db.cell(tr, 10, "", st());
+        db.cell(tr, 4, vac ? "" : ((e.name_ar as string) || ""), stR(vac ? { color: C.faint } : undefined));
+        db.cell(tr, 5, a, stR());
+        db.cell(tr, 6, b, stR());
+        db.cell(tr, 7, c, stR());
+        db.cell(tr, 8, trName((e.job as string) || ""), stR());
+        db.cell(tr, 9, vac ? "" : ((e.job_ar as string) || ""), stR(vac ? { color: C.faint } : undefined));
+        db.cell(tr, 10, (e.mach as string) || "", st());
+        db.cell(tr, 11, (e.note as string) || "", stR());
+        db.cell(tr, 12, "", st());
         if (vac) {
           db.cell(tr, 3, "", st({ italic: true, color: C.red, bold: true }));
-          db.cell(tr, 7, trName((e.job as string) || ""), stR({ italic: true, color: C.red, bold: true }));
+          db.cell(tr, 8, trName((e.job as string) || ""), stR({ italic: true, color: C.red, bold: true }));
         }
         tr++;
       }
@@ -195,6 +201,7 @@ export async function GET(req: NextRequest) {
         ["", false],
         ["إضافة موظف: صف جديد — اكتب الكود والاسم والوظيفة والإدارة/القسم. (الكود ممكن يفضل فاضي — هيطلع في الموقع «جديد»)", false],
         ["تعديل موظف: دور على كوده وغيّر أي خانة (الاسم/الوظيفة/القسم/الماكينة/ملاحظات).", false],
+        ["الاسم بالعربي / الوظيفة بالعربي (R47): اختياري — اكتب فيهم النص العربي، وه يظهر في الموقع بزرار AR جنب الاسم. لو غيّرت الاسم من عربي لإنجليزي وسيبت العربي فاضي، الموقع هيحفظ العربي القديم تلقائيًا في حقله.", false],
         ["نقل موظف: غيّر الادارة/القسم/القسم الداخلي في صفه — النقل هيتسجل في الأرشيف تلقائيًا.", false],
         ["شاغر (وظيفة مطلوبة من غير حد): سيب خانة «الأسم» فاضي واكتب الوظيفة — الموقع هيحطه «شاغر» مكانه.", false],
         ["حذف موظف: اكتب «نعم» في عمود «حذف؟» في صفه — الحذف هيتسجل في الأرشيف كخروج.", false],

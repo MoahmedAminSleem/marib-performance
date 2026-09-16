@@ -10,7 +10,7 @@
 | `/api/auth` | POST | none | login → sets cookie |
 | `/api/auth` | DELETE | any | logout |
 | `/api/manpower` | GET | any | الهيكل الكامل (depts+emps+req+transfers+tr+root) |
-| `/api/manpower` | POST | admin+ | add/edit/fill/vacAdd/vacDel/deptAdd/deptRename/deptMove/deptDelete/req/import/undo/trSync |
+| `/api/manpower` | POST | admin+ | add/edit/fill/vacAdd/vacDel/deptAdd/deptRename/deptMove/deptDelete/req/import/undo/trSync — edit/add/fill/import بيقبلوا `name_ar`/`job_ar` + حفظ تلقائي للعربي (R47)، و import بيقبل `arCol` |
 | `/api/manpower/export` | GET | any | تنزيل Excel (?template=1 ?lang=ar\|en\|tr) |
 | `/api/users` | GET | admin | قائمة المستخدمين |
 | `/api/users` | POST | admin | إنشاء مستخدم |
@@ -64,4 +64,14 @@ audit.view       storage.view
 ```
 POST /api/manpower  action=import  →  يرجّع undoToken في الـ response
 POST /api/manpower  action=undo    →  ?undoToken=X  →  restoreFromSnapshot()
+```
+
+## العربي في الموظفين (R47)
+
+```
+POST /api/manpower  action=edit    →  body: { ..., name_ar, job_ar }  (فاضي = مسح صريح)
+POST /api/manpower  action=import  →  body: { rows: [code,name,dept,sec,sub,job,note,hire,vac,mach,del,nameAr,jobAr], arCol: true|false }
+  - arCol=true   → أعمدة العربي موجودة في الشيت (القيمة الفاضية = فاضية)
+  - arCol=false  → شيت قديم: تغيير اسم عربي لإنجليزي بيتحفظ العربي القديم في name_ar تلقائيًا
+التيمبلت (?template=1) فيه عمودي «الأسم بالعربي» و«الوظيفة بالعربي» (12 عمود).
 ```

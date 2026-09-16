@@ -811,13 +811,20 @@ var MaribManpower = (function () {
       : '<span class="tw ghost"></span>';
     var ico = '<span class="mi dept">' + ICO_DEPT + "</span>";
     /* R46-6: اسم القسم يبان زي ما هو (RAW) افتراضياً، مع زرار صغير جنبه
-       يوريك الترجمة العربية مؤقتاً (لو فيه ترجمة متاحة). */
+       يوريك الترجمة العربية مؤقتاً. لو فيه ترجمة cached في DATA.tr،
+       بناخدها على طول؛ غير كده، الزرار بيعمل fetch من /api/translate
+       (Google gtx + MyMemory، مجاني بدون مفتاح) ويخزنها للمرّة الجاية. */
     var deptAr = (DATA && DATA.tr && DATA.tr[n.label] && DATA.tr[n.label].ar) ? DATA.tr[n.label].ar : "";
+    /* R46-6 live: حتى لو مفيش cached، الزرار يبان — عشان اليوزر يقدر
+       يطلب ترجمة فورية لأي قسم. */
     var showAr = !!deptArShow[n.key];
-    var dispLabel = showAr && deptAr ? deptAr : n.label;
-    var arToggle = deptAr
-      ? '<i class="mar-btn' + (showAr ? " on" : "") + '" role="button" tabindex="0" title="' + esc(T("mp_show_ar")) + '" data-dar="' + esc(n.id) + '" aria-pressed="' + (showAr ? "true" : "false") + '">' + ICO_AR + "</i>"
-      : "";
+    var dispLabel = showAr ? (deptArShow[n.key] === "__loading__" ? "…" : (deptAr || n.label)) : n.label;
+    if (showAr && deptAr) dispLabel = deptAr;
+    if (showAr && !deptAr && deptArShow[n.key] !== "__loading__") dispLabel = n.label;
+    var arToggle = '<i class="mar-btn' + (showAr ? " on" : "") + '" role="button" tabindex="0" title="' + esc(T("mp_show_ar")) + '" data-dar="' + esc(n.id) + '" data-term="' + esc(n.label) + '" aria-pressed="' + (showAr ? "true" : "false") + '">' + ICO_AR + "</i>";
+      /* R47: رجّعنا النسخة live — الزرار بيظهر دايمًا حتى لو مفيش ترجمة
+         cached، وأول ضغطة بتجيب الترجمة من /api/translate (كانت ضاعت
+         في رفع R46-v4 فالأقسام الجديدة ملقتش زرار الترجمة) */
     var label = '<span class="ml"><b class="mln' + (showAr && deptAr ? " ar" : "") + '">' + hl(dispLabel, needle) + "</b>" +
       (n.own !== null ? '<i class="mls ov" title="' + esc(T("mp_req_own")) + '">✎</i>' : "") + arToggle + "</span>";
     /* R39: زرار واحد بس — نفس المودال بيعمل التسمية والنقل مع بعض
@@ -1679,8 +1686,13 @@ var MaribManpower = (function () {
     var m = modalOpen("",
       '<h3 id="mpmTitle">' + esc(T(editing ? "mp_edit" : preset && preset.fill ? "mp_vac_fill" : "mp_add_emp")) + "</h3>" +
       '<label><span data-i18n="mp_name">' + esc(T("mp_name")) + '</span><input id="mpmName" type="text" maxlength="90" autocomplete="off"></label>' +
+      /* R47: الاسم بالعربي — اختياري، بيتخزن في name_ar وبيظهر بزرار
+         التبديل (AR) جنب الاسم في الشجرة */
+      '<label class="mpm-ar"><span data-i18n="mp_name_ar">' + esc(T("mp_name_ar")) + '</span><input id="mpmNameAr" type="text" maxlength="90" dir="auto" autocomplete="off" placeholder="' + esc(T("mp_ar_opt")) + '"></label>' +
       '<label><span data-i18n="mp_code">' + esc(T("mp_code")) + '</span><input id="mpmCode" type="text" maxlength="20" class="num" autocomplete="off" placeholder="' + esc(T("mp_code_ph")) + '"></label>' +
       '<label><span data-i18n="mp_job">' + esc(T("mp_job")) + '</span><input id="mpmJob" type="text" maxlength="90" list="mpJobsList" autocomplete="off"></label>' +
+      /* R47: الوظيفة بالعربي — اختياري، بتتخزن في job_ar */
+      '<label class="mpm-ar"><span data-i18n="mp_job_ar">' + esc(T("mp_job_ar")) + '</span><input id="mpmJobAr" type="text" maxlength="90" dir="auto" autocomplete="off" placeholder="' + esc(T("mp_ar_opt")) + '"></label>' +
       (preset && preset.fill ? '' : '<div class="md-sec"><b data-i18n="mp_dept">' + esc(T("mp_dept")) + '</b><div class="mpc" id="mpmDept"></div></div>') +
       '<label><span data-i18n="mp_hire">' + esc(T("mp_hire")) + '</span><input id="mpmHire" type="date" class="num"></label>' +
       '<datalist id="mpJobsList"></datalist>' +
@@ -1690,6 +1702,9 @@ var MaribManpower = (function () {
       "</div>");
     fillLists();
     $("mpmName").value = editing ? emp[2] : "";
+    /* R47: حقول العربي — بتتملي من e[9]/e[10] لو موجودين */
+    $("mpmNameAr").value = editing ? (emp[9] || "") : "";
+    $("mpmJobAr").value = editing ? (emp[10] || "") : "";
     $("mpmCode").value = editing ? (emp[1] || "") : "";
     /* R45: الكود بقى قابل للتعديل في كل الحالات — السيرفر بيمنع تكرار
        الكود (409) لو حد كتب كود بتاع حد تاني */
@@ -1708,6 +1723,10 @@ var MaribManpower = (function () {
       var code = $("mpmCode").value.trim();
       var job = $("mpmJob").value.trim();
       var hire = $("mpmHire").value;
+      /* R47: العربي اختياري — السيرفر بيحفظ القديم تلقائيًا لو اتغير
+         الاسم لإنجليزي والعربي فاضي (حماية من ضياع العربي) */
+      var nameAr = $("mpmNameAr").value.trim();
+      var jobAr = $("mpmJobAr").value.trim();
       var deptEl = $("mpmDept");
       var deptId = deptEl ? trailToId(deptEl._trail || []) : "";
       if (!name || (!deptId && !(preset && preset.fill))) { toast(T("mp_fill"), "err"); return; }
@@ -1720,20 +1739,20 @@ var MaribManpower = (function () {
           confirmBox({ title: T("mp_confirm_edit_t"), html: '<div class="cf-warn">' + esc(T("mp_confirm_edit")) + "</div>", okText: T("mp_save") })
             .then(function (yes) {
               if (!yes) return;
-              save({ action: "edit", id: emp[0], code: code, name: name, job: job, deptId: deptId, hire: hire },
+              save({ action: "edit", id: emp[0], code: code, name: name, job: job, deptId: deptId, hire: hire, name_ar: nameAr, job_ar: jobAr },
                 moved ? T("mp_moved") : T("mp_saved"), true);
               m.remove();
             });
           return;
         }
-        save({ action: "edit", id: emp[0], code: code, name: name, job: job, deptId: deptId, hire: hire },
+        save({ action: "edit", id: emp[0], code: code, name: name, job: job, deptId: deptId, hire: hire, name_ar: nameAr, job_ar: jobAr },
           moved ? T("mp_moved") : T("mp_saved"), true);
         m.remove();
       } else if (preset && preset.fill) {
-        save({ action: "fill", id: preset.vacId, code: code, name: name, hire: hire }, T("mp_filled"), true);
+        save({ action: "fill", id: preset.vacId, code: code, name: name, hire: hire, name_ar: nameAr, job_ar: jobAr }, T("mp_filled"), true);
         m.remove();
       } else {
-        save({ action: "add", code: code, name: name, job: job, deptId: deptId, hire: hire }, T("mp_added"), true)
+        save({ action: "add", code: code, name: name, job: job, deptId: deptId, hire: hire, name_ar: nameAr, job_ar: jobAr }, T("mp_added"), true)
           .then(function () { m.remove(); })
           .catch(function (e) {
             if (e && e.status === 409) toast(T("mp_dup"), "err");
@@ -2154,7 +2173,11 @@ var MaribManpower = (function () {
               for (var c = 0; c < row.length; c++) {
                 var h = String(row[c] || "").trim();
                 if (!h) continue;
-                if (h.indexOf("الكود") >= 0) map.code = c;
+                /* R47: أعمدة العربي الأول — لازم قبل «الأسم/الوظيفة» العادية
+                   عشان «الأسم بالعربي» ميتلحقش كاسم أساسي (البحث بـ indexOf) */
+                if (h.indexOf("الأسم بالعربي") >= 0 || h.indexOf("الاسم بالعربي") >= 0) map.nameAr = c;
+                else if (h.indexOf("الوظيفة بالعربي") >= 0) map.jobAr = c;
+                else if (h.indexOf("الكود") >= 0) map.code = c;
                 else if (h.indexOf("الأسم") >= 0 || h.indexOf("الاسم") >= 0 || h.indexOf("الموظف") >= 0) map.name = c;
                 else if (h.indexOf("الادارة") >= 0 || h.indexOf("الإدارة") >= 0 || h.indexOf("الاداره") >= 0) map.dept = c;
                 else if (h.indexOf("القسم الداخلي") >= 0) map.sub = c;
@@ -2203,7 +2226,9 @@ var MaribManpower = (function () {
                 xlsxDate(get("hire")),
                 vac,
                 String(get("mach") == null ? "" : get("mach")).trim().slice(0, 30),  /* R40 */
-                String(get("del") == null ? "" : get("del")).trim().slice(0, 10)     /* R42: حذف؟ */
+                String(get("del") == null ? "" : get("del")).trim().slice(0, 10),    /* R42: حذف؟ */
+                String(get("nameAr") == null ? "" : get("nameAr")).trim().slice(0, 90),  /* R47: الاسم بالعربي */
+                String(get("jobAr") == null ? "" : get("jobAr")).trim().slice(0, 90)    /* R47: الوظيفة بالعربي */
               ]);
             } else {
               var code = String(get("code") == null ? "" : get("code")).trim();
@@ -2223,7 +2248,8 @@ var MaribManpower = (function () {
           var colFlags = {
             hireCol: best.map.hire !== undefined,
             machCol: best.map.mach !== undefined,
-            noteCol: best.map.note !== undefined
+            noteCol: best.map.note !== undefined,
+            arCol: best.map.nameAr !== undefined || best.map.jobAr !== undefined   /* R47: أعمدة العربي موجودة؟ */
           };
           var liveByCode = {};
           var liveByName = {};
@@ -2267,7 +2293,7 @@ var MaribManpower = (function () {
             okText: T("mp_import_go")
           }).then(function (yes) {
             if (!yes) return;
-            save({ action: "import", rows: rows, hireCol: colFlags.hireCol, machCol: colFlags.machCol, noteCol: colFlags.noteCol }, "", false).then(function (r) {
+            save({ action: "import", rows: rows, hireCol: colFlags.hireCol, machCol: colFlags.machCol, noteCol: colFlags.noteCol, arCol: colFlags.arCol }, "", false).then(function (r) {
               var bits = [T("mp_import_done") + " — " + (r ? r.total : rows.length)];
               if (r && r.codeFilled) bits.push(T("mp_code_filled") + " " + r.codeFilled);
               if (r && r.moved) bits.push(T("mp_moved_n") + " " + r.moved);
@@ -2758,11 +2784,47 @@ var MaribManpower = (function () {
       if (darBtn) {
         e.stopPropagation();
         var darId = darBtn.getAttribute("data-dar");
+        var darTerm = darBtn.getAttribute("data-term") || "";
         if (darId) {
           var node = findByKey("d:" + darId);
           if (node) {
-            deptArShow[node.key] = !deptArShow[node.key];
-            renderTree();
+            /* toggle off → just remove the flag */
+            if (deptArShow[node.key] && deptArShow[node.key] !== "__loading__") {
+              delete deptArShow[node.key];
+              renderTree();
+            } else {
+              /* toggle on — check cache first */
+              var cached = (DATA && DATA.tr && DATA.tr[node.label] && DATA.tr[node.label].ar) ? DATA.tr[node.label].ar : "";
+              if (cached) {
+                deptArShow[node.key] = cached;
+                renderTree();
+              } else {
+                /* fetch live translation via /api/translate */
+                deptArShow[node.key] = "__loading__";
+                renderTree();
+                fetch("/api/translate?term=" + encodeURIComponent(node.label) + "&to=ar", { credentials: "include" })
+                  .then(function (r) { if (!r.ok) throw new Error("tr" + r.status); return r.json(); })
+                  .then(function (data) {
+                    var tr = (data && data.tr) || "";
+                    if (tr) {
+                      /* cache it client-side so next click is instant */
+                      if (!DATA.tr) DATA.tr = {};
+                      if (!DATA.tr[node.label]) DATA.tr[node.label] = {};
+                      DATA.tr[node.label].ar = tr;
+                      deptArShow[node.key] = tr;
+                    } else {
+                      delete deptArShow[node.key];
+                      toast(T("toast_sync_err"), "err");
+                    }
+                    renderTree();
+                  })
+                  .catch(function () {
+                    delete deptArShow[node.key];
+                    toast(T("toast_sync_err"), "err");
+                    renderTree();
+                  });
+              }
+            }
           }
         }
         return;

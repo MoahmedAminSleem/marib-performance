@@ -316,6 +316,8 @@ export async function POST(req: NextRequest) {
       const job = cleanStr(body.job, 90);
       const deptId = cleanStr(body.deptId, 40);
       const hire = cleanStr(body.hire, 10);
+      const nameAr = cleanStr(body.name_ar, 90);   /* R47: العربي من المودال */
+      const jobAr = cleanStr(body.job_ar, 90);     /* R47 */
       if (!name || !deptId) return fail("fields", 400);
       if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) return fail("hire", 400);
       if (code && code !== "جديد") {
@@ -324,9 +326,9 @@ export async function POST(req: NextRequest) {
       }
       const ord = await q("SELECT COALESCE(MAX(ord),0)+1 AS n FROM marib_emp");
       await q(
-        `INSERT INTO marib_emp (code, name, job, dept_id, hire, vac, ord)
-         VALUES ($1, $2, $3, $4, $5, false, $6)`,
-        [code || "جديد", name, job, deptId, hire, ord[0]?.n ?? 1]
+        `INSERT INTO marib_emp (code, name, job, dept_id, hire, vac, ord, name_ar, job_ar)
+         VALUES ($1, $2, $3, $4, $5, false, $6, $7, $8)`,
+        [code || "جديد", name, job, deptId, hire, ord[0]?.n ?? 1, nameAr || null, jobAr || null]
       );
       const p = await deptPath(deptId);
       await audit(actor, "create", "manpower", name, { code: code || "جديد", dept: p, job });
@@ -339,7 +341,7 @@ export async function POST(req: NextRequest) {
       const code = normCode(body.code);
       if (!id && !code) return fail("code", 400);
       const cur = await q(
-        "SELECT id, code, name, job, dept_id, hire FROM marib_emp WHERE id = $1 OR code = $1 LIMIT 1",
+        "SELECT id, code, name, job, dept_id, hire, name_ar, job_ar FROM marib_emp WHERE id = $1 OR code = $1 LIMIT 1",
         [id || code]
       );
       if (!cur.length) return fail("none", 404);
@@ -348,6 +350,20 @@ export async function POST(req: NextRequest) {
       const job = body.job !== undefined ? cleanStr(body.job, 90) : (old.job as string);
       const deptId = body.deptId !== undefined ? cleanStr(body.deptId, 40) : (old.dept_id as string);
       const hire = body.hire !== undefined ? cleanStr(body.hire, 10) : (old.hire as string);
+      /* R47: الاسم/الوظيفة بالعربي — القيمة من المودال مباشرة، ولو فاضية
+         والقيمة الأساسية اتغيرت من عربي لحاجة تانية، بنحفظ العربي القديم
+         تلقائيًا في حقله (حماية من ضياع العربي — مبدأ ممنوع مسح البيانات).
+         مسح العربي بيحصل بكتابة القيمة الجديدة أو تفريغ الحقل مع تثبيت
+         نفس الاسم (حينها مفيش تغيير فمفيش حفظ تلقائي). */
+      const hasArabic = (s: unknown): boolean => /[\u0600-\u06FF]/.test(String(s || ""));
+      let nameAr = body.name_ar !== undefined ? cleanStr(body.name_ar, 90) : ((old.name_ar as string) || "");
+      if (!nameAr && body.name !== undefined && name !== (old.name as string) && hasArabic(old.name) && !(old.name_ar as string)) {
+        nameAr = (old.name as string);
+      }
+      let jobAr = body.job_ar !== undefined ? cleanStr(body.job_ar, 90) : ((old.job_ar as string) || "");
+      if (!jobAr && body.job !== undefined && job !== (old.job as string) && hasArabic(old.job) && !(old.job_ar as string)) {
+        jobAr = (old.job as string);
+      }
       /* allow setting the code of a جديد row (code pending) — never steal
          a code that already belongs to someone else.
          R45: مسح الكود بقى مسموح — فاضي أو «جديد» يرجّع الموظف لحالة
@@ -366,8 +382,8 @@ export async function POST(req: NextRequest) {
       if (!name || !deptId) return fail("fields", 400);
       if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) return fail("hire", 400);
       await q(
-        `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, hire=$6, updated_at=now() WHERE id=$1`,
-        [old.id, newCode, name, job, deptId, hire]
+        `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, hire=$6, name_ar=$7, job_ar=$8, updated_at=now() WHERE id=$1`,
+        [old.id, newCode, name, job, deptId, hire, nameAr || null, jobAr || null]
       );
       const oldPath = await deptPath(old.dept_id as string);
       const newPath = await deptPath(deptId);
@@ -406,6 +422,8 @@ export async function POST(req: NextRequest) {
       const code = normCode(body.code);
       const name = cleanStr(body.name, 90);
       const hire = cleanStr(body.hire, 10);
+      const nameAr = cleanStr(body.name_ar, 90);   /* R47: العربي من المودال */
+      const jobAr = cleanStr(body.job_ar, 90);     /* R47 */
       if (!id || !name) return fail("fields", 400);
       if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) return fail("hire", 400);
       const cur = await q("SELECT id, code, name, job, dept_id FROM marib_emp WHERE id = $1 AND vac = true LIMIT 1", [id]);
@@ -417,8 +435,8 @@ export async function POST(req: NextRequest) {
       }
       const p = await deptPath(old.dept_id as string);
       await q(
-        `UPDATE marib_emp SET code=$2, name=$3, hire=$4, vac=false, updated_at=now() WHERE id=$1`,
-        [old.id, code || "جديد", name, hire]
+        `UPDATE marib_emp SET code=$2, name=$3, hire=$4, name_ar=$5, job_ar=$6, vac=false, updated_at=now() WHERE id=$1`,
+        [old.id, code || "جديد", name, hire, nameAr || null, jobAr || null]
       );
       await logTransfer(actor, code || "جديد", name, p, (old.job as string) + " (شاغر)", p, old.job as string, "fill");
       await audit(actor, "create", "manpower", name, { filled: old.job, dept: p });
@@ -592,11 +610,14 @@ export async function POST(req: NextRequest) {
       const undoToken = await (await import("@/lib/marib/undo")).captureUndoSnapshot(me.username);
       await (await import("@/lib/marib/undo")).sweepExpiredUndoTokens().catch(() => {});
       /* R42: أعمدة موجودة فعلًا في الشيت؟ (لو عمود التعيين مش موجود
-         أصلًا، مفيش فرغ لتواريخ التعيين المخزنة) */
+         أصلًا، مفيش فرغ لتواريخ التعيين المخزنة)
+         R47: arCol — أعمدة «بالعربي» موجودة في الشيت؟ لو مش موجودة
+         (تيمبلت قديم) بنطبّق الحفظ التلقائي للعربي عند تغيير الاسم */
       const colFlags = {
         hire: !!body.hireCol,
         mach: body.machCol !== false,
         note: body.noteCol !== false,
+        ar: !!body.arCol,
       };
 
       const allDepts0 = await q("SELECT id, name, parent_id FROM marib_dept");
@@ -657,8 +678,8 @@ export async function POST(req: NextRequest) {
         return parent;
       }
 
-      /* normalize both formats → {code,name,chain,job,note,hire,vac,mach,del} */
-      const clean: { code: string; name: string; chain: string[]; job: string; note: string; hire: string; vac: boolean; mach: string; del: boolean }[] = [];
+      /* normalize both formats → {code,name,chain,job,note,hire,vac,mach,del,nameAr,jobAr} */
+      const clean: { code: string; name: string; chain: string[]; job: string; note: string; hire: string; vac: boolean; mach: string; del: boolean; nameAr: string; jobAr: string }[] = [];
       for (const r0 of rows) {
         const r = Array.isArray(r0) ? (r0 as unknown[]) : [];
         if (r.length >= 8) {
@@ -678,6 +699,7 @@ export async function POST(req: NextRequest) {
           clean.push({
             code: normCode(r[0]), name, chain, job: cleanStr(r[5], 90),
             note: cleanStr(r[6], 60), hire, vac: vac || !name, mach: cleanStr(r[9], 30), del,
+            nameAr: cleanStr(r[11], 90), jobAr: cleanStr(r[12], 90),   /* R47: بالعربي */
           });
         } else {
           /* old format: [code, name, job, deptPath, hire] */
@@ -693,7 +715,8 @@ export async function POST(req: NextRequest) {
       }
       if (!clean.length) return fail("rows", 400);
 
-      const existing = await q("SELECT id, code, name, job, dept_id, hire, vac, note, mach FROM marib_emp");
+      /* R47: name_ar/job_ar في الـ SELECT — أساس الحفظ التلقائي */
+      const existing = await q("SELECT id, code, name, job, dept_id, hire, vac, note, mach, name_ar, job_ar FROM marib_emp");
       type EmpRow = (typeof existing)[number];
       const byCode = new Map<string, EmpRow>();
       const byName = new Map<string, EmpRow>();
@@ -792,13 +815,26 @@ export async function POST(req: NextRequest) {
             const cand = byName.get(c.name);
             if (cand && (!cand.code || cand.code === "جديد")) old = cand;
           }
+          /* R47: قيمة العربي النهائية للصف —
+             (1) الشيت فيه عمود العربي وقيمته مش فاضية → ناخدها
+             (2) الشيت من غير أعمدة عربي (تيمبلت قديم) والاسم اتغير
+                 والقديم كان عربي والعربي المخزن فاضي → نحفظ القديم
+                 تلقائيًا (حماية من ضياع العربي)
+             (3) غير كده → نسيب المخزن زي ما هو (العمود الناقص ميفضّيش) */
+          const hasArabicImp = (s: unknown): boolean => /[\u0600-\u06FF]/.test(String(s || ""));
+          const finalAr = (sheetVal: string, oldVal: string | null, oldMain: string, newMain: string): string | null => {
+            if (sheetVal) return sheetVal;
+            if (!colFlags.ar && newMain !== oldMain && hasArabicImp(oldMain) && !oldVal) return oldMain;
+            return oldVal || null;
+          };
           if (!old) {
             const gKey = c.chain.map((x) => normName(x)).join("|");
             const deptId = chainTarget.get(gKey) || (await ensureChain(c.chain));
+            /* R47: موظف جديد — العربي من عمود الشيت لو موجود */
             await q(
-              `INSERT INTO marib_emp (code, name, job, dept_id, note, hire, vac, ord, mach)
-               VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)`,
-              [c.code || "جديد", c.name, c.job, deptId, colFlags.note ? c.note : "", c.hire, clean.indexOf(c) + 1, colFlags.mach ? c.mach : ""]
+              `INSERT INTO marib_emp (code, name, job, dept_id, note, hire, vac, ord, mach, name_ar, job_ar)
+               VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $9, $10)`,
+              [c.code || "جديد", c.name, c.job, deptId, colFlags.note ? c.note : "", c.hire, clean.indexOf(c) + 1, colFlags.mach ? c.mach : "", c.nameAr || null, c.jobAr || null]
             );
             inserted++;
           } else {
@@ -817,8 +853,11 @@ export async function POST(req: NextRequest) {
             const newPath = await deptPath(deptId);
             const hadNoCode = !old.code || old.code === "جديد";
             const newHire = colFlags.hire ? (c.hire || (old.hire as string) || "") : (old.hire as string) || "";
+            /* R47: العربي النهائي بالمنطق التلاتي (شيت → حفظ تلقائي → مخزن) */
+            const finalNameAr = finalAr(c.nameAr, (old.name_ar as string) || null, (old.name as string) || "", c.name);
+            const finalJobAr = finalAr(c.jobAr, (old.job_ar as string) || null, (old.job as string) || "", c.job);
             await q(
-              `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, note=$6, hire=$7, vac=false, mach=$8, updated_at=now() WHERE id=$1`,
+              `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, note=$6, hire=$7, vac=false, mach=$8, name_ar=$9, job_ar=$10, updated_at=now() WHERE id=$1`,
               [
                 old.id,
                 c.code && c.code !== "جديد" ? c.code : (old.code as string) || "جديد",
@@ -826,6 +865,8 @@ export async function POST(req: NextRequest) {
                 colFlags.note ? c.note : ((old.note as string) || ""),
                 newHire,
                 colFlags.mach ? c.mach : ((old.mach as string) || ""),
+                finalNameAr,
+                finalJobAr,
               ]
             );
             if (hadNoCode && c.code && c.code !== "جديد") codeFilled++;

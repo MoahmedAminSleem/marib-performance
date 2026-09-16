@@ -1,29 +1,36 @@
-Marib R46 v3 upload — fixes for empty buttons + excess card-mode
-============================================================
+Marib R47 upload — تنفيذ كل المعلّق + استرجاع واجهة إدخال البيانات + إصلاح الأيقونات جذريًا
+====================================================================================
 
-Fixes in v3:
-  1. Re-added Entries button (#tbEntriesBtn) to skeleton.ts
-  2. Defensive CSS for .tb-mini with !important (fixes empty buttons)
-  3. Restructured excess card-mode to show INTERNAL leaf depts
-     (the sub-depts directly containing employees) instead of
-     the parent departments. Each leaf dept is a separate card.
+الجولة 47 (16 سبتمبر 2026) — 7 بنود:
+  1. أيقونات التوب بار: لون SVG صريح + ليبلات نصية + cache-busting (?v=r47)
+  2. مودال الموظف: حقول name_ar/job_ar + حفظ تلقائي للعربي (auto-preserve)
+  3. التيمبلت + الاستيراد بعمودي «الأسم بالعربي» / «الوظيفة بالعربي»
+  4. كارت Extra Staff: توثيق بالدليل (3 = GM+1 + IA+2)
+  5. استرجاع واجهة إدخال البيانات اللي ضاعت من رفع R46-v4 (زرار Entries كان ميت)
+  6. إصلاح باج حفظ فورمات الإدخال + إضافة القسم/الخط لفورم الإنتاج
+  7. bun run build ينجح بدون أخطاء (جاهز لـ Vercel)
 
-Files (18 total):
-  src/lib/marib/db.ts                                          18227 bytes  md5:2fe4fbcd95
-  src/lib/marib/perms.ts                                        8684 bytes  md5:4c48a43f62
-  src/lib/marib/undo.ts                                         7936 bytes  md5:99a655dd69
-  src/lib/marib/http.ts                                         5296 bytes  md5:307688fff2
-  src/app/api/perms/route.ts                                    5200 bytes  md5:31484029de
-  src/app/api/audit/route.ts                                    3493 bytes  md5:094a3614e2
-  src/app/api/manpower/route.ts                                44689 bytes  md5:b2da0e7d71
-  src/app/api/manpower/export/route.ts                         31900 bytes  md5:6124acc406
-  src/app/api/entries/production/route.ts                       4254 bytes  md5:2abcac15c9
-  src/app/api/entries/absence/route.ts                         11635 bytes  md5:fcade2e1c8
-  src/app/api/entries/overtime/route.ts                         5839 bytes  md5:83979d4149
-  src/app/skeleton.ts                                          81239 bytes  md5:fafd14822f
-  public/app/app_manpower.js                                  157939 bytes  md5:1a6ceaf42c
-  public/app/app_main.js                                      195774 bytes  md5:f81c7c4991
-  public/app/app.css                                          613341 bytes  md5:fe6107829c
-  public/app/i18n_dict.js                                      97776 bytes  md5:189b86caf3
+Files (9 code + docs):
+  src/app/skeleton.ts                                          80948 bytes  md5:dynamic
+  src/app/layout.tsx                                           (app.css?v=r47)
+  src/app/page.tsx                                             (scripts ?v=r47)
+  src/app/api/manpower/route.ts                                (edit/add/fill/import + AR)
+  src/app/api/manpower/export/route.ts                         (template 12 cols)
+  public/app/app_main.js                                       (entries UI restored + fixes)
+  public/app/app_manpower.js                                   (modal AR + import AR + live tr)
+  public/app/i18n_dict.js                                      (+29 keys)
+  public/app/app.css                                           (labels + AR fields + .ent-*)
 
-TOTAL: 1293222 bytes
+Docs:
+  docs/00-START-HERE.md          (updated: R47 + cache-busting note)
+  docs/03-API-ROUTES.md          (updated: AR import semantics)
+  docs/05-CURRENT-STATE.md       (rewritten for R47)
+  docs/06-ROUNDS.md              (R47 entry)
+  docs/سير-العمل-R47.md          (NEW — تفاصيل الجولة كاملة)
+  سير-العمل.html                 (R47 block + footer)
+  CHANGED-FILES.txt              (هذا الملف)
+
+⚠️ ممنوع رفع package.json أو bun.lock — Vercel يستخدم نسخة GitHub.
+
+بعد الرفع: Vercel ينشر في دقيقة. المستخدمين هيشوفوا الجديد حتى من غير hard
+refresh بفضل الـ cache-busting (?v=r47).
