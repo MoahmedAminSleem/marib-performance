@@ -45,7 +45,7 @@ export async function readJson(req: NextRequest): Promise<Record<string, unknown
 /* Boot + session in one call:
    { user }        → caller may proceed
    { res }         → send this response (401) */
-export async function requireUser(req: NextRequest, mod: string, method: string): Promise<{ user?: SessionUser; res?: NextResponse }> {
+export async function requireUser(req: NextRequest, _mod: string, _method: string): Promise<{ user?: SessionUser; res?: NextResponse }> {
   await ensureBoot();
   const me = sessionUser(req);
   if (!me) return { res: fail("auth", 401) };

@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requirePermBody, requirePerm } from "@/lib/marib/http";
-import { XBook, XStyle } from "@/lib/marib/xlsx-writer";
+import { XBook } from "@/lib/marib/xlsx-writer";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

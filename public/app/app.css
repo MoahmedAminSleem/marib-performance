@@ -2138,13 +2138,13 @@ body.mp-on .shell{display:none}
   border-bottom:1px dashed rgba(217,168,107,.28);
 }
 .mp-brand{display:flex;align-items:center;gap:12px;min-width:0}
-.mp-brand .mp-ico{
-  display:flex;align-items:center;justify-content:center;
-  width:44px;height:44px;border-radius:13px;flex:none;
-  background:rgba(217,168,107,.1);color:#D9A86B;
-  border:1px solid rgba(217,168,107,.3);
+/* R54: لوجو مأرب الأصلي مكان أيقونة الميزان — اللوجو أبيض شفاف
+   (224×94) فياخد ارتفاع ثابت وعرض تلقائي، واضح على الشريط الكحلي. */
+.mp-brand .mp-logo{
+  height:42px;width:auto;flex:none;display:block;
+  filter:drop-shadow(0 4px 14px rgba(0,0,0,.35));
 }
-.mp-brand .mp-ico svg{width:24px;height:24px}
+@media (max-width:640px){ .mp-brand .mp-logo{height:32px} }
 .mp-t h2{margin:0;font-size:17px;font-weight:800;line-height:1.2}
 .mp-t small{color:var(--muted);font-size:11px}
 .mp-top-ctrls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -4123,5 +4123,33 @@ img.ic3d{display:block;width:22px;height:22px;flex:0 0 auto;object-fit:contain;f
 .lg-leather .lg-label{width:98px;height:98px;border-radius:22px;margin-bottom:10px;background:linear-gradient(172deg,#FAF4E4 0%,#F1E7CD 58%,#E8DABF 100%);border:1px solid #C9B78E;box-shadow:inset 0 -3px 9px rgba(120,95,55,.16),0 9px 22px rgba(0,0,0,.3)}
 .lg-leather .lg-label img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 3px 7px rgba(90,64,20,.25))}
 
-/* اللوجو في التوب بار — أيقونة المصنع 3D */
-.logo{height:42px;width:auto;border-radius:9px;filter:drop-shadow(0 3px 10px rgba(0,0,0,.35))}
+/* اللوجو في التوب بار — R54: رجع لوجو مأرب العريض (224×94 أبيض شفاف):
+   ارتفاع 46 زي الأصل، من غير border-radius (كانت لأيقونة المصنع المربعة). */
+.logo{height:46px;width:auto;filter:drop-shadow(0 4px 14px rgba(0,0,0,.35))}
+
+/* ============================================================
+   R54 — رجوع لوجو مأرب + إصلاح الوضع الفاتح
+   (1) رقعة الدخول ترجع عريضة (104×54) — كانت مربعة (98×98)
+       لأيقونة المصنع، واللوجو العريض (224×94) بياخد شكلها الأصلي.
+   (2) الوضع الفاتح بيخلي التوب بار وهيدر الاتزان غامقين
+       بالتصميم (R44)، بس العناوين جوّاهم كانت بترث --txt الغامق
+       (#1F2937) = كحلي على كحلي مش باين. دي الـ overrides
+       الناقصة بنفس عائلة ألوان R44 (#F1E4C9 عناوين / #C9B583
+       ثانوي / #C9D4E4 نص عادي).
+   ============================================================ */
+
+/* (1) رقعة الدخول العريضة */
+.lg-leather .lg-label{width:104px;height:54px;border-radius:8px;margin-bottom:7px}
+.lg-leather .lg-label img{width:auto;height:auto;max-width:84px;max-height:40px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(90,70,40,.35))}
+
+/* (2) نصوص الأشرطة الغامقة في الوضع الفاتح */
+/* التوب بار — اسم الشركة والسطر الإنجليزي ومؤشر الداتا */
+html[data-theme="light"] .brand h1{color:#F1E4C9}
+html[data-theme="light"] .brand small{color:#C9B583}
+html[data-theme="light"] .live{color:#C9D4E4}
+html[data-theme="light"] .uc-role.admin{color:#E6C690;border-color:rgba(230,198,144,.48)}
+/* هيدر الاتزان — العنوان والسطر التوضيحي وتبويبات غير المختارة */
+html[data-theme="light"] .mp-t h2{color:#F1E4C9}
+html[data-theme="light"] .mp-t small{color:#C9B583}
+html[data-theme="light"] .mp-tab{color:#C9D4E4}
+html[data-theme="light"] .mp-tab:hover{color:#F1E4C9}

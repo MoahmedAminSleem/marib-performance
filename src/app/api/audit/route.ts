@@ -9,7 +9,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { q } from "@/lib/marib/db";
-import { serverFail, requirePerm } from "@/lib/marib/http";
+import { serverFail, requirePerm, logger } from "@/lib/marib/http";
+
+const lg = logger("audit");
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -77,8 +79,12 @@ export async function GET(req: NextRequest) {
       );
       list = rows;
     }
+    /* R54: مراقبة — حجم السجل المحمّل + عدد الكيانات، من غير
+       تسجيل أي بيانات حساسة (أسماء/تفاصيل) — أرقام فقط. */
+    lg.debug("audit view", { events: list.length, entities: entities.length, ranged: params.length > 0 });
     return NextResponse.json({ events: list, entities });
   } catch (e) {
+    lg.error("GET failed", { err: String(e) });
     return serverFail("audit", "GET", e);
   }
 }

@@ -906,10 +906,11 @@ var MaribAuth = (function () {
     loginEl = $("loginScreen");
     cardEl = loginEl ? loginEl.querySelector(".lg-card") : null;
     if (!loginEl) { veilOff(); return; }
-    /* real company logo on the login leather patch (static file) */
+    /* لوجو الشركة الحقيقي على رقعة الجلد في شاشة الدخول — R54:
+       رجّعنا لوجو مأرب الأصلي (كان اتغير لأيقونة مصنع في R51). */
     try {
       var lgLogo = $("lgCoLogo");
-      if (lgLogo) { lgLogo.src = "/app/icons/factory.png"; lgLogo.alt = ""; }
+      if (lgLogo) { lgLogo.src = "/app/logo.png?v=r54"; lgLogo.alt = ""; }
     } catch (e) { }
     pwVisible = false;
     $("lgPwField").classList.add("sewn");

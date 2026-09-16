@@ -18,7 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requireUser, requireRoleBody } from "@/lib/marib/http";
-import { cleanStr, normCode, deptPath, logTransfer, normName, hasArabic, importManpower } from "@/lib/marib/manpower_io";
+import { cleanStr, normCode, deptPath, logTransfer, hasArabic, importManpower } from "@/lib/marib/manpower_io";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

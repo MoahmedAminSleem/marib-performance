@@ -1,31 +1,42 @@
-Marib R53 — إصلاح لوحة الصلاحيات: «المزامنة فشلت» اللي كانت كذبة
+Marib R54 — لوجو مأرب يرجع لبيته + الوضع الفاتح يبان + بذرة الهندسة
 ====================================================================================
 
-الجولة 53 (16 سبتمبر 2026) — بلاغ المالك: «خانة الصلاحيات بيقولي
-المزامنة فشلت». التشخيص: الشبكة سليمة (GET /api/perms بيرجع 200) —
-الباج كان جوا الرندر نفسه وبيتخفى ورا رسالة فشل المزامنة.
+الجولة 54 (16 سبتمبر 2026) — بلاغ المالك: «في الوضع الفاتح الكلام في
+العناوين مش باينة + فين لوجو Marib مكان صورة المصنع والميزان؟».
 
-  1. الجذر: renderPerms بينادي I18N.cur() — cur متغير خاص جوا
-     i18n_core وعمرو ما اتصدّر → TypeError بيتلقط في catch الشبكة.
-     الباج دخل مع R46 وعاش نقلات R50/R51/R52 (7 جولات).
-  2. الإصلاح: I18N.is("ar") + فصل catch الرندر عن catch الشبكة
-     (console.error + رسالة مستقلة pm_render_err عربي/إنجليزي/تركي).
-  3. تنظيف: مفاتيح pm_empty_t/pm_empty_d/pm_add_user كانت متكررة
-     مرتين من R51 — اتشال التكرار.
-  4. cache-bust r52 → r53 (page.tsx + layout.tsx + skeleton.ts).
+  1. اللوجو: logo.png الأصلي (أبيض+أحمر 224×94) رجع في التوب بار
+     (app_main) + شاشة الدخول (app_auth) + هيدر الاتزان (skeleton —
+     img.mp-logo مكان أيقونة الميزان SVG). الرقعة رجعت عريضة
+     104×54 (كانت مربعة 98×98 لأيقونة المصنع) و.logo بلا radius.
+  2. الوضع الفاتح: R44 بتخلي التوب بار وهيدر الاتزان غامقين
+     بالتصميم لكن العناوين كانت بترث --txt الغامق = كحلي على كحلي.
+     8 overrides اتضافوا (brand h1/small + live + uc-role.admin +
+     mp-t h2/small + mp-tab/hover) بنفس عائلة R44.
+  3. الهندسة (طلب دائم جديد): tsconfig noImplicitAny + noUnusedLocals
+     + noUnusedParameters (6 إصلاحات unused في 5 ملفات) + logging
+     لمساري audit/health (9/9 مسارات API مغطاة دلوقتي).
+  4. cache-bust r53 → r54: 12 سكريبت في page.tsx + app.css في layout.
+  5. E2E: ALL PASS — درس الجولة: سيرفر قديم ماسك البورت = HTML قديم
+     من الذاكرة مع static جديد من الديسك. pkill يطابق "bun server.js"
+     + التحقق من PID البورت إجباري بعد أي restart.
 
-الاختبار: بناء نضيف + E2E متصفح بداتابيز 3 مستخدمين (مطوّر/أدمن/
-يوزر): اللوحة بترندر كاملة (11 ميزة × أعمدة المستخدمين) · حفظ فعلي
-(صف في marib_perm + أوديت perms:manpower.view) · توست «الصلاحية
-اتغيرت» · صفر أخطاء كونسول · رسالة الفشل اختفت تمامًا.
-
-الملفات المتغيرة (5 + توثيق):
-
-  M  public/app/app_admin.js      — الإصلاح الرئيسي (I18N.is + فصل catch)
-  M  public/app/i18n_dict.js      — pm_render_err + إزالة التكرار
-  M  src/app/page.tsx             — cache-bust r53 (12 سكريبت)
-  M  src/app/layout.tsx           — cache-bust r53 (CSS)
-  M  src/app/skeleton.ts          — cache-bust r53 (أيقونة)
-  M  docs/05-CURRENT-STATE.md     — حالة R53
-  M  docs/06-ROUNDS.md            — سجل R53
-  A  docs/سير-العمل-R53.md        — تقرير الجولة الكامل
+ملف لكل تغيير:
+  public/app/app.css              بلوك R54 (ألوان الأشرطة + mp-logo + الرقعة + .logo)
+  public/app/app_main.js          brandLogo → logo.png?v=r54
+  public/app/app_auth.js          lgCoLogo → logo.png?v=r54
+  src/app/skeleton.ts             mp-ico SVG → img.mp-logo (مرساة Python)
+  src/app/layout.tsx              app.css?v=r54
+  src/app/page.tsx                12 سكريبت ?v=r54
+  tsconfig.json                   noImplicitAny + noUnused*
+  src/app/api/audit/route.ts      logging (debug حجم السجل + error)
+  src/app/api/health/route.ts     logging مع قياس ms
+  src/app/api/perms/route.ts      حذف me غير المستخدمة
+  src/app/api/manpower/route.ts   حذف normName من الاستيراد
+  src/app/api/entries/absence/route.ts  حذف XStyle من الاستيراد
+  src/lib/marib/db.ts             await import("pg") بدون تفكيك ميت
+  src/lib/marib/http.ts           requireUser بمعاملات _prefix
+  scripts/e2e_r54.sh              E2E الجولة (بناء + سيرفر + فحوصات)
+  scripts/e2e_r54_verify.sh       E2E إعادة التحقق (بعد درس السيرفر)
+  docs/سير-العمل-R54.md           توثيق الجولة كاملة
+  docs/05-CURRENT-STATE.md        + قسم R54
+  docs/06-ROUNDS.md               + ملخص R54

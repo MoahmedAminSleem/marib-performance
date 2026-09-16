@@ -35,7 +35,6 @@ export async function GET(req: NextRequest) {
     /* default GET — admin only — كل المستخدمين + كل الـ overrides. */
     const g = await requireRoleBody(req, "admin");
     if (g.res) return g.res;
-    const me = g.user!;
 
     const users = await q(
       "SELECT id, username, role FROM marib_user ORDER BY created_at ASC"

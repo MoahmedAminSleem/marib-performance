@@ -62,7 +62,7 @@ export async function withTransaction(fn: (run: (sql: string, params?: unknown[]
   const url = process.env.DATABASE_URL || "";
   const isPg = url.startsWith("postgres://") || url.startsWith("postgresql://");
   if (isPg) {
-    const { Pool } = await import("pg");
+    await import("pg"); /* side-effect: make sure the driver is loaded */
     // reach the SAME pool the driver wraps
     const pool = (g as unknown as { __maribPool?: PgPool }).__maribPool!;
     const client = await pool.connect();
