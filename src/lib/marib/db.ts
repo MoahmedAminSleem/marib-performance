@@ -6,6 +6,11 @@
 import path from "path";
 
 type Row = Record<string, unknown>;
+
+/* (R48) نوع الـ Pool من pg — الـ dynamic import بيرجّع قيمة مش نوع،
+   فبنستخدم type-only import بدال استخدام Pool كنوع. */
+type PgPool = import("pg").Pool;
+
 interface Driver {
   query(sql: string, params?: unknown[]): Promise<{ rows: Row[] }>;
 }
@@ -23,7 +28,7 @@ async function createDriver(): Promise<Driver> {
       max: 4,
       connectionTimeoutMillis: 15000,
     });
-    (g as unknown as { __maribPool?: Pool }).__maribPool = pool;
+    (g as unknown as { __maribPool?: PgPool }).__maribPool = pool;
     return {
       query: (sql, params) => pool.query(sql, params as unknown[]),
     };
@@ -59,7 +64,7 @@ export async function withTransaction(fn: (run: (sql: string, params?: unknown[]
   if (isPg) {
     const { Pool } = await import("pg");
     // reach the SAME pool the driver wraps
-    const pool = (g as unknown as { __maribPool?: Pool }).__maribPool!;
+    const pool = (g as unknown as { __maribPool?: PgPool }).__maribPool!;
     const client = await pool.connect();
     try {
       await client.query("BEGIN");

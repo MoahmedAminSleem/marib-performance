@@ -87,7 +87,7 @@ export async function restoreFromSnapshot(token: string, actor: string): Promise
     if (snap.emps.length) {
       for (let i = 0; i < snap.emps.length; i += 500) {
         const ch = snap.emps.slice(i, i + 500);
-        const c: string[] = [], n: string[] = [], j: string[] = [];
+        const c: (string | null)[] = [], n: string[] = [], j: string[] = [];
         const d: (string | null)[] = [], h: string[] = [];
         const v: boolean[] = [], no: string[] = [], m: string[] = [];
         const o: number[] = [];

@@ -160,7 +160,9 @@ async function downloadTemplate(req: NextRequest) {
 
     const wb = new XBook();
     const sh = wb.sheet("Absence", { rtl: true, freezeRows: 1, widths: [8, 14, 30, 30], defaultRowHeight: 18 });
-    const header: [string, string, "right" | "center"][] = [
+    /* (R48) النوع كان متصرّح غلط [string, string, align] — القيم
+       فعليًا [label, align] ثنائية. اتصحح التصريح مش القيم. */
+    const header: [string, "right" | "center"][] = [
       ["p", "center"],
       ["الكود", "center"],
       ["الاسم", "right"],
@@ -201,7 +203,9 @@ async function downloadTemplate(req: NextRequest) {
     });
 
     const buf = wb.build();
-    return new NextResponse(buf, {
+    /* (R48) نفس الـ cast المتبع في manpower/export — Uint8Array
+       مقبول runtime كس body، بس TS محتاج توضيح. */
+    return new NextResponse(buf as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="Absence-Template-${stampT}.xlsx"`,

@@ -2,6 +2,25 @@
 
 > ملخص كل جولة. التفاصيل الكاملة في `سير-العمل.html` + ملف لكل جولة حديثة في `docs/`.
 
+## R48 (16 سبتمبر 2026) — Refactoring: تنظيف شامل بدون تغيير سلوك
+
+- **مسح 3.9MB كود ميت:** i18n.js · marib-core.js · marib-charts.js · embed.js ·
+  xlsx.js (951KB) · Marib_Performance_Studio.html الأوفلاين (1.87MB) ·
+  skeleton-html.ts · marib-app.css (515KB) — كلهم صفر مراجع (متأكدين بفحص شامل)
+- **مسح نظام Prisma القديم بالكامل:** 7 routes ميتة (auth/login·me·logout ·
+  months · users/[id]×2) + lib/{db,auth,bootstrap}.ts + seed JSONs — الفرونت
+  عمره ما نده عليهم (نظام واحد: marib)
+- **/api/health** اتعادت على جداول marib الحية ({ok,users,months,employees})
+- **إلغاء تكرار كود الترجمة** في manpower/route.ts → lib/marib/translate
+  (كان مستخرج في R46 والنسخة القديمة لسه موجودة) + توحيد hasArabic
+- **إصلاح 11 خطأ أنواع (tsc --noEmit بقى نضيف 100%)** — موروثة من R46/R47
+- **الاختبار الأقوى لحد دلوقتي:** build ✓ + tsc ✓ + curl E2E 35/35 على
+  سيرفر الإنتاج standalone ✓ + متصفح E2E (اتزان 810/يوزرز/إدخال بفورم 64 قسم) ✓
+- **اكتشاف:** الـ standalone محليًا محتاج `cp -r db .next/standalone/db`
+  (process.chdir) — موثق في 01-ARCHITECTURE
+
+**التفاصيل:** `docs/سير-العمل-R48.md` · **ملفات معدلة:** 6 + docs · **محذوفات:** 20 ملف
+
 ## R47 (16 سبتمبر 2026) — تنفيذ كل المعلّق + استرجاع كود ضاع
 
 7 بنود:

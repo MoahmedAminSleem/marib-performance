@@ -1,36 +1,62 @@
-Marib R47 upload — تنفيذ كل المعلّق + استرجاع واجهة إدخال البيانات + إصلاح الأيقونات جذريًا
+Marib R48 upload — Refactoring: مسح 3.9MB كود ميت + نظام واحد + tsc نضيف 100%
 ====================================================================================
 
-الجولة 47 (16 سبتمبر 2026) — 7 بنود:
-  1. أيقونات التوب بار: لون SVG صريح + ليبلات نصية + cache-busting (?v=r47)
-  2. مودال الموظف: حقول name_ar/job_ar + حفظ تلقائي للعربي (auto-preserve)
-  3. التيمبلت + الاستيراد بعمودي «الأسم بالعربي» / «الوظيفة بالعربي»
-  4. كارت Extra Staff: توثيق بالدليل (3 = GM+1 + IA+2)
-  5. استرجاع واجهة إدخال البيانات اللي ضاعت من رفع R46-v4 (زرار Entries كان ميت)
-  6. إصلاح باج حفظ فورمات الإدخال + إضافة القسم/الخط لفورم الإنتاج
-  7. bun run build ينجح بدون أخطاء (جاهز لـ Vercel)
+الجولة 48 (16 سبتمبر 2026) — تنظيف شامل بدون أي تغيير في السلوك الظاهر:
+  1. مسح 8 ملفات ميتة (3.44MB): xlsx.js (951KB) · Marib_Performance_Studio.html
+     الأوفلاين (1.87MB) · marib-app.css (515KB) · i18n.js · marib-core.js ·
+     marib-charts.js · embed.js · skeleton-html.ts — كلهم صفر مراجع
+  2. مسح نظام Prisma القديم بالكامل: 7 routes ميتة + lib/{db,auth,bootstrap}.ts
+     + seeds الشهور القديمة — الفرونت عمره ما نده عليهم. نظام واحد: marib
+  3. /api/health اتعادت على جداول marib الحية → {ok, users, months, employees}
+  4. إلغاء تكرار كود الترجمة في manpower/route.ts → lib/marib/translate.ts
+     + توحيد hasArabic المكررة
+  5. إصلاح 11 خطأ أنواع موروثة من R46/R47 — tsc --noEmit نضيف 100% لأول مرة
+  6. cache-busting ?v=r47 → ?v=r48 (page.tsx + layout.tsx)
+  7. الاختبار الأقوى في تاريخ المشروع: build + tsc + curl E2E 35/35 على
+     سيرفر الإنتاج standalone + متصفح E2E كامل (اتزان 810 / يوزرز / إدخال
+     بفورم 64 قسم) + صفر أخطاء console
 
-Files (9 code + docs):
-  src/app/skeleton.ts                                          80948 bytes  md5:dynamic
-  src/app/layout.tsx                                           (app.css?v=r47)
-  src/app/page.tsx                                             (scripts ?v=r47)
-  src/app/api/manpower/route.ts                                (edit/add/fill/import + AR)
-  src/app/api/manpower/export/route.ts                         (template 12 cols)
-  public/app/app_main.js                                       (entries UI restored + fixes)
-  public/app/app_manpower.js                                   (modal AR + import AR + live tr)
-  public/app/i18n_dict.js                                      (+29 keys)
-  public/app/app.css                                           (labels + AR fields + .ent-*)
+Files (7 code + docs):
+  src/app/api/health/route.ts                     (R48: rewritten on marib tables)
+  src/app/api/manpower/route.ts                   (translate dedup + hasArabic + old-format type fix)
+  src/app/api/entries/absence/route.ts            (template tuple type + BodyInit cast)
+  src/lib/marib/db.ts                             (PgPool type alias — types only)
+  src/lib/marib/undo.ts                           ((string|null)[] type fix)
+  src/app/page.tsx                                (scripts ?v=r48)
+  src/app/layout.tsx                              (app.css?v=r48)
+
+DELETED (20 files — see DELETED-FILES-R48.txt for the GitHub steps):
+  public/app/xlsx.js                              (951KB — duplicate of xlsx.full.min.js)
+  public/app/i18n.js                              (72KB — old generation)
+  public/app/marib-core.js                        (46KB — old generation)
+  public/app/marib-charts.js                      (40KB — old generation)
+  public/app/embed.js                             (37KB — old embed mode)
+  public/Marib_Performance_Studio.html            (1.87MB — old offline edition)
+  src/app/skeleton-html.ts                        (51KB — zero imports)
+  src/app/marib-app.css                           (515KB — zero imports)
+  src/app/api/auth/login/route.ts                 (dead — Prisma legacy)
+  src/app/api/auth/me/route.ts                    (dead)
+  src/app/api/auth/logout/route.ts                (dead)
+  src/app/api/months/route.ts                     (dead)
+  src/app/api/months/[key]/route.ts               (dead)
+  src/app/api/users/[id]/route.ts                 (dead)
+  src/app/api/users/[id]/password/route.ts        (dead)
+  src/lib/db.ts                                   (dead — Prisma client)
+  src/lib/auth.ts                                 (dead — Prisma auth)
+  src/lib/bootstrap.ts                            (dead — Prisma boot)
+  src/server/seed/2026-07.json                    (dead — old system seed)
+  src/server/seed/2026-08.json                    (dead)
+  src/server/seed/2026-09.json                    (dead)
 
 Docs:
-  docs/00-START-HERE.md          (updated: R47 + cache-busting note)
-  docs/03-API-ROUTES.md          (updated: AR import semantics)
-  docs/05-CURRENT-STATE.md       (rewritten for R47)
-  docs/06-ROUNDS.md              (R47 entry)
-  docs/سير-العمل-R47.md          (NEW — تفاصيل الجولة كاملة)
-  سير-العمل.html                 (R47 block + footer)
-  CHANGED-FILES.txt              (هذا الملف)
+  docs/00-START-HERE.md          (R48 + single-system line)
+  docs/01-ARCHITECTURE.md        (new tree + single auth + standalone tip)
+  docs/03-API-ROUTES.md          (legacy section → deleted note)
+  docs/04-FILES-MAP.md           (deleted files removed + R48 notes)
+  docs/05-CURRENT-STATE.md       (R48 section + updated pending)
+  docs/06-ROUNDS.md              (R48 entry)
+  docs/سير-العمل-R48.md          (NEW — full R48 worklog)
+  سير-العمل.html                 (R48 block)
+  DELETED-FILES-R48.txt          (NEW — GitHub deletion guide)
 
-⚠️ ممنوع رفع package.json أو bun.lock — Vercel يستخدم نسخة GitHub.
-
-بعد الرفع: Vercel ينشر في دقيقة. المستخدمين هيشوفوا الجديد حتى من غير hard
-refresh بفضل الـ cache-busting (?v=r47).
+NOT in the ZIP (قاعدة ثابتة): package.json · bun.lock · .env

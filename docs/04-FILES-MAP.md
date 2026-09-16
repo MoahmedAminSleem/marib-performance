@@ -19,27 +19,25 @@
 
 | Path | File | Notes |
 |------|------|-------|
-| `auth/route.ts` | login/logout/session (marib_user) | النظام الجديد |
-| `auth/login/route.ts` | login (Prisma) | النظام القديم |
-| `auth/logout/route.ts` | logout (Prisma) | |
-| `auth/me/route.ts` | session (Prisma) | |
-| `manpower/route.ts` | GET (snapshot) + POST (actions) | ~870 lines — الأكبر |
+| `auth/route.ts` | login/logout/session (marib_user) | نظام واحد من R48 |
+| `manpower/route.ts` | GET (snapshot) + POST (actions) | ~840 lines — الأكبر |
 | `manpower/export/route.ts` | Excel export | ~640 lines |
-| `users/route.ts` | CRUD users | ~155 |
-| `users/[id]/route.ts` | single user | |
-| `users/[id]/password/route.ts` | password change | |
+| `users/route.ts` | CRUD users (photo/title/password/role) | ~155 |
 | `settings/route.ts` | GET/PUT settings | ~90 |
 | `audit/route.ts` | GET audit log | R46: perm-aware |
 | `perms/route.ts` | R46: GET/PUT/DELETE perms | ~115 |
 | `translate/route.ts` | R46: GET ?term=&to= | ~25 |
 | `entries/production/route.ts` | R46: CRUD production | ~115 |
-| `entries/absence/route.ts` | R46: CRUD + template + import | ~210 |
+| `entries/absence/route.ts` | R46: CRUD + template + import | ~215 |
 | `entries/overtime/route.ts` | R46: CRUD overtime | ~115 |
-| `health/route.ts` | Prisma health check | |
-| `data/route.ts` | Prisma data upload/download | |
-| `storage/route.ts` | Prisma storage info | |
-| `months/route.ts` | Prisma months list | |
-| `months/[key]/route.ts` | Prisma single month | |
+| `health/route.ts` | فحص حيوية {ok,users,months,employees} | R48: على جداول marib |
+| `data/route.ts` | رفع/تنزيل بيانات الشهور (marib_data) | marib أصلًا |
+| `storage/route.ts` | مساحة التخزين (marib) | marib أصلًا |
+
+> R48 حذفت: `auth/login` · `auth/logout` · `auth/me` · `users/[id]` ·
+> `users/[id]/password` · `months` · `months/[key]` (نظام Prisma الميت) +
+> `src/lib/{db,auth,bootstrap}.ts` + `src/server/seed/2026-0*.json` +
+> `src/app/{skeleton-html.ts,marib-app.css}`.
 
 ## public/app/
 
@@ -61,20 +59,20 @@
 | File | Role |
 |------|------|
 | `skeleton.ts` | HTML الـ SPA كله (login + topbar + dashboard + modals) |
-| `skeleton-html.ts` | نسخة HTML ثابتة (للنسخ القديم) |
-| `page.tsx` | `<div dangerouslySetInnerHTML={{__html: SKELETON}} />` |
-| `layout.tsx` | root layout (fonts, meta) |
+| `page.tsx` | `<div dangerouslySetInnerHTML={{__html: SKELETON}} />` + قائمة السكريبتات (?v=r48) |
+| `layout.tsx` | root layout (meta + app.css?v=r48) |
 | `globals.css` | Tailwind base |
+
+> R48 حذفت كمان: `skeleton-html.ts` (51KB) و`marib-app.css` (515KB) — صفر استيرادات.
 
 ## ملفات أخرى
 
 | File | Role |
 |------|------|
-| `سير-العمل.html` | سجل الجولات التاريخي (R28→R46) |
+| `سير-العمل.html` | سجل الجولات التاريخي (R28→R48) |
 | `README.md` | وصف المشروع |
 | `next.config.ts` | CSP headers + standalone output |
-| `package.json` | dependencies + scripts |
+| `package.json` | dependencies + scripts (ممنوع في الـ ZIP أبدًا) |
 | `.env` | DATABASE_URL + AUTH_SECRET + DEV_BOOT_PASSWORD |
-| `prisma/schema.prisma` | SQLite schema (للنظام القديم) |
-| `src/server/seed/manpower-seed.ts` | بيانات الاتزان (828 موظف) |
-| `src/server/seed/2026-0[7-9].json` | بيانات الشهور |
+| `prisma/schema.prisma` | R48: مش مستخدم من الكود — فاضل لتوافق package.json |
+| `src/server/seed/manpower-seed.ts` | بيانات الاتزان (828 موظف) — يستخدمه ensureBoot |

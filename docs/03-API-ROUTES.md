@@ -1,6 +1,7 @@
 # 03 — API ROUTES
 
-> كل المسارات تحت `/api/`. نظاما المصادقة متوازيان (انظر ARCHITECTURE.md).
+> كل المسارات تحت `/api/`. من R48 فيه نظام واحد بس: marib
+> (HMAC cookie). نظام Prisma القديم اتمسح بالكامل (شوف سير-العمل-R48).
 
 ## المسارات الجديدة (marib)
 
@@ -16,8 +17,7 @@
 | `/api/users` | POST | admin | إنشاء مستخدم |
 | `/api/users` | PUT | admin | تعديل (photo/title/password/role) |
 | `/api/users` | DELETE | admin | حذف |
-| `/api/users/[id]` | GET/PUT/DELETE | admin | مستخدم واحد |
-| `/api/users/[id]/password` | PUT | admin | تغيير كلمة السر |
+| `/api/health` | GET | none | فحص حيوية: `{ok, users, months, employees}` (R48: على جداول marib) |
 | `/api/settings` | GET | any | كل الإعدادات |
 | `/api/settings` | PUT | admin+ | حفظ إعداد |
 | `/api/audit` | GET | perm:audit.view | سجل العمليات (?from=?to=) |
@@ -36,18 +36,14 @@
 | `/api/entries/overtime` | POST | perm:data.upload | create |
 | `/api/entries/overtime` | DELETE | perm:data.upload | ?id= |
 
-## المسارات القديمة (Prisma)
+## المسارات القديمة (Prisma) — اتمسحت في R48
 
-| Route | Method | Auth | Notes |
-|-------|--------|------|-------|
-| `/api/auth/login` | POST | none | login (Prisma User table) |
-| `/api/auth/logout` | DELETE | any | logout |
-| `/api/auth/me` | GET | any | session check (Prisma) |
-| `/api/health` | GET | none | `{months, users}` (Prisma) |
-| `/api/data` | GET/POST | user | رفع/تنزيل بيانات الشهور |
-| `/api/storage` | GET | dev | مساحة التخزين |
-| `/api/months` | GET | user | قائمة الشهور |
-| `/api/months/[key]` | GET/PUT/DELETE | user | شهر واحد |
+المسارات دي كانت بقايا من النظام القديم والفرونت مش بيستخدمها خالص
+>(اتأكدنا من كل الـ fetches في marib_cloud.js + الموديولات). اتمسحت:
+>`/api/auth/login` · `/api/auth/me` · `/api/auth/logout` · `/api/months` ·
+>`/api/months/[key]` · `/api/users/[id]` · `/api/users/[id]/password`
+>معاهم `src/lib/{db,auth,bootstrap}.ts` + seed JSONs القديمة.
+>و`/api/data` + `/api/storage` دول أصلًا على نظام marib (في الجدول فوق).
 
 ## مفاتيح الصلاحيات (R46)
 

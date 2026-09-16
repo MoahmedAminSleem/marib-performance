@@ -540,6 +540,21 @@
       </ul>
     </div>
 
+<!-- ⬇️ R48 — Refactoring: تنظيف شامل بدون تغيير سلوك ⬇️ -->
+    <div class="upd-block">
+      <div class="upd-head">🟢 الجولة 48 — Refactoring: مسح 3.9MB كود ميت + نظام واحد + tsc نضيف 100%<span class="upd-date">16 سبتمبر 2026</span></div>
+      <ul>
+        <li><b>مسح الملفات الميتة (3.44MB):</b> xlsx.js (951KB نسخة مكررة) · Marib_Performance_Studio.html الأوفلاين (1.87MB) · marib-app.css (515KB) · i18n.js · marib-core.js · marib-charts.js · embed.js · skeleton-html.ts — كلهم صفر مراجع (اتأكدنا بفحص شامل قبل الحذف)، وكلهم بيرجعوا 404 على سيرفر الإنتاج بعد الحذف.</li>
+        <li><b>مسح نظام Prisma القديم بالكامل:</b> 7 routes ميتة (auth/login·me·logout · months · months/[key] · users/[id] ×2) + lib/{db,auth,bootstrap}.ts + seeds الشهور القديمة — الفرونت عمره ما نده عليهم (اتأكدنا من كل الـ fetches). دلوقتي فيه نظام واحد بس (marib) — وباب الـ login القديم المقفول ده فايدة أمنية مجانية. الـ schema.prisma فاضل عمدًا لأن package.json ممنوع يتلمس.</li>
+        <li><b>/api/health على النظام الحي:</b> كان بيفحص جداول Prisma الميتة — بقى يرجع {ok, users, months, employees} من جداول marib (اتزان: 810 موظف).</li>
+        <li><b>إلغاء تكرار كود الترجمة:</b> النسخة الخاصة جوه manpower/route.ts (65 سطر) اتشالت والاستيراد بقى من lib/marib/translate.ts — R46 عملت الاستخراج بس النسخة القديمة فضلت موجودة. + توحيد hasArabic (كانت مكررة مرتين).</li>
+        <li><b>إصلاح 11 خطأ أنواع موروثة:</b> next build بيتخطى فحص الأنواع فدي كانت راقدة من R46/R47 (تصريحات tuples غلط في تيمبلت الغياب · Pool كنوع · مصفوفة nullable في undo · الفورمات القديم ناقص nameAr/jobAr). النتيجة: <b>tsc --noEmit نضيف 100% لأول مرة</b>.</li>
+        <li><b>الاختبار الأقوى في تاريخ المشروع:</b> build ✓ + tsc ✓ + <b>curl E2E 35/35 على سيرفر الإنتاج standalone</b> (مش الـ dev!) ✓ + متصفح E2E كامل (دخول → اتحاد 810/828 → يوزرز → إدخال بفورم 64 قسم) ✓ + صفر أخطاء console. 12 لقطة دليل.</li>
+        <li><b>اكتشاف موثق:</b> الـ standalone محليًا محتاج <code>cp -r db .next/standalone/db</code> قبل التشغيل (server.js بيعمل process.chdir) — على Vercel مفيش تأثير (Neon/pg).</li>
+      </ul>
+      <p class="upd-note">ملفات معدلة: 7 + docs. محذوفات: 20 ملف (شوف DELETED-FILES-R48.txt — الحذف على GitHub لازم كله commit واحد). التفاصيل: <code>docs/سير-العمل-R48.md</code>. مهم للجولات الجاية: حدّث <code>?v=r48</code> → <code>?v=rNN</code> مع كل رفع.</p>
+    </div>
+
 <!-- ⬇️ R46 — أكبر جولة في تاريخ المشروع (16 ميزة/إصلاح) ⬇️ -->
     <div class="upd-block">
       <div class="upd-head">🟢 الجولة 47 — تنفيذ كل المعلّق + استرجاع واجهة إدخال البيانات الضايعة + إصلاح جذري للأيقونات<span class="upd-date">16 سبتمبر 2026</span></div>

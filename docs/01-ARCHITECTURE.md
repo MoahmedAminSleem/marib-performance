@@ -8,7 +8,7 @@
 | React | 19 | الواجهة |
 | PGlite | 0.5.8 | Postgres WASM للتطوير المحلي (file-based at `db/pglite/`) |
 | pg | 8.23 | Postgres للإنتاج (Vercel + Neon) |
-| Prisma | 6.11 | نظام قديم — يُستخدم فقط في `/api/health`, `/api/auth/login`, `/api/data`, `/api/storage`, `/api/months` |
+| Prisma | 6.11 | R48: مش مستخدم في أي كود — الـ dep + `prisma/schema.prisma` فاضلين للتوافق مع package.json (ممنوع نلمسه) |
 | XLSX (in-house) | — | مولّد Excel بدون مكتبات خارجية (`src/lib/marib/xlsx-writer.ts`) |
 | z-ai-web-dev-sdk | 0.0.18 | SDK للترجمة + VLM + LLM |
 
@@ -19,14 +19,11 @@ marib-performance-main/
 ├── src/
 │   ├── app/
 │   │   ├── skeleton.ts          ← HTML الـ SPA (80KB string)
-│   │   ├── skeleton-html.ts     ← نسخة HTML ثابتة (للنسخ القديم)
 │   │   ├── page.tsx              ← صفحة Next.js الوحيدة (dangerouslySetInnerHTML)
 │   │   ├── layout.tsx            ← root layout
 │   │   ├── globals.css           ← Tailwind
-│   │   ├── marib-app.css         ← غير مستخدم (مدمج في app.css)
-│   │   └── api/                  ← كل الـ API routes
-│   │       ├── auth/             ← login/logout/me (النظام القديم Prisma)
-│   │       ├── auth/route.ts     ← login/logout (النظام الجديد marib_user)
+│   │   └── api/                  ← كل الـ API routes (نظام واحد: marib)
+│   │       ├── auth/route.ts     ← login/logout (marib_user)
 │   │       ├── perms/            ← R46: نظام الصلاحيات
 │   │       ├── translate/        ← R46: ترجمة فورية
 │   │       ├── entries/          ← R46: إدخال البيانات (production/absence/overtime)
@@ -34,14 +31,10 @@ marib-performance-main/
 │   │       ├── users/            ← إدارة المستخدمين
 │   │       ├── settings/         ← الإعدادات
 │   │       ├── audit/            ← سجل العمليات
-│   │       ├── months/           ← شهور البيانات
-│   │       ├── data/             ← رفع/تنزيل البيانات
-│   │       └── health/           ← فحص الصحة
+│   │       ├── data/             ← رفع/تنزيل البيانات (marib_data)
+│   │       └── health/           ← فحص الصحة (R48: على جداول marib)
 │   ├── lib/
-│   │   ├── db.ts                 ← Prisma client (النظام القديم)
-│   │   ├── bootstrap.ts          ← Prisma boot (النظام القديم)
-│   │   ├── auth.ts               ← Prisma auth (النظام القديم)
-│   │   └── marib/                ← كل المنطق الجديد
+│   │   └── marib/                ← كل المنطق (نظام واحد)
 │   │       ├── db.ts             ← raw SQL driver (PGlite/pg) + BOOT_SQL + ensureBoot()
 │   │       ├── session.ts        ← HMAC-signed cookie (marib_sess)
 │   │       ├── http.ts           ← helpers (requireUser/requireRole/requirePerm)
@@ -51,8 +44,7 @@ marib-performance-main/
 │   │       ├── xlsx-writer.ts    ← مولّد Excel داخلي
 │   │       └── logger.ts        ← structured logging
 │   └── server/seed/
-│       ├── manpower-seed.ts      ← بيانات الاتزان (828 موظف / 63 قسم)
-│       └── 2026-0[7-9].json      ← بيانات شهور يوليو/أغسطس/سبتمبر
+│       └── manpower-seed.ts      ← بيانات الاتزان (828 موظف / 63 قسم) — يستخدمه ensureBoot()
 ├── public/
 │   └── app/
 │       ├── app_main.js           ← الواجهة الرئيسية (Dashboard)
@@ -63,10 +55,12 @@ marib-performance-main/
 │       ├── marib_cloud.js        ← API client (fetch wrapper)
 │       ├── i18n_core.js          ← محرك الترجمة
 │       ├── i18n_dict.js          ← قاموس الترجمة (AR/EN/TR)
-│       ├── xlsx.full.min.js      ← مكتبة XLSX (client-side)
+│       ├── xlsx.full.min.js      ← مكتبة XLSX (lazy-load عند أول رفع/تنزيل)
 │       └── app.css               ← كل الستايل (600KB+)
+│   └── (R48: i18n.js / marib-core.js / marib-charts.js / embed.js / xlsx.js
+│        + Marib_Performance_Studio.html الأوفلاين — كلهم اتمسحوا: ميتين بلا أي مرجع)
 ├── prisma/
-│   └── schema.prisma             ← SQLite schema (للنظام القديم)
+│   └── schema.prisma             ← R48: فاضي من الكود — فاضل لتوافق package.json
 ├── docs/                         ← هذا الفولدر
 ├── سير-العمل.html                ← السجل التاريخي (R28→R46)
 ├── README.md
@@ -75,17 +69,19 @@ marib-performance-main/
 └── .env                          ← DATABASE_URL + AUTH_SECRET + DEV_BOOT_PASSWORD
 ```
 
-## نظاما المصادقة (مهم!)
+## المصادقة (نظام واحد من R48)
 
-هناك **نظامان متوازيان**:
+R48 مسحت نظام Prisma القديم بالكامل. اللي فاضل (وكان المستخدم فعليًا من زمان):
 
-| | النظام القديم (Prisma) | النظام الجديد (marib) |
-|---|---|---|
-| **Cookie** | `marib_sess` (hex token, DB lookup) | `marib_sess` (signed payload.signature) |
-| **DB** | Prisma `User` + `Session` tables (SQLite) | `marib_user` table (PGlite/Postgres) |
-| **Routes** | `/api/auth/login`, `/api/auth/me`, `/api/health`, `/api/data`, `/api/months`, `/api/storage` | `/api/auth` (GET/POST/DELETE), `/api/manpower/*`, `/api/users/*`, `/api/settings/*`, `/api/perms/*`, `/api/entries/*`, `/api/translate/*` |
-| **Login** | `/api/auth/login` (POST) | `/api/auth` (POST) |
-| **الواجهة** | تستخدم النظام الجديد (`/api/auth`) | ✓ هذا هو المستخدم فعلياً |
+| | النظام (marib) |
+|---|---|
+| **Cookie** | `marib_sess` (signed payload.signature — HMAC) |
+| **DB** | `marib_user` table (PGlite/Postgres) |
+| **Routes** | `/api/auth` (GET/POST/DELETE), `/api/manpower/*`, `/api/users/*`, `/api/settings/*`, `/api/perms/*`, `/api/entries/*`, `/api/translate/*`, `/api/health` |
+| **Login** | `/api/auth` (POST) — Amin / 2872002 |
+
+> الـ routes القديمة (`/api/auth/login`, `/api/auth/me`, `/api/auth/logout`,
+> `/api/months`, `/api/users/[id]`…) اتمسحت في R48 — كانت ميتة (الفرونت عمره ما نده عليها).
 
 ## التشغيل المحلي
 
@@ -102,6 +98,11 @@ bun run dev    # → http://localhost:3000
 bun run build   # → .next/standalone/
 # Vercel ينشر تلقائياً عند رفع GitHub
 ```
+
+> **ملاحظة تشغيل الـ standalone محليًا (اتكتشفت في R48):** سيرفر الـ standalone
+> بيعمل `process.chdir(__dirname)` — فبيروح يدور على `db/pglite` جنب `server.js`.
+> لو هتختبر الإنتاج محليًا: `cp -r db .next/standalone/db` قبل التشغيل.
+> (على Vercel مفيش تأثير — الإنتاج Postgres/Neon مش PGlite.)
 
 ## BOOT_SQL
 

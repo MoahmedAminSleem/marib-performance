@@ -17,6 +17,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requireUser, requireRoleBody } from "@/lib/marib/http";
+/* R48 (refactoring): الترجمة التلقائية بقت من الـ lib المشتركة — كانت
+   متكررة هنا وفي lib/marib/translate.ts (الاستخراج حصل في R46
+   لكن النسخة الخاصة لسه موجودة). نفس السلوك بالظبط، من مكان واحد. */
+import { translateAndStore } from "@/lib/marib/translate";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -78,75 +82,15 @@ function normName(v: unknown): string {
     .toLowerCase();
 }
 
-/* ---------- R42: الترجمة التلقائية المجانية ----------
-   Google gtx endpoint (بدون مفتاح، بدون حدود عملية) + MyMemory كاحتياطي.
-   الاتجاه: لو الكلمة عربية → ar→en + ar→tr، غير كده → en→ar + en→tr.
-   النتيجة تتخزن في marib_i18n — مرة واحدة لكل كلمة. الفشل صامت:
-   الكلمة تظهر زي ما هي (مفيش ترجمة أحسن من ترجمة غلط). */
-const AR_RE = /[\u0600-\u06FF]/;
-async function gtx(text: string, from: string, to: string, host = "translate.googleapis.com"): Promise<string> {
-  const u =
-    "https://" + host + "/translate_a/single?client=gtx&sl=" +
-    from + "&tl=" + to + "&dt=t&q=" + encodeURIComponent(text);
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), 3500);
-  try {
-    const r = await fetch(u, { signal: ctl.signal });
-    if (!r.ok) return "";
-    const j = (await r.json()) as unknown;
-    const segs = (j as unknown[][])?.[0];
-    if (!Array.isArray(segs)) return "";
-    return segs.map((s) => (Array.isArray(s) && s[0]) ? String(s[0]) : "").join("").trim();
-  } catch {
-    return "";
-  } finally {
-    clearTimeout(t);
-  }
+/* (R48) كشف العربي — كان معرّف مرتين جوه edit وجوه import باسمين
+   مختلفين (hasArabic / hasArabicImp) — اتحد هنا في تعريف واحد. */
+const ARABIC_RE = /[\u0600-\u06FF]/;
+function hasArabic(s: unknown): boolean {
+  return ARABIC_RE.test(String(s || ""));
 }
-async function myMemory(text: string, from: string, to: string): Promise<string> {
-  try {
-    const u =
-      "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) +
-      "&langpair=" + from + "|" + to;
-    const r = await fetch(u);
-    if (!r.ok) return "";
-    const j = (await r.json()) as { responseData?: { translatedText?: string } };
-    const out = String(j?.responseData?.translatedText || "").trim();
-    /* MyMemory يرجع أحيانًا رسائل خطأ كنص — تجاهلها */
-    if (!out || /MYMEMORY WARNING|INVALID/i.test(out)) return "";
-    return out;
-  } catch {
-    return "";
-  }
-}
-async function translateInto(text: string, from: string, to: string): Promise<string> {
-  /* R43: مضيفين لجوجل + MyMemory — 3 فرص قبل ما الكلمة تفضل زي ما هي */
-  return (await gtx(text, from, to))
-    || (await gtx(text, from, to, "translate.google.com"))
-    || (await myMemory(text, from, to));
-}
-/* يترجم مصطلحًا للغتين التانيتين ويخزنهم — يستخدمها deptAdd/deptRename
-   و trSync (الدفعات اللي بيبعتها العميل). */
-async function translateAndStore(term: string): Promise<void> {
-  const t = cleanStr(term, 90);
-  if (!t || t.length < 2) return;
-  const have = await q("SELECT lang FROM marib_i18n WHERE term = $1", [t]);
-  const done = new Set(have.map((r) => r.lang as string));
-  const from = AR_RE.test(t) ? "ar" : "en";
-  const targets: string[] = from === "ar" ? ["en", "tr"] : ["ar", "tr"];
-  /* R43: اللغتين بالتوازي */
-  await Promise.all(targets.map(async (tl) => {
-    if (done.has(tl)) return;
-    const out = await translateInto(t, from, tl);
-    if (out && out !== t) {
-      await q(
-        `INSERT INTO marib_i18n (term, lang, tr) VALUES ($1, $2, $3)
-         ON CONFLICT (term, lang) DO UPDATE SET tr = $3, at = now()`,
-        [t, tl, out.slice(0, 90)]
-      );
-    }
-  }));
-}
+
+/* (R48) كود الترجمة التلقائية (gtx + MyMemory + translateAndStore)
+   انتقل لـ src/lib/marib/translate.ts — نفس السلوك، مكان واحد. */
 
 export async function GET(req: NextRequest) {
   try {
@@ -355,7 +299,6 @@ export async function POST(req: NextRequest) {
          تلقائيًا في حقله (حماية من ضياع العربي — مبدأ ممنوع مسح البيانات).
          مسح العربي بيحصل بكتابة القيمة الجديدة أو تفريغ الحقل مع تثبيت
          نفس الاسم (حينها مفيش تغيير فمفيش حفظ تلقائي). */
-      const hasArabic = (s: unknown): boolean => /[\u0600-\u06FF]/.test(String(s || ""));
       let nameAr = body.name_ar !== undefined ? cleanStr(body.name_ar, 90) : ((old.name_ar as string) || "");
       if (!nameAr && body.name !== undefined && name !== (old.name as string) && hasArabic(old.name) && !(old.name_ar as string)) {
         nameAr = (old.name as string);
@@ -710,7 +653,9 @@ export async function POST(req: NextRequest) {
           if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) hire = "";
           const chain = cleanStr(r[3], 190).split(" - ").map((x) => x.trim()).filter(Boolean);
           if (!chain.length) continue;
-          clean.push({ code, name, chain, job: cleanStr(r[2], 90), note: "", hire, vac: false, mach: "", del: false });
+          /* (R48) nameAr/jobAr فاضيين للفورمات القديم — نفس معنى العمود
+             الفاضي في الفورمات الجديد: finalAr بيرجع للمخزن/الحفظ التلقائي */
+          clean.push({ code, name, chain, job: cleanStr(r[2], 90), note: "", hire, vac: false, mach: "", del: false, nameAr: "", jobAr: "" });
         }
       }
       if (!clean.length) return fail("rows", 400);
@@ -821,10 +766,9 @@ export async function POST(req: NextRequest) {
                  والقديم كان عربي والعربي المخزن فاضي → نحفظ القديم
                  تلقائيًا (حماية من ضياع العربي)
              (3) غير كده → نسيب المخزن زي ما هو (العمود الناقص ميفضّيش) */
-          const hasArabicImp = (s: unknown): boolean => /[\u0600-\u06FF]/.test(String(s || ""));
           const finalAr = (sheetVal: string, oldVal: string | null, oldMain: string, newMain: string): string | null => {
             if (sheetVal) return sheetVal;
-            if (!colFlags.ar && newMain !== oldMain && hasArabicImp(oldMain) && !oldVal) return oldMain;
+            if (!colFlags.ar && newMain !== oldMain && hasArabic(oldMain) && !oldVal) return oldMain;
             return oldVal || null;
           };
           if (!old) {
