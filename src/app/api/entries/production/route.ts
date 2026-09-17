@@ -73,6 +73,10 @@ export async function POST(req: NextRequest) {
     const poNumber = String(body.po_number || "").trim().slice(0, 40);
     const qty = parseInt(String(body.qty || "0"), 10);
     const note = String(body.note || "").trim().slice(0, 200);
+    /* R58: كمية عقد الـ PO — بتتبعت من نموذج الإدخال لما يكون الـ PO
+       جديد (أول مرة). بتتسجل في ريفرانس marib_po مرة واحدة؛ لو الـ PO
+       مسجل أصلًا الريفرانس هو الحقيقة والقيمة دي بتتجاهل. */
+    const poContract = parseInt(String(body.po_contract_qty || "0"), 10);
 
     if (!isDayStr(date)) return fail("date", 400);
     if (qty <= 0) return fail("qty", 400);
@@ -85,6 +89,19 @@ export async function POST(req: NextRequest) {
        VALUES ($1, $2, $3::date, NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), $7, $8, $9, $10)`,
       [id, monthKey, date, deptId || null, deptName || null, lineId || null, poNumber, qty, note, me.username]
     );
+    /* R58: تسجيل كمية العقد لو الـ PO جديد والمستخدم كتبها في النموذج */
+    if (poNumber && poContract > 0) {
+      const known = await q("SELECT po FROM marib_po WHERE po = $1", [poNumber]);
+      if (!known.length) {
+        await q(
+          `INSERT INTO marib_po (po, contract_qty, note, actor, updated_by)
+           VALUES ($1, $2, '', $3, $3)
+           ON CONFLICT (po) DO NOTHING`,
+          [poNumber, poContract, me.username]
+        );
+        await audit(me.username, "create", "po:" + poNumber, poNumber, { qty: poContract, via: "entry-form" });
+      }
+    }
     await audit(me.username, "create", "entries:production", id, { date, dept: deptName || deptId, qty });
     lg.info("prod entry created", { by: me.username, date, qty, po: poNumber, dept: deptName || deptId });
     return NextResponse.json({ ok: true, id });

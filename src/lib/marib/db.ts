@@ -269,6 +269,22 @@ const BOOT_SQL: string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS marib_prod_month_idx ON marib_prod (month_key)`,
   `CREATE INDEX IF NOT EXISTS marib_prod_date_idx ON marib_prod (date)`,
+  /* R58: تجميع إنتاج الـ PO (التولتيب/الخانات في الإدخال بتسأل
+     بالـ PO دايمًا) — فهرس مركب يخدم التجميع بالتاريخ. */
+  `CREATE INDEX IF NOT EXISTS marib_prod_po_date_idx ON marib_prod (po_number, date)`,
+  /* R58 — ريفرانس كمية العقد لكل PO (طلب المالك في الإدخال):
+     لما يكتب PO أول مرة يسجل كمية عقده، والخانات والتولتيب
+     بيحسبوا المصنوع/المتبقي منها. الرفع من تيمبلت إكسل أو الكتابة
+     المباشرة — الاتنين upsert على نفس الجدول. */
+  `CREATE TABLE IF NOT EXISTS marib_po (
+    po           TEXT PRIMARY KEY,          -- رقم أمر الإنتاج
+    contract_qty INT NOT NULL DEFAULT 0,   -- كمية العقد
+    note         TEXT NOT NULL DEFAULT '',
+    actor        TEXT NOT NULL,            -- مين سجّل العقد
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by   TEXT
+  )`,
   /* جدول الغياب: كل سجل = موظف + تاريخ + سبب. ممكن يكون emp_id فاضي
      لو الموظف لسه مش موجود في الاتزان (لو اليوزر رفع غياب لشخص من غير
      الكود — بيتسجل كعدد لحد ما يترفع على الاتزان). */
@@ -326,7 +342,9 @@ let booting: Promise<void> | null = null;
    واحدة بس. العلامة مش بتتكتب غير لما البذر يتأكد (mp_seed_ver=42)
    — لو البذر فشل (non-fatal) البوابة مش بتتحط والسلوك القديم
    (إعادة المحاولة كل إقلاع) بيفضل زي ما هو بالظبط. */
-const BOOT_VER = "57";
+/* "58": فهرس marib_prod(po_number, date) + جدول marib_po (ريفرانس
+   كمية العقد لكل PO — طلب المالك في صفحة الإدخال). */
+const BOOT_VER = "58";
 
 interface BootInfoShape {
   __maribBootInfo?: { ver: string; path: "fast" | "full" };

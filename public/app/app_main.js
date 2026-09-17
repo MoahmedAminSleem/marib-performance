@@ -75,9 +75,9 @@ var App = (function () {
     if (!_xlsxP) {
       _xlsxP = new Promise(function (res, rej) {
         var s = document.createElement("script");
-        /* R57: ?v=r57 — ترويسة immutable الجديدة خلت الرابط ده يتخزن
+        /* R57: ?v=r58 — ترويسة immutable الجديدة خلت الرابط ده يتخزن
            للأبد في المتصفح؛ أي تحديث للمكتبة مستقبلًا = بارامتر جديد */
-        s.src = "/app/xlsx.full.min.js?v=r57";
+        s.src = "/app/xlsx.full.min.js?v=r58";
         s.onload = function () { window.XLSX ? res(window.XLSX) : rej(new Error("XLSX missing")); };
         s.onerror = function () { _xlsxP = null; rej(new Error("XLSX load failed")); };
         document.head.appendChild(s);

@@ -4165,3 +4165,129 @@ body.no-upload .dt-hero,
 body.no-upload #dpFolder,
 body.no-upload #dpExcel,
 body.no-upload #ndBtn { display: none !important; }
+
+/* ============================================================
+   R58 — صفحة الإدخال: أشرطة الخط/القسم + عقود الـ PO
+   (شريطان قابلان للنقر بدل الدروب ليست + خانات العقد الحية +
+   التولتيب التفصيلي + قايمة إدارة العقود) — طلب المالك.
+   ============================================================ */
+
+/* ---- شريط الأزرار (الخط فوق / القسم تحت) ---- */
+.ent-strip{
+  display:flex;flex-wrap:wrap;gap:6px;
+}
+.ent-strip-btn{
+  flex:1 1 0;min-width:56px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(217,168,107,.28);
+  color:#C9D4E4;padding:8px 10px;border-radius:8px;
+  font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;
+  transition:background .15s,color .15s,border-color .15s,transform .1s;
+  white-space:nowrap;
+}
+.ent-strip-btn:hover{
+  background:rgba(217,168,107,.14);color:#F1E4C9;border-color:rgba(217,168,107,.55);
+}
+.ent-strip-btn:active{transform:translateY(1px)}
+.ent-strip-btn.on{
+  background:linear-gradient(135deg,#D9A86B,#B07E3F);
+  color:#131922;border-color:#B07E3F;font-weight:700;
+  box-shadow:0 3px 12px rgba(176,126,63,.35);
+}
+
+/* ---- سطر معلومات الـ PO (عقد/مصنوع/متبقي + شريط تقدم) ---- */
+.ent-po-info{
+  position:relative;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:rgba(217,168,107,.08);border:1px solid rgba(217,168,107,.30);
+  border-radius:8px;padding:8px 10px;cursor:default;
+}
+.pi-chip{font-size:11.5px;color:#C9D4E4}
+.pi-chip b{color:#F1E4C9;font-variant-numeric:tabular-nums}
+.pi-pct{
+  margin-inline-start:auto;font-size:11.5px;font-weight:700;color:#D9A86B;
+  background:rgba(217,168,107,.12);border:1px solid rgba(217,168,107,.35);
+  border-radius:6px;padding:2px 8px;font-variant-numeric:tabular-nums;
+}
+.pi-pct.full{color:#8FD6A8;background:rgba(52,168,110,.14);border-color:rgba(52,168,110,.45)}
+.pi-bar{
+  flex-basis:100%;height:5px;border-radius:4px;overflow:hidden;
+  background:rgba(255,255,255,.08);
+}
+.pi-bar i{display:block;height:100%;background:linear-gradient(90deg,#B07E3F,#D9A86B);border-radius:4px;transition:width .3s}
+.ent-po-info.full .pi-bar i{background:linear-gradient(90deg,#2E9E63,#5BC98A)}
+
+/* ---- خانات PO أول مرة (كمية العقد + المتبقي) ---- */
+.ent-po-new{
+  background:rgba(217,168,107,.06);border:1px dashed rgba(217,168,107,.40);
+  border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.ent-po-new .ent-form-row{margin:0}
+.ent-po-new .ent-form-hint{grid-column:1 / -1;margin:0}
+
+/* ---- تولتيب الـ PO: إنتاج القسم/الخط بالتاريخ والإجمالي ---- */
+.po-row{position:relative}
+.ent-po-tip{
+  position:absolute;inset-inline-start:0;top:calc(100% + 6px);z-index:60;
+  min-width:240px;max-width:340px;
+  background:#141C2A;border:1px solid rgba(217,168,107,.40);
+  border-radius:10px;padding:10px 12px;
+  box-shadow:0 14px 36px rgba(0,0,0,.45);
+}
+.ent-po-tip .tip-head{
+  font-size:12px;font-weight:700;color:#F5E4BB;margin-bottom:6px;
+  padding-bottom:6px;border-bottom:1px solid rgba(217,168,107,.22);
+}
+.ent-po-tip .tip-kpis{
+  display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#9FB0C3;margin-bottom:6px;
+}
+.ent-po-tip .tip-kpis b{color:#D9A86B;font-variant-numeric:tabular-nums}
+.ent-po-tip .tip-days{width:100%;border-collapse:collapse;font-size:11px}
+.ent-po-tip .tip-days td{padding:3px 4px;color:#C9D4E4;border-bottom:1px solid rgba(255,255,255,.05)}
+.ent-po-tip .tip-days td.num{text-align:end;color:#F1E4C9;font-weight:600;font-variant-numeric:tabular-nums}
+.ent-po-tip .tip-empty{font-size:11px;color:#9FB0C3;margin:4px 0 0}
+
+/* ---- قايمة إدارة عقود الـ POs ---- */
+.po-manage .po-card{width:min(560px,94vw)}
+.po-manage-body{padding:12px 16px;max-height:min(56vh,430px);overflow-y:auto}
+.po-tbl .po-name{font-weight:700;color:#F1E4C9;white-space:nowrap}
+.po-tbl .po-c input{
+  width:96px;background:rgba(255,255,255,.06);border:1px solid rgba(217,168,107,.30);
+  color:#F1E4C9;border-radius:6px;padding:4px 8px;font-size:12px;
+  font-variant-numeric:tabular-nums;font-family:inherit;text-align:center;
+}
+.po-tbl .po-c input:focus{outline:0;border-color:rgba(217,168,107,.65)}
+
+/* ---- الوضع الفاتح ---- */
+html[data-theme="light"] .ent-strip-btn{
+  background:#F7F9FC;border-color:rgba(20,33,61,.18);color:#3D4A5C;
+}
+html[data-theme="light"] .ent-strip-btn:hover{
+  background:rgba(176,126,63,.10);color:#A66B24;border-color:rgba(176,126,63,.45);
+}
+html[data-theme="light"] .ent-strip-btn.on{
+  background:linear-gradient(135deg,#D9A86B,#B07E3F);color:#FFFFFF;border-color:#B07E3F;
+}
+html[data-theme="light"] .ent-po-info{
+  background:rgba(176,126,63,.07);border-color:rgba(176,126,63,.32);
+}
+html[data-theme="light"] .pi-chip{color:#3D4A5C}
+html[data-theme="light"] .pi-chip b{color:#1F2937}
+html[data-theme="light"] .pi-pct{color:#A66B24;background:rgba(176,126,63,.10);border-color:rgba(176,126,63,.35)}
+html[data-theme="light"] .pi-pct.full{color:#1E7A45;background:rgba(52,168,110,.10);border-color:rgba(52,168,110,.40)}
+html[data-theme="light"] .pi-bar{background:rgba(20,33,61,.08)}
+html[data-theme="light"] .ent-po-new{
+  background:#FDF9F2;border-color:rgba(176,126,63,.45);
+}
+html[data-theme="light"] .ent-po-tip{
+  background:#FFFFFF;border-color:rgba(176,126,63,.40);
+  box-shadow:0 14px 36px rgba(15,23,42,.20);
+}
+html[data-theme="light"] .ent-po-tip .tip-head{color:#A66B24;border-bottom-color:rgba(176,126,63,.25)}
+html[data-theme="light"] .ent-po-tip .tip-kpis{color:#5B6472}
+html[data-theme="light"] .ent-po-tip .tip-kpis b{color:#A66B24}
+html[data-theme="light"] .ent-po-tip .tip-days td{color:#1F2937;border-bottom-color:rgba(15,23,42,.06)}
+html[data-theme="light"] .ent-po-tip .tip-days td.num{color:#1F2937}
+html[data-theme="light"] .ent-po-tip .tip-empty{color:#5B6472}
+html[data-theme="light"] .po-tbl .po-name{color:#1F2937}
+html[data-theme="light"] .po-tbl .po-c input{
+  background:#FFFFFF;border-color:rgba(20,33,61,.20);color:#1F2937;
+}

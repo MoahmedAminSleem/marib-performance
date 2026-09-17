@@ -85,6 +85,10 @@ var AppEntries = (function (ctx) {
   function entRenderProduction(body, entries) {
     var html = '<div class="ent-actions">' +
       '<button type="button" class="ent-add" id="entProdAdd">' + esc(T("ent_add")) + '</button>' +
+      /* R58: عقود الـ PO — تنزيل/رفع تيمبلت + إدارة الريفرانس */
+      '<button type="button" class="ent-add ghost" id="entPoTpl" title="' + esc(T("ent_po_tpl_hint")) + '">📥 ' + esc(T("ent_po_tpl")) + '</button>' +
+      '<button type="button" class="ent-add ghost" id="entPoUpload" title="' + esc(T("ent_po_upload_hint")) + '">📤 ' + esc(T("ent_po_upload")) + '</button>' +
+      '<button type="button" class="ent-add ghost" id="entPoManage">📋 ' + esc(T("ent_po_manage")) + '</button>' +
       '<span class="ent-count"><b>' + entries.length + '</b> ' + esc(T("mp_rows")) + '</span>' +
     '</div>';
     if (!entries.length) {
@@ -115,6 +119,13 @@ var AppEntries = (function (ctx) {
     body.innerHTML = html;
     var add = body.querySelector("#entProdAdd");
     if (add) add.addEventListener("click", function () { entOpenProdForm(); });
+    /* R58: أزرار عقود الـ PO */
+    var poTpl = body.querySelector("#entPoTpl");
+    if (poTpl) poTpl.addEventListener("click", function () { entDownloadPoTemplate(); });
+    var poUpl = body.querySelector("#entPoUpload");
+    if (poUpl) poUpl.addEventListener("click", function () { entUploadPoTemplate(); });
+    var poMng = body.querySelector("#entPoManage");
+    if (poMng) poMng.addEventListener("click", function () { entOpenPoManage(); });
     body.querySelectorAll(".ent-del").forEach(function (b) {
       b.addEventListener("click", function () { entDelete("production", b.getAttribute("data-id")); });
     });
@@ -137,32 +148,193 @@ var AppEntries = (function (ctx) {
     }
     return h;
   }
+  /* ============================================================
+     R58 — نموذج الإنتاج الجديد (طلب المالك):
+     1) التاريخ الافتراضي = امبارح (الإنتاج بيتسجل غالبًا لليوم اللي فات)
+     2) شريط للخط فوق + شريط للقسم تحت — نقر مباشر بدل الدروب ليست
+     3) خانة الـ PO حية: بتستعلم فورًا وتعرض كمية العقد + اتعمل قد
+        إيه + المتبقي (مع شريط تقدم)، والتولتيب بيفصّل إنتاج القسم
+        والخط المحددين بالتاريخ والإجمالي.
+     4) لو الـ PO أول مرة (غير مسجل) → خانتين: كمية العقد + المتبقي
+        (بيتملّي تلقائي = العقد − المصنوع) — بيتسجلوا مع الحفظ.
+     ============================================================ */
+  function entYesterday() {
+    var d = new Date(Date.now() - 86400000);
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  function entLineItems() {
+    return ENT_LINES.map(function (n) {
+      return { v: n, t: I18N.lang() === "tr" ? "Hat " + n : "خط " + n };
+    });
+  }
+  function entSecItems() {
+    return ENT_SECTIONS.map(function (s) { return { v: s, t: s }; });
+  }
+  /* شريط أزرار قابل للنقر — البديل عن الـ select (نفس القيم) */
+  function entStripRow(id, labelKey, items) {
+    var h = '<div class="ent-form-row"><label>' + esc(T(labelKey)) + '</label>' +
+      '<div class="ent-strip" id="' + id + '">';
+    items.forEach(function (it) {
+      h += '<button type="button" class="ent-strip-btn" data-v="' + esc(it.v) + '">' + esc(it.t) + '</button>';
+    });
+    return h + '</div></div>';
+  }
+  function entStripSelected(fm, id) {
+    var b = fm.querySelector("#" + id + " .ent-strip-btn.on");
+    return b ? b.getAttribute("data-v") : "";
+  }
+  /* حالة الـ PO الحالية (آخر استعلام) — للتولتيب والحفظ */
+  var poState = null;
+  var poTimer = null;
+  function poRefresh(fm) {
+    var po = (fm.querySelector("#efPo") || {}).value || "";
+    po = po.trim();
+    var row = fm.querySelector("#poInfoRow");
+    if (!row) return;
+    if (!po) { poState = null; row.hidden = true; row.innerHTML = ""; return; }
+    var line = entStripSelected(fm, "efLineStrip");
+    var dept = entStripSelected(fm, "efSecStrip");
+    var url = "/api/po?po=" + encodeURIComponent(po) +
+      "&dept=" + encodeURIComponent(dept) + "&line=" + encodeURIComponent(line);
+    fetch(url, { credentials: "include" })
+      .then(function (r) { if (!r.ok) throw new Error("p" + r.status); return r.json(); })
+      .then(function (d) {
+        /* المستخدم ممكن يكون غيّر الـ PO أثناء الاستعلام — تجاهل القديم */
+        var now = ((fm.querySelector("#efPo") || {}).value || "").trim();
+        if (now !== po || !fm.isConnected) return;
+        poState = d;
+        poRenderInfo(row, d, dept, line);
+      })
+      .catch(function () { /* فشل مؤقت — نفضل فاضيين بدل رسالة مزعجة */ });
+  }
+  function poRenderInfo(row, d, dept, line) {
+    row.hidden = false;
+    if (d.known) {
+      /* المعروف: سطر العقد/المصنوع/المتبقي + شريط تقدم + تولتيب تفصيلي */
+      var pct = d.contract_qty > 0 ? Math.min(100, Math.round(d.made_total * 100 / d.contract_qty)) : 0;
+      row.innerHTML =
+        '<div class="ent-po-info" id="poInfoBox">' +
+          '<span class="pi-chip">📦 ' + esc(T("ent_contract")) + ': <b>' + esc(d.contract_qty.toLocaleString()) + '</b></span>' +
+          '<span class="pi-chip">🏭 ' + esc(T("ent_done")) + ': <b>' + esc(d.made_total.toLocaleString()) + '</b></span>' +
+          '<span class="pi-chip">➖ ' + esc(T("ent_left")) + ': <b>' + esc((d.left || 0).toLocaleString()) + '</b></span>' +
+          '<span class="pi-pct' + (pct >= 100 ? " full" : "") + '">' + pct + '%</span>' +
+          '<div class="pi-bar"><i style="width:' + pct + '%"></i></div>' +
+        '</div>' +
+        poTipHTML(d, dept, line);
+      poBindTip(row);
+    } else {
+      /* أول مرة: خانتين — كمية العقد (يكتبها) + المتبقي (تلقائي = العقد − المصنوع) */
+      row.innerHTML =
+        '<div class="ent-po-new">' +
+          '<div class="ent-form-row"><label>' + esc(T("ent_contract_new")) + ' *<input type="number" id="efPoContract" min="1" placeholder="0"></label></div>' +
+          '<div class="ent-form-row"><label>' + esc(T("ent_left")) + '<input type="number" id="efPoLeft" value="0" readonly></label></div>' +
+          '<p class="ent-form-hint">' + (d.made_total > 0
+            ? esc(T("ent_po_orphan")).replace("{n}", "<b>" + d.made_total.toLocaleString() + "</b>")
+            : esc(T("ent_po_first_hint"))) + '</p>' +
+        '</div>' +
+        poTipHTML(d, dept, line);
+      var c = row.querySelector("#efPoContract");
+      if (c) c.addEventListener("input", function () {
+        var v = parseInt(c.value, 10) || 0;
+        var left = Math.max(0, v - (d.made_total || 0));
+        var l = row.querySelector("#efPoLeft");
+        if (l) l.value = left;
+      });
+      poBindTip(row);
+    }
+  }
+  /* تولتيب الـ PO: إنتاج القسم والخط المحددين بالتاريخ + الإجمالي */
+  function poTipHTML(d, dept, line) {
+    var scopeTxt = dept || line
+      ? (dept ? dept : "") + (dept && line ? " · " : "") + (line ? (I18N.lang() === "tr" ? "Hat " : "خط ") + line : "")
+      : T("ent_po_all");
+    var days = (d.days || []).slice(0, 10);
+    var h = '<div class="ent-po-tip" id="poTip" hidden>' +
+      '<div class="tip-head">' + esc(d.po) + ' · ' + esc(scopeTxt) + '</div>';
+    h += '<div class="tip-kpis">' +
+      '<span>' + esc(T("ent_scope_made")) + ': <b>' + esc((d.made_scope || 0).toLocaleString()) + '</b></span>' +
+      '<span>' + esc(T("mp_rows")) + ': <b>' + esc(d.scope_days || 0) + '</b></span>' +
+      '<span>' + esc(T("ent_total")) + ': <b>' + esc((d.made_total || 0).toLocaleString()) + '</b></span>' +
+      '</div>';
+    if (days.length) {
+      h += '<table class="tip-days"><tbody>';
+      days.forEach(function (x) {
+        h += '<tr><td>' + esc(x.date) + '</td><td class="num">' + esc(x.made.toLocaleString()) + '</td></tr>';
+      });
+      h += '</tbody></table>';
+    } else {
+      h += '<p class="tip-empty">' + esc(T("ent_po_no_days")) + '</p>';
+    }
+    return h + '</div>';
+  }
+  function poBindTip(row) {
+    var box = row.querySelector("#poInfoBox");
+    var input = row.closest(".ent-form-card") ? row.closest(".ent-form-card").querySelector("#efPo") : null;
+    var tip = row.querySelector("#poTip");
+    if (!tip) return;
+    function show() { tip.hidden = false; }
+    function hide() { tip.hidden = true; }
+    if (box) {
+      box.addEventListener("mouseenter", show);
+      box.addEventListener("mouseleave", hide);
+    }
+    if (input) {
+      input.addEventListener("mouseenter", show);
+      input.addEventListener("mouseleave", hide);
+    }
+  }
   function entOpenProdForm() {
-    var today = new Date().toISOString().slice(0, 10);
     var html =
-      '<div class="ent-form-row"><label>' + esc(T("ent_date")) + '<input type="date" id="efDate" value="' + today + '"></label></div>' +
+      '<div class="ent-form-row"><label>' + esc(T("ent_date")) + '<input type="date" id="efDate" value="' + entYesterday() + '"></label></div>' +
+      /* R58: شريط الخط فوق + شريط القسم تحت — نقر مباشر (طلب المالك) */
+      entStripRow("efLineStrip", "ent_line", entLineItems()) +
+      entStripRow("efSecStrip", "ent_dept", entSecItems()) +
       '<div class="ent-form-row two">' +
-        '<label>' + esc(T("ent_dept")) + '<select id="efSec">' + entSecOptions() + '</select></label>' +
-        '<label>' + esc(T("ent_line")) + '<select id="efLine">' + entLineOptions() + '</select></label>' +
-      '</div>' +
-      '<div class="ent-form-row two">' +
-        '<label>' + esc(T("ent_po")) + '<input type="text" id="efPo" placeholder="PO-123"></label>' +
+        '<label>' + esc(T("ent_po")) + '<input type="text" id="efPo" placeholder="PO-123" autocomplete="off"></label>' +
         '<label>' + esc(T("ent_qty")) + '<input type="number" id="efQty" min="1" value="1"></label>' +
       '</div>' +
+      '<div class="ent-form-row po-row" id="poInfoRow" hidden></div>' +
       '<div class="ent-form-row"><label>' + esc(T("ent_note")) + '<input type="text" id="efNote" placeholder=""></label></div>';
-    entOpenForm(T("ent_add") + " — " + T("ent_prod_tab"), html, function (fm) {
+    var fm = entOpenForm(T("ent_add") + " — " + T("ent_prod_tab"), html, function (fm) {
       var data = {
         date: fm.querySelector("#efDate").value,
-        dept: (fm.querySelector("#efSec") || {}).value || "",
-        line: (fm.querySelector("#efLine") || {}).value || "",
-        po_number: fm.querySelector("#efPo").value,
+        dept: entStripSelected(fm, "efSecStrip"),
+        line: entStripSelected(fm, "efLineStrip"),
+        po_number: fm.querySelector("#efPo").value.trim(),
         qty: parseInt(fm.querySelector("#efQty").value, 10) || 0,
         note: fm.querySelector("#efNote").value,
+        /* R58: كمية العقد لو ظهرت (PO أول مرة) — بتتسجل مع السجل */
+        po_contract_qty: parseInt(((fm.querySelector("#efPoContract") || {}).value || "0"), 10) || 0,
       };
       if (!data.date || data.qty <= 0 || !data.dept || !data.line) { toast(T("toast_fill"), "err"); return false; }
       entSubmitForm("/api/entries/production", data);
       return true;
     });
+    if (!fm) return;
+    /* ربط الأشرطة: نقر واحد بيحدد + أي تغيير بيعيد استعلام الـ PO
+       (التولتيب بيتبع القسم/الخط المحددين) */
+    ["efLineStrip", "efSecStrip"].forEach(function (id) {
+      var strip = fm.querySelector("#" + id);
+      if (!strip) return;
+      strip.addEventListener("click", function (e) {
+        var b = e.target.closest(".ent-strip-btn");
+        if (!b) return;
+        strip.querySelectorAll(".ent-strip-btn").forEach(function (x) { x.classList.toggle("on", x === b); });
+        poRefresh(fm);
+      });
+    });
+    /* الـ PO حي: كتابة → استعلام بعد وقفة قصيرة */
+    var poInput = fm.querySelector("#efPo");
+    if (poInput) {
+      poInput.addEventListener("input", function () {
+        if (poTimer) clearTimeout(poTimer);
+        poTimer = setTimeout(function () { poRefresh(fm); }, 350);
+      });
+      poInput.addEventListener("change", function () {
+        if (poTimer) clearTimeout(poTimer);
+        poRefresh(fm);
+      });
+    }
   }
   /* ---- absence ---- */
   function entLoadAbsence(body) {
@@ -550,11 +722,196 @@ var AppEntries = (function (ctx) {
       });
     }, 40);
   }
+  /* ============================================================
+     R58 — عقود الـ PO: تيمبلت (تنزيل/رفع) + إدارة الريفرانس
+     ============================================================ */
+  function entDownloadPoTemplate() {
+    fetch("/api/po?template=1", { credentials: "include" })
+      .then(function (r) { if (!r.ok) throw new Error("t" + r.status); return r.blob(); })
+      .then(function (b) {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        var d = new Date();
+        function p2(n) { return (n < 10 ? "0" : "") + n; }
+        a.download = "PO-Template-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + ".xlsx";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
+        toast(T("mp_tmpl_done"), "ok");
+      })
+      .catch(function () { toast(T("toast_sync_err"), "err"); });
+  }
+  function entUploadPoTemplate() {
+    var pick = document.createElement("input");
+    pick.type = "file";
+    pick.accept = ".xlsx,.xls";
+    pick.addEventListener("change", function () {
+      var f = pick.files && pick.files[0];
+      if (!f) return;
+      ensureXLSX().then(function (XLSX) {
+        var fr = new FileReader();
+        fr.onload = function (ev) {
+          try {
+            var wb = XLSX.read(ev.target.result, { type: "array" });
+            var ws = wb.Sheets[wb.SheetNames[0]];
+            var grid = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
+            /* سطر الرأس: «رقم PO» — بعده الصفوف مباشرة (نفس منطق الغياب) */
+            var hRow = 0;
+            for (var i = 0; i < grid.length; i++) {
+              var r = grid[i] || [];
+              if (String(r[1] || "").indexOf("PO") >= 0) { hRow = i; break; }
+            }
+            var rows = [];
+            for (var j = hRow + 1; j < grid.length; j++) {
+              var g = grid[j] || [];
+              if (!String(g[1] || "").trim()) continue;
+              rows.push(["p", String(g[1] || "").trim(), String(g[2] ?? "").trim(), String(g[3] || "").trim()]);
+            }
+            if (!rows.length) { toast(T("ent_po_no_rows"), "err"); return; }
+            fetch("/api/po?action=import", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ rows: rows }),
+            })
+              .then(function (r) { if (!r.ok) throw new Error("i" + r.status); return r.json(); })
+              .then(function (d) {
+                toast(T("ent_po_imported").replace("{i}", d.inserted).replace("{u}", d.updated), "ok");
+                entRender();
+              })
+              .catch(function () { toast(T("toast_sync_err"), "err"); });
+          } catch (e) { toast(T("toast_sync_err"), "err"); }
+        };
+        fr.readAsArrayBuffer(f);
+      }).catch(function () { toast(T("toast_sync_err"), "err"); });
+    });
+    pick.click();
+  }
+  /* إدارة عقود الـ PO — القايمة الكاملة: عرض/تعديل/إضافة/حذف
+     (المرونة اللي طلبها المالك: رفع ريفرانس أو كتابة مباشرة) */
+  var poManageModal = null;
+  function entOpenPoManage() {
+    if (poManageModal) { poManageModal.remove(); poManageModal = null; }
+    var m = document.createElement("div");
+    m.className = "ent-form-modal po-manage";
+    m.innerHTML =
+      '<div class="ent-form-card po-card">' +
+        '<div class="ent-form-head"><h4>📋 ' + esc(T("ent_po_manage")) + '</h4>' +
+          '<button type="button" class="ent-form-x" aria-label="' + esc(T("dp_close")) + '">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+          '</button>' +
+        '</div>' +
+        '<div class="po-manage-body" id="poManageBody"><div class="ent-loading">…</div></div>' +
+        '<div class="ent-form-btns po-manage-btns">' +
+          '<button type="button" class="ent-form-cancel">' + esc(T("dp_close")) + '</button>' +
+          '<button type="button" class="ent-form-save" id="poAddBtn">➕ ' + esc(T("ent_po_add")) + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(m);
+    poManageModal = m;
+    m.addEventListener("click", function (e) { if (e.target === m) entClosePoManage(); });
+    m.querySelector(".ent-form-x").addEventListener("click", entClosePoManage);
+    m.querySelector(".ent-form-cancel").addEventListener("click", entClosePoManage);
+    m.querySelector("#poAddBtn").addEventListener("click", entOpenPoAdd);
+    poManageRender();
+  }
+  function entClosePoManage() {
+    if (poManageModal) { poManageModal.remove(); poManageModal = null; }
+  }
+  function poManageRender() {
+    var body = poManageModal ? poManageModal.querySelector("#poManageBody") : null;
+    if (!body) return;
+    fetch("/api/po", { credentials: "include" })
+      .then(function (r) { if (!r.ok) throw new Error("l" + r.status); return r.json(); })
+      .then(function (d) { poManageDraw(body, d.pos || []); })
+      .catch(function () { body.innerHTML = '<p class="ent-err">' + esc(T("toast_sync_err")) + '</p>'; });
+  }
+  function poManageDraw(body, pos) {
+    if (!pos.length) {
+      body.innerHTML = '<p class="ent-empty">' + esc(T("ent_po_none")) + '</p>';
+      return;
+    }
+    var html = '<table class="ent-tbl po-tbl"><thead><tr>' +
+      '<th>PO</th>' +
+      '<th>' + esc(T("ent_contract")) + '</th>' +
+      '<th>' + esc(T("ent_done")) + '</th>' +
+      '<th>' + esc(T("ent_left")) + '</th>' +
+      '<th>%</th>' +
+      '<th>' + esc(T("ent_actions")) + '</th>' +
+      '</tr></thead><tbody>';
+    pos.forEach(function (p) {
+      var pct = p.contract_qty > 0 ? Math.min(100, Math.round(p.made * 100 / p.contract_qty)) : 0;
+      html += '<tr data-po="' + esc(p.po) + '">' +
+        '<td class="po-name">' + esc(p.po) + '</td>' +
+        '<td class="num po-c"><input type="number" min="1" value="' + esc(p.contract_qty) + '" data-old="' + esc(p.contract_qty) + '"></td>' +
+        '<td class="num">' + esc(p.made.toLocaleString()) + '</td>' +
+        '<td class="num">' + esc(p.left.toLocaleString()) + '</td>' +
+        '<td class="num"><span class="pi-pct' + (pct >= 100 ? " full" : "") + '">' + pct + '%</span></td>' +
+        '<td><button type="button" class="ent-del" data-po="' + esc(p.po) + '" title="' + esc(T("ent_deleted")) + '">✕</button></td>' +
+      '</tr>';
+    });
+    body.innerHTML = html + '</tbody></table>';
+    /* تعديل الكمية: blur بقيمة جديدة → POST upsert */
+    body.querySelectorAll(".po-c input").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var tr = inp.closest("tr");
+        var po = tr.getAttribute("data-po");
+        var v = parseInt(inp.value, 10) || 0;
+        if (v <= 0 || v === parseInt(inp.getAttribute("data-old"), 10)) return;
+        fetch("/api/po", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ po: po, contract_qty: v }),
+        })
+          .then(function (r) { if (!r.ok) throw new Error("u" + r.status); return r.json(); })
+          .then(function () { toast(T("ent_saved"), "ok"); poManageRender(); })
+          .catch(function () { toast(T("toast_sync_err"), "err"); });
+      });
+    });
+    body.querySelectorAll(".ent-del").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var po = b.getAttribute("data-po");
+        if (!confirm(T("ent_po_del_confirm").replace("{po}", po))) return;
+        fetch("/api/po?po=" + encodeURIComponent(po), {
+          method: "DELETE",
+          credentials: "include",
+        })
+          .then(function (r) { if (!r.ok) throw new Error("d" + r.status); return r.json(); })
+          .then(function () { toast(T("ent_deleted"), "ok"); poManageRender(); })
+          .catch(function () { toast(T("toast_sync_err"), "err"); });
+      });
+    });
+  }
+  function entOpenPoAdd() {
+    var html =
+      '<div class="ent-form-row"><label>PO<input type="text" id="paPo" placeholder="PO-123"></label></div>' +
+      '<div class="ent-form-row"><label>' + esc(T("ent_contract")) + '<input type="number" id="paQty" min="1" value="1"></label></div>' +
+      '<div class="ent-form-row"><label>' + esc(T("ent_note")) + '<input type="text" id="paNote" placeholder=""></label></div>';
+    entOpenForm(T("ent_po_add"), html, function (fm) {
+      var po = fm.querySelector("#paPo").value.trim();
+      var qty = parseInt(fm.querySelector("#paQty").value, 10) || 0;
+      if (!po || qty <= 0) { toast(T("toast_fill"), "err"); return false; }
+      fetch("/api/po", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ po: po, contract_qty: qty, note: fm.querySelector("#paNote").value }),
+      })
+        .then(function (r) { if (!r.ok) throw new Error("a" + r.status); return r.json(); })
+        .then(function () { toast(T("ent_saved"), "ok"); poManageRender(); })
+        .catch(function () { toast(T("toast_sync_err"), "err"); });
+      return true;
+    });
+  }
+
   /* ---- helpers ---- */
   /* R47-fix: onSave كان بيقرأ الحقول من entModal (البوب أب الكبير) وهي
      في الحقيقة في المودال الصغير المنفصل اللي بيتزق على body — فالقراءة
      كانت بترمي exception صامت والسجل مش بيتسجل أبداً. بقى onSave(fm)
-     بياخد عنصر الفورم نفسه. */
+     بياخد عنصر الفورم نفسه.
+     R58: بترجع عنصر المودال عشان النداء الجديد (نموذج الإنتاج) يربط
+     أحداث الأشرطة والـ PO الحي على الفورم نفسه. */
   function entOpenForm(title, html, onSave) {
     var m = document.createElement("div");
     m.className = "ent-form-modal";
@@ -579,6 +936,7 @@ var AppEntries = (function (ctx) {
       var ok = onSave(m);
       if (ok !== false) m.remove();
     });
+    return m; /* R58: النداء بيربط أحداثه على العنصر الراجع */
   }
   function entSubmitForm(url, data, after) {
     fetch(url, {

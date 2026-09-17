@@ -2024,9 +2024,9 @@ var MaribManpower = (function () {
     if (window.XLSX) return Promise.resolve(window.XLSX);
     return new Promise(function (res, rej) {
       var s = document.createElement("script");
-      /* R57: ?v=r57 — ترويسة immutable خلت الرابط يتخزن للأبد؛
+      /* R57: ?v=r58 — ترويسة immutable خلت الرابط يتخزن للأبد؛
          تحديث المكتبة مستقبلًا = بارامتر جديد (نفس فكرة app.css) */
-      s.src = "/app/xlsx.full.min.js?v=r57";
+      s.src = "/app/xlsx.full.min.js?v=r58";
       s.onload = function () { window.XLSX ? res(window.XLSX) : rej(new Error("XLSX missing")); };
       s.onerror = function () { rej(new Error("XLSX load failed")); };
       document.head.appendChild(s);

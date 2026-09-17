@@ -16,17 +16,17 @@ import { SKELETON } from "./skeleton";
    البيانات) + app_admin (الأوديت/التخزين/الصلاحيات) — كلهم بعد app_main
    عشان جسر __maribCtx يبقى جاهز، وقبل app_auth اللي بيبدأ التشغيل. */
 const SCRIPTS = [
-  "/app/app_core.js?v=r57",      // MaribCore — parsing + the 42 measures
-  "/app/i18n_dict.js?v=r57",     // AR / EN / TR dictionary
-  "/app/i18n_core.js?v=r57",     // i18n engine
-  "/app/app_charts.js?v=r57",    // MaribCharts
-  "/app/marib_cloud.js?v=r57",   // server sync client (R23)
-  "/app/app_main.js?v=r57",      // App core — state + utils + filters + drill + settings
-  "/app/app_pages.js?v=r57",     // R52 — عرض صفحات التحليل + بيت المدير
-  "/app/app_entries.js?v=r57",   // R52 — إدخال البيانات (إنتاج/غياب/أوفر تايم)
-  "/app/app_admin.js?v=r57",     // R52 — الأوديت + التخزين + الصلاحيات
-  "/app/app_auth.js?v=r57",      // MaribAuth — server login gate
-  "/app/app_manpower.js?v=r57",  // R37 — الاتزان (manpower balance)
+  "/app/app_core.js?v=r58",      // MaribCore — parsing + the 42 measures
+  "/app/i18n_dict.js?v=r58",     // AR / EN / TR dictionary
+  "/app/i18n_core.js?v=r58",     // i18n engine
+  "/app/app_charts.js?v=r58",    // MaribCharts
+  "/app/marib_cloud.js?v=r58",   // server sync client (R23)
+  "/app/app_main.js?v=r58",      // App core — state + utils + filters + drill + settings
+  "/app/app_pages.js?v=r58",     // R52 — عرض صفحات التحليل + بيت المدير
+  "/app/app_entries.js?v=r58",   // R52 — إدخال البيانات (إنتاج/غياب/أوفر تايم)
+  "/app/app_admin.js?v=r58",     // R52 — الأوديت + التخزين + الصلاحيات
+  "/app/app_auth.js?v=r58",      // MaribAuth — server login gate
+  "/app/app_manpower.js?v=r58",  // R37 — الاتزان (manpower balance)
 ];
 /* xlsx.full.min.js (~950KB) is NOT loaded upfront anymore: App.ensureXLSX()
    pulls it on first upload/export (R24 perf — the first paint got heavy). */
