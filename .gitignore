@@ -32,3 +32,5 @@ scripts/e2e_r57/
 scripts/e2e_r58/
 scripts/e2e_r59/
 scripts/e2e_r60/
+scripts/e2e_common/scratch/
+scripts/e2e_common/db_seeded/

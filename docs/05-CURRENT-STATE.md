@@ -1,6 +1,26 @@
 # 05 — CURRENT STATE
 
-> **الحالة في 17 سبتمبر 2026 (R60).** ما تم، ما معلّق، المشاكل المعروفة.
+> **الحالة في 17 سبتمبر 2026 (R61).** ما تم، ما معلّق، المشاكل المعروفة.
+
+## ✅ مكتمل (R61 — توحيد الـ E2E: مكتبة مشتركة + baselines على git)
+
+| # | البند | الحالة |
+|---|--------|--------|
+| R61-1 | `e2e_lib.sh`: كل الفحوصات الثابتة دوال (typecheck/seed/capture/compare/functional/UI) — سكريبت الجولة 66 سطر بدل 272 | ✅ E2E 80/80 |
+| R61-2 | baselines (13 JSON + 5 XLSX) **مرفوعة على git** + bootstrap من الصفر (ensureBoot) — أي sandbox جديد شغال من غير تاريخ محلي | ✅ 16 مقارنة bootstrap خضرا |
+| R61-3 | إثباتات جديدة: canary (المقارنة مش شكلية) + idempotence (نظافة + أوديت سجّل الأثر) + auth ضمن المقارنة (uid→<ID>) + تطبيع هويات manpower/users | ✅ |
+| R61-4 | **🔧 باج حقيقي متصلح:** PGlite mkdir غير recursive — إقلاع self-hosted نضيف كان بيضرب ENOENT للأبد (اكتشفه فحص الـ bootstrap) | ✅ mkdirSync recursive |
+
+> الأجندة الهندسية الدايمة: 1) Refactoring تمت (R52+R56+R59) ·
+> 2) Optimize Performance تمت (R57) · 3) TS strict تمت (R60) ·
+> 4) **E2E تمت (R61)** · 5) Logging تالية (الأساس جاهز من R25/R54
+> — الجولة الجاية: عدادات استعلامات + slow-query + stats في
+> /api/health).
+
+> دروس الجولة: (1) اختبر أدوات الاختبار — الـ canary هو اللي بيثبت
+> إن المقارنة مش فحص شكلي. (2) uuidات البذر والطوابع هويات مش
+> بيانات — طبّعها بدل ما تستثنى الـ endpoint كله. (3) الفحص من
+> الصفر بيكشف الفروض المخفية (باج mkdir كان مستخبي من 6 جولات).
 
 ## ✅ مكتمل (R60 — TypeScript strict: noUncheckedIndexedAccess)
 

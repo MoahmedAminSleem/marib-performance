@@ -3,6 +3,7 @@
  *  - local dev: PGlite (real Postgres in-process, persisted at db/pglite)
  * Chosen by DATABASE_URL: starts with "postgres" → pg, otherwise PGlite. */
 
+import fs from "node:fs";
 import path from "path";
 
 type Row = Record<string, unknown>;
@@ -36,6 +37,11 @@ async function createDriver(): Promise<Driver> {
   // local development — PGlite keeps a real Postgres database on disk
   const { PGlite } = await import("@electric-sql/pglite");
   const dataDir = path.join(process.cwd(), "db", "pglite");
+  /* R61: باج حقيقي اتكشف بفحص الـ bootstrap — PGlite بيعمل mkdir
+     للورقة الأخيرة بس من غير recursive، فلو مجلد db/ نفسه مش
+     موجود (نسخة self-hosted على مجلد نضيف) كان الإقلاع بيضرب
+     ENOENT. recursive = no-op لو المجلد موجود فالسلوك زي ما هو. */
+  try { fs.mkdirSync(path.dirname(dataDir), { recursive: true }); } catch { /* read-only FS — يسيبها لـ PGlite */ }
   const pgl = new PGlite(dataDir);
   return {
     query: async (sql, params) => (await pgl.query(sql, params as unknown[])) as { rows: Row[] },

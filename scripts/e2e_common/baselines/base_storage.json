@@ -1,0 +1,1 @@
+{"bytes":8659067,"method":"database","quota":536870912,"tables":[{"name":"marib_emp","bytes":360448},{"name":"marib_audit","bytes":65536},{"name":"marib_absence","bytes":65536},{"name":"marib_user","bytes":49152},{"name":"marib_dept","bytes":49152},{"name":"marib_prod","bytes":40960},{"name":"marib_meta","bytes":32768},{"name":"marib_data","bytes":32768}],"rows":0,"months":0}
