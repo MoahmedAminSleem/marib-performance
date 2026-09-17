@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
-import { fail, serverFail, readJson, logger, requirePermBody, requirePerm } from "@/lib/marib/http";
+import { fail, serverFail, readJson, logger, requirePermBody, requireEntryRead } from "@/lib/marib/http";
 import { loadDeptMap, monthParam, isDayStr, deleteEntry } from "@/lib/marib/entries";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,9 @@ const lg = logger("entries:production");
 
 export async function GET(req: NextRequest) {
   try {
-    const g = await requirePerm(req, "data.view", "view");
+    /* R63: حارس قراءة الإدخال — data.view أو data.upload (مسؤول
+       الإدخال اللي اللوحة مخفية عنه يقرأ عادي) */
+    const g = await requireEntryRead(req);
     if (g.res) return g.res;
 
     const month = monthParam(req.nextUrl.searchParams);

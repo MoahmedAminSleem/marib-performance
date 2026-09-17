@@ -8,7 +8,7 @@
 |------|------|-------|
 | `db.ts` | raw SQL driver (PGlite/pg) + BOOT_SQL + ensureBoot() + audit() | ~300 |
 | `session.ts` | HMAC cookie (issueToken/verifyToken) + hashPassword (scrypt) | ~100 |
-| `http.ts` | requireUser/requireRole/requirePerm + readJson + fail/serverFail | ~130 |
+| `http.ts` | requireUser/requireRole/requirePerm + readJson + fail/serverFail + **requireEntryRead (R63)** | ~155 |
 | `perms.ts` | R46: PERM_KEYS + loadUserPerms + effectiveLevel + checkPerm | ~180 |
 | `undo.ts` | R46: captureUndoSnapshot + restoreFromSnapshot | ~170 |
 | `translate.ts` | R46: gtx + myMemory + translateInto + translateLive | ~100 |
@@ -30,6 +30,7 @@
 | `entries/production/route.ts` | R46: CRUD production | ~115 |
 | `entries/absence/route.ts` | R46: CRUD + template + import | ~215 |
 | `entries/overtime/route.ts` | R46: CRUD overtime | ~115 |
+| `entries/employees/route.ts` | R63: كومبوبوكس الإدخال — {code,name,nameTr,job,path} بحارس الإدخال | ~65 |
 | `health/route.ts` | فحص حيوية {ok,users,months,employees} | R48: على جداول marib |
 | `data/route.ts` | رفع/تنزيل بيانات الشهور (marib_data) | marib أصلًا |
 | `storage/route.ts` | مساحة التخزين (marib) | marib أصلًا |
@@ -59,8 +60,8 @@
 | File | Role |
 |------|------|
 | `skeleton.ts` | HTML الـ SPA كله (login + topbar + dashboard + modals) |
-| `page.tsx` | `<div dangerouslySetInnerHTML={{__html: SKELETON}} />` + قائمة السكريبتات (?v=r48) |
-| `layout.tsx` | root layout (meta + app.css?v=r48) |
+| `page.tsx` | `<div dangerouslySetInnerHTML={{__html: SKELETON}} />` + قائمة السكريبتات (?v=r63) |
+| `layout.tsx` | root layout (meta + app.css?v=r63) |
 | `globals.css` | Tailwind base |
 
 > R48 حذفت كمان: `skeleton-html.ts` (51KB) و`marib-app.css` (515KB) — صفر استيرادات.

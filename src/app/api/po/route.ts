@@ -7,12 +7,13 @@
    POST ?action=import {rows}    → رفع التيمبلت (الواجهة بتقرا الإكسل
                                    وتبعت الصفوف — نفس نمط الغياب)
    DELETE ?po=                   → حذف PO من الريفرانس (الإنتاج بيفضل)
-   كل عملية كتابة بتسجل في الـ audit log. الأذونات: القراءة data.view،
-   الكتابة data.upload edit — نفس أذونات الإدخال نفسه. */
+   كل عملية كتابة بتسجل في الـ audit log. الأذونات: القراءة حارس
+   الإدخال (data.view أو data.upload — R63)، الكتابة data.upload edit —
+   نفس أذونات الإدخال نفسه. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
-import { fail, serverFail, readJson, logger, requirePermBody, requirePerm } from "@/lib/marib/http";
+import { fail, serverFail, readJson, logger, requirePermBody, requireEntryRead } from "@/lib/marib/http";
 import { XBook } from "@/lib/marib/xlsx-writer";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +64,8 @@ export async function GET(req: NextRequest) {
     const sp = req.nextUrl.searchParams;
     if (sp.get("template") === "1") return downloadTemplate(req);
 
-    const g = await requirePerm(req, "data.view", "view");
+    /* R63: حارس قراءة الإدخال — الـ PO جزء من شاشة الإدخال */
+    const g = await requireEntryRead(req);
     if (g.res) return g.res;
 
     /* تفاصيل PO واحد — الخانات والتولتيب في نموذج الإدخال */
@@ -198,7 +200,8 @@ export async function DELETE(req: NextRequest) {
 /* ---- تيمبلت الإكسل: عمود PO + عمود كمية العقد (+ شيت تعليمات) ---- */
 async function downloadTemplate(req: NextRequest) {
   try {
-    const g = await requirePerm(req, "data.view", "view");
+    /* R63: التيمبلت جزء من عملية الإدخال — نفس حارس القراءة */
+    const g = await requireEntryRead(req);
     if (g.res) return g.res;
 
     const wb = new XBook();

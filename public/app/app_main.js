@@ -2206,6 +2206,8 @@ var App = (function () {
     if (window.MaribManpower && MaribManpower.hide) { try { MaribManpower.hide(); } catch (e) { } }
     /* R43: الدخول من زرار «البيانات» في البوابة لازم يقفل البوابة نفسها */
     if (window.MaribAuth && MaribAuth.hideGate) { try { MaribAuth.hideGate(); } catch (e) { } }
+    /* R63: علامة السطح — عشان مراجعة الصلاحيات الحية تعرف إحنا فين */
+    document.body.setAttribute("data-surface", "dashboard");
     updateTitle();
     var loaded = !!(state.model && state.model.dates && state.model.dates.length);
     if (page && $("page-" + page)) {

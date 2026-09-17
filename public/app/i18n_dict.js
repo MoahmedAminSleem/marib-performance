@@ -435,7 +435,14 @@ window.MARIB_I18N_DICT = {
   us_toast_saved: { ar: "تم الحفظ", en: "Saved", tr: "Kaydedildi" },
   us_toast_del:   { ar: "تم حذف المستخدم", en: "User deleted", tr: "Kullanıcı silindi" },
   us_toast_nodel: { ar: "مينفعش تحذف الحساب ده", en: "This account can't be deleted", tr: "Bu hesap silinemez" },
+  /* R63: تعديل اسم المستخدم */
+  us_ren:        { ar: "تعديل اسم المستخدم", en: "Rename user", tr: "Kullanıcı adını değiştir" },
+  us_ren_ph:     { ar: "الاسم الجديد (2-40 حرف)", en: "New name (2-40 chars)", tr: "Yeni ad (2-40 karakter)" },
+  us_ren_saved: { ar: "الاسم اتغير — الدخول الجاي بالاسم الجديد", en: "Username changed — log in with the new name next time", tr: "Kullanıcı adı değişti — bir dahaki girişte yeni adla girin" },
+  us_ren_dup:   { ar: "الاسم ده مستخدم بالفعل — اختار اسم تاني", en: "That name is already taken — pick another", tr: "Bu ad zaten alınmış — başka seçin" },
+  us_ren_bad:   { ar: "الاسم غير صالح (2-40 حرف من غير رموز تحكم)", en: "Invalid name (2-40 characters)", tr: "Geçersiz ad (2-40 karakter)" },
 perm_denied:   { ar: "ماعندكش صلاحية كفاية للعملية دي", en: "You don't have permission for this", tr: "Bu işlem için yetkiniz yok" },
+  perm_changed:  { ar: "صلاحياتك اتغيرت — السطح ده بقى ممنوع عليك", en: "Your permissions changed — this area is no longer allowed", tr: "Yetkileriniz değişti — bu alan artık kapalı" },
   perm_no_dash:  { ar: "رؤية اللوحة متاحةش لحسابك — راجع الأدمن", en: "Dashboard view is not enabled for your account — ask the admin", tr: "Hesabınız için pano görüntüsü etkin değil — yöneticiye sorun" },
   perm_no_mp:    { ar: "رؤية الاتزان متاحةش لحسابك — راجع الأدمن", en: "Balance view is not enabled for your account — ask the admin", tr: "Hesabınız için denge görüntüsü etkin değil — yöneticiye sorun" },
   perm_none:     { ar: "مفيش أي شاشات متاحة لحسابك — كلم الأدمن يفعّللك صلاحيات", en: "No screens are enabled for your account — ask the admin to grant you permissions", tr: "Hesabınız için etkin ekran yok — yöneticiden izin isteyin" },
@@ -752,6 +759,8 @@ nav_tt_swap: { ar: "التبديل بين الواجهتين", en: "Switch betwe
   pm_lg_edit_d:  { ar: "صلاحية كاملة", en: "full access", tr: "tam erişim" },
   pm_empty:      { ar: "مفيش يوزرات تانيين لسه — ضيف يوزر من نافذة المستخدمين الأول", en: "No other users yet — add users first from the Users modal", tr: "Henüz başka kullanıcı yok — önce Kullanıcılar penceresinden ekleyin" },
   pm_saved:      { ar: "الصلاحية اتغيرت", en: "Permission updated", tr: "İzin güncellendi" },
+  /* R63: شارة المستوى الفعلي جنب كل اختيار — «افتراضي» مش صندوق أسود */
+  pm_eff:        { ar: "فعليًا:", en: "effective:", tr: "etkin:" },
   /* R53: رسالة مستقلة لخطأ الرندر — قبل كده كان بيتعرض رسالة فشل المزامنة
      حتى لو السيرفر رد 200 (تداخل catch الرندر مع catch الشبكة) */
   pm_render_err: { ar: "حصل خطأ في عرض لوحة الصلاحيات — حدّث الصفحة وحاول تاني، ولو استمرت بلّغ المطور", en: "The permissions panel failed to render — refresh and try again, and tell the developer if it persists", tr: "İzin paneli görüntülenemedi — sayfayı yenileyip tekrar deneyin, sürerse geliştiriciye bildirin" },

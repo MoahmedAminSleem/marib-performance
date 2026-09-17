@@ -23,6 +23,14 @@ var AppEntries = (function (ctx) {
     return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
   })();
   function openEntries() {
+    /* R63: فتح شاشة الإدخال محتاج صلاحية الرفع — البطاقة نفسها بتظهر
+       بنفس الشرط، والسيرفر بيصد كل مسار كتابة برضه (حماية مزدوجة). */
+    if (window.MaribAuth && MaribAuth.can && !MaribAuth.can("data.upload", "edit")) {
+      if (ctx.toast) ctx.toast(T("perm_denied"), "err");
+      return;
+    }
+    /* R63: علامة السطح — عشان مراجعة الصلاحيات الحية تعرف إحنا فين */
+    document.body.setAttribute("data-surface", "entry");
     if (entModal) { entModal.remove(); entModal = null; }
     var m = document.createElement("div");
     m.className = "ent-pop";
@@ -521,35 +529,18 @@ var AppEntries = (function (ctx) {
       b.addEventListener("click", function () { entDelete("overtime", b.getAttribute("data-id")); });
     });
   }
-  /* R50: كومبوبوكس الموظفين — بحث بالاسم أو الكود من الاتزان،
-     مع إكمال تلقائي لباقي الكلمة، وزرار «إضافة كرقم» للي مش موجود */
+  /* R50: كومبوبوكس الموظفين — بحث بالاسم أو الكود،
+     مع إكمال تلقائي لباقي الكلمة، وزرار «إضافة كرقم» للي مش موجود.
+     R63: المصدر بقى /api/entries/employees (حارس الإدخال) بدل
+     /api/manpower (محتاج manpower.view) — فمسؤول الإدخال اللي
+     الاتزان مخفي عنه بقى يشوف الكومبوبوكس شغال. */
   var entEmpCache = null;   /* [{code, name, nameTr, job, path}] */
   function entEmpList(cb) {
     if (entEmpCache) { cb(entEmpCache); return; }
-    fetch("/api/manpower", { credentials: "include" })
+    fetch("/api/entries/employees", { credentials: "include" })
       .then(function (r) { if (!r.ok) throw new Error("m"); return r.json(); })
       .then(function (d) {
-        var byId = {}, kids = {};
-        (d.depts || []).forEach(function (n) {
-          byId[n[0]] = n[1];
-          (kids[n[2] || ""] = kids[n[2] || ""] || []).push(n[0]);
-        });
-        var pathOf = {};
-        (function walk(pid, pref) {
-          (kids[pid] || []).forEach(function (k) {
-            pathOf[k] = (pref ? pref + " — " : "") + (byId[k] || k);
-            walk(k, pathOf[k]);
-          });
-        })("", "");
-        entEmpCache = [];
-        (d.emps || []).forEach(function (e) {
-          if (e[6]) return; /* شواغر مش ناس */
-          entEmpCache.push({
-            code: String(e[1] || ""), name: String(e[2] || ""),
-            nameTr: String(e[11] || ""), job: String(e[3] || ""),
-            path: pathOf[e[4]] || "",
-          });
-        });
+        entEmpCache = (d && d.emps) || [];
         cb(entEmpCache);
       })
       .catch(function () { cb([]); });

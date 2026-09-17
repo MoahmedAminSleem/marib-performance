@@ -12,19 +12,23 @@
 6. **الأمان:** كل route mutating يحترم الصلاحيات (requirePerm/requirePermBody). كل تغيير بيتسجل في audit.
 7. **الـ Excel:** استخدم `xlsx-writer.ts` الداخلي. لا تضف مكتبات خارجية (exceljs كسر Vercel في R39).
 
-## التدفق المثالي لأي تعديل
+## التدفق المثالي لأي تعديل (R63: بقي بيقوده الفهرس)
 
 ```
-1. اقرأ docs/00-START-HERE.md → 01-ARCHITECTURE.md → 05-CURRENT-STATE.md
-2. اقرأ الملف اللي هتعدّله من docs/04-FILES-MAP.md
-3. ابدأ dev server: pkill -9 -f "next\|marib-watch" && nohup setsid bash scripts/marib-watch.sh &
-4. عدّل الملف
-5. اختبر: curl + browser snapshot
-6. لو فيه عطب → ارجع الملف (git diff) → أصلح → أعد الاختبار
-7. E2E: login → ادخل الصفحة → جرّب الميزة كاملة
-8. حدّث docs/05-CURRENT-STATE.md + سير-العمل.html
-9. أنشئ ZIP: scripts/marib-watch.sh → zip changed files → /home/z/my-project/download/
+1. اقرأ docs/00-START-HERE.md → CODE-MAP.md (الفهرس الآلي — ده الموجه)
+2. من الخريطة: حدد الملف + الشريحة + رادار التأثير (مين بيعتمد عليه)
+3. اقرأ الشريحة المطلوبة بس (offset/limit) — مش الملف كله
+4. ابدأ dev server: pkill -9 -f "next|marib-watch" && nohup setsid bash scripts/marib-watch.sh &
+5. عدّل الملف
+6. اختبر: curl + browser snapshot
+7. لو فيه عطب → ارجع الملف (git diff) → أصلح → أعد الاختبار
+8. E2E: login → ادخل الصفحة → جرّب الميزة كاملة
+9. حدّث docs/05-CURRENT-STATE.md + سير-العمل.html
+10. bun scripts/code_map.mjs (تحديث الفهرس — إلزامي)
+11. commit + push
 ```
+
+> البروتوكول الكامل ونص السيناريوهات الجاهزة: `docs/08-CODE-INTELLIGENCE.md`
 
 ## تشغيل المشروع
 

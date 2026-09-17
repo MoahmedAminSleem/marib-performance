@@ -4291,3 +4291,22 @@ html[data-theme="light"] .po-tbl .po-name{color:#1F2937}
 html[data-theme="light"] .po-tbl .po-c input{
   background:#FFFFFF;border-color:rgba(20,33,61,.20);color:#1F2937;
 }
+
+/* ============================================================
+   R63 — شارة المستوى الفعلي في لوحة الصلاحيات
+   "افتراضي" كان صندوق أسود — دلوقتي جنب كل اختيار شارة صغيرة
+   بتقول المستوى الفعلي بعد دمج الدور (نفس منطق defaultForRole).
+   ============================================================ */
+.pm-eff{
+  display:block;margin-top:3px;font-size:9.5px;font-weight:700;font-style:normal;
+  line-height:1.2;letter-spacing:.2px;text-align:center;
+  color:#9FB0C3;
+}
+.pm-eff[data-eff="hidden"]{color:#F5C6C8}
+.pm-eff[data-eff="view"]{color:#C9D4E4}
+.pm-eff[data-eff="edit"]{color:#7BD8A2}
+/* الوضع الفاتح — نفس متغيرات الثيم */
+html[data-theme="light"] .pm-eff{color:#5B6472}
+html[data-theme="light"] .pm-eff[data-eff="hidden"]{color:#B91C1C}
+html[data-theme="light"] .pm-eff[data-eff="view"]{color:#1D3A5F}
+html[data-theme="light"] .pm-eff[data-eff="edit"]{color:#0B7A4B}

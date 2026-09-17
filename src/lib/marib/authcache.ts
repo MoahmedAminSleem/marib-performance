@@ -26,14 +26,19 @@ const TTL_MS = 30_000; /* 30 ثانية */
 
 type Entry<T> = { v: T; at: number };
 
+/* R63: كاش الدور بقى بيشيل الاسم كمان — عشان تعديل اسم مستخدم
+   يبان في نفس اللحظة (التوب بار / الأوديت بيتغذوا من currentUser)
+   بدل ما الاسم القديم يفضل ماسك لحد ما الكوكي يتوقع. */
+export interface RoleEntry { r: string; u: string }
+
 interface AuthCacheShape {
-  __maribRoleCache?: Map<string, Entry<string>>;
+  __maribRoleCache?: Map<string, Entry<RoleEntry>>;
   __maribPermCache?: Map<string, Entry<Record<string, PermLevel>>>;
 }
 
 /* globalThis — ينجو من HMR في التطوير (نفس نمط __maribDriver في db.ts) */
 const g = globalThis as unknown as AuthCacheShape;
-const roles: Map<string, Entry<string>> = (g.__maribRoleCache ??= new Map());
+const roles: Map<string, Entry<RoleEntry>> = (g.__maribRoleCache ??= new Map());
 const perms: Map<string, Entry<Record<string, PermLevel>>> = (g.__maribPermCache ??= new Map());
 
 function fresh<T>(e: Entry<T> | undefined): e is Entry<T> {
@@ -42,13 +47,13 @@ function fresh<T>(e: Entry<T> | undefined): e is Entry<T> {
 
 /* ---------------- الدور (مع وجود اليوزر) ---------------- */
 
-export function cachedRole(uid: string): string | undefined {
+export function cachedRole(uid: string): RoleEntry | undefined {
   const e = roles.get(uid);
   return fresh(e) ? e.v : undefined;
 }
 
-export function setCachedRole(uid: string, role: string): void {
-  roles.set(uid, { v: role, at: Date.now() });
+export function setCachedRole(uid: string, role: string, username: string): void {
+  roles.set(uid, { v: { r: role, u: username }, at: Date.now() });
 }
 
 /* ---------------- الصلاحيات (خريطة feature→level) ---------------- */

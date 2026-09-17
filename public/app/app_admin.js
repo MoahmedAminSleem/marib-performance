@@ -321,6 +321,21 @@ var AppAdmin = (function (ctx) {
       if (!groups[g]) groups[g] = [];
       groups[g].push(f);
     });
+    /* R63: نفس منطق defaultForRole السيرفري — عشان نعرض للمالك
+       المستوى الفعلي جنب كل اختيار ("افتراضي" كان صندوق أسود). */
+    function pmDefaultFor(role, key) {
+      if (role === "dev" || role === "admin") return "edit";
+      if (key === "users.manage" || key === "audit.view" || key === "storage.view") return "hidden";
+      return "view";
+    }
+    function pmEffective(u, key) {
+      var ov = (u.perms && u.perms[key]) || "inherit";
+      return ov === "inherit" ? pmDefaultFor(u.role, key) : ov;
+    }
+    function pmEffChip(u, key) {
+      var eff = pmEffective(u, key);
+      return '<i class="pm-eff" data-eff="' + esc(eff) + '">' + esc(T("pm_eff")) + " " + esc(T("pm_lg_" + eff)) + "</i>";
+    }
     var html = [];
     groupOrder.forEach(function (g) {
       if (!groups[g]) return;
@@ -342,7 +357,7 @@ var AppAdmin = (function (ctx) {
               + '<option value="hidden"' + (cur === "hidden" ? " selected" : "") + ">" + esc(T("pm_lg_hidden")) + "</option>"
               + '<option value="view"' + (cur === "view" ? " selected" : "") + ">" + esc(T("pm_lg_view")) + "</option>"
               + '<option value="edit"' + (cur === "edit" ? " selected" : "") + ">" + esc(T("pm_lg_edit")) + "</option>"
-              + "</select></div>");
+              + "</select>" + pmEffChip(u, f.key) + "</div>");
           }
         });
         html.push("</div>");
@@ -356,13 +371,16 @@ var AppAdmin = (function (ctx) {
         var uid = sel.getAttribute("data-uid");
         var feat = sel.getAttribute("data-feature");
         var lvl = sel.value;
-        sel.setAttribute("data-cur", lvl);
-        savePerm(uid, feat, lvl, sel);
+        /* R63: القيمة الأصلية قبل أي تحديث — الباج القديم كان بيحدّث
+           data-cur قبل ما savePerm يقراه، فالفشل كان بيرجّع القيمة
+           الجديدة والواجهة كانت بتكذب على المالك (شكلها متحفظ
+           والسيرفر رافض) */
+        var orig = sel.getAttribute("data-cur");
+        savePerm(uid, feat, lvl, sel, orig);
       });
     });
   }
-  function savePerm(uid, feature, level, sel) {
-    var orig = sel.getAttribute("data-cur");
+  function savePerm(uid, feature, level, sel, orig) {
     fetch("/api/perms", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -372,22 +390,37 @@ var AppAdmin = (function (ctx) {
       .then(function (r) { if (!r.ok) throw { status: r.status }; return r.json(); })
       .then(function () {
         toast(T("pm_saved"), "ok");
-        /* update local cache so re-render keeps the new value */
+        /* R63: التحديث المحلي بعد النجاح بس — القيمة + شارة الفعلي */
+        sel.setAttribute("data-cur", level);
         if (PM_DATA) {
           for (var i = 0; i < PM_DATA.users.length; i++) {
             if (PM_DATA.users[i].id === uid) {
               if (!PM_DATA.users[i].perms) PM_DATA.users[i].perms = {};
               PM_DATA.users[i].perms[feature] = level;
+              var chip = sel.parentElement.querySelector(".pm-eff");
+              if (chip) {
+                var eff = (level === "inherit")
+                  ? (PM_DATA.users[i].role === "admin" ? "edit"
+                    : (feature === "users.manage" || feature === "audit.view" || feature === "storage.view") ? "hidden" : "view")
+                  : level;
+                chip.setAttribute("data-eff", eff);
+                chip.textContent = T("pm_eff") + " " + T("pm_lg_" + eff);
+              }
               break;
             }
           }
         }
       })
       .catch(function (e) {
-        toast(e && e.status === 403 ? T("toast_need_dev") : T("toast_sync_err"), "err");
-        /* revert the dropdown */
-        sel.value = orig;
-        sel.setAttribute("data-cur", orig);
+        /* R63: رسالة 403 واضحة (كانت بتقول «محتاج مطور» وهي مش كده) */
+        toast(e && e.status === 403 ? T("perm_denied") : T("toast_sync_err"), "err");
+        /* رجّع الدروب ليست للقيمة الفعلية المحفوظة عند السيرفر */
+        if (orig) {
+          sel.value = orig;
+        } else {
+          /* ما عندناش القيمة القديمة — أقرب حل صادق: إعادة التحميل */
+          loadPerms();
+        }
       });
   }
 

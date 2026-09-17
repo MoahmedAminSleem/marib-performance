@@ -115,6 +115,29 @@ export async function PUT(req: NextRequest) {
       lg.info("title set", { by: me.username, user: rec.username, title: title || "(cleared)" });
     }
 
+    /* ---- R63: username rename — طلب المالك: الاسم كان مش متاح للتعديل.
+       نفس قواعد الإنشاء: 2-40 حرف بدون حروف تحكم، والتفرده
+       case-insensitive (لو حد تاني ماخد الاسم → 409). الجلسة
+       بتشتغل بالـ uid فالاسم الجديد بيفضل شغال من غير إعادة دخول. ---- */
+    if (body.username !== undefined) {
+      const nu = String(body.username ?? "").replace(/[\u0000-\u001F\u007F]/g, "").trim();
+      if (nu.length < 2 || nu.length > 40) return fail("invalid", 400);
+      if (nu !== rec.username) {
+        const dupe = await q(
+          "SELECT 1 FROM marib_user WHERE LOWER(username) = LOWER($1) AND id <> $2",
+          [nu, id]
+        );
+        if (dupe.length) return fail("duplicate", 409);
+        await q("UPDATE marib_user SET username = $1 WHERE id = $2", [nu, id]);
+        /* R63: الكاش كان هيفضل ماسك الاسم القديم لحد الـ TTL — الإبطال
+           الفوري + الكاش الجديد (اللي بيحمل الاسم) بيخلي التعديل ظاهر
+           في نفس اللحظة (التوب بار + الأوديت بيشوفوا الاسم الجديد). */
+        invalidateUser(id);
+        await audit(me.username, "edit", "users:" + nu, rec.username, { change: "username", from: rec.username, to: nu });
+        lg.info("username changed", { by: me.username, from: rec.username, to: nu });
+      }
+    }
+
     if (typeof body.password === "string" && body.password.length > 0) {
       if (body.password.length < 4) return fail("invalid", 400);
       await q("UPDATE marib_user SET pass_hash = $1 WHERE id = $2", [hashPassword(body.password), id]);

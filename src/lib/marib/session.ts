@@ -66,14 +66,16 @@ export async function currentUser(req: NextRequest): Promise<SessionUser | null>
   if (!u) return null;
   const { cachedRole, setCachedRole } = await import("./authcache");
   const hit = cachedRole(u.uid);
-  if (hit) return { uid: u.uid, username: u.username, role: hit as SessionUser["role"] };
+  /* R63: الاسم من الداتابيز (عبر الكاش) — تعديل الاسم بيبان فورًا،
+     والاسم جوه الكوكي الموقّع بقى مجرد fallback لو القاعدة وقعت. */
+  if (hit) return { uid: u.uid, username: hit.u || u.username, role: hit.r as SessionUser["role"] };
   try {
     const { q } = await import("./db");
-    const rows = await q("SELECT role FROM marib_user WHERE id = $1 LIMIT 1", [u.uid]);
+    const rows = await q("SELECT role, username FROM marib_user WHERE id = $1 LIMIT 1", [u.uid]);
     const r0 = rows[0]; /* R60: حارس العنصر بدل فحص الطول */
     if (!r0) return null;
-    setCachedRole(u.uid, r0.role as string);
-    return { uid: u.uid, username: u.username, role: r0.role as SessionUser["role"] };
+    setCachedRole(u.uid, r0.role as string, (r0.username as string) || u.username);
+    return { uid: u.uid, username: (r0.username as string) || u.username, role: r0.role as SessionUser["role"] };
   } catch {
     return u; /* DB hiccup — the signed token is still our best evidence */
   }

@@ -17,7 +17,7 @@
 | `/api/manpower/export` | GET | perm:manpower.export | تنزيل Excel (?template=1 ?lang=ar\|tr) — البناء في lib/marib/manpower_export.ts (R56) |
 | `/api/users` | GET | perm:users.manage | قائمة المستخدمين (R55) |
 | `/api/users` | POST | perm:users.manage edit | إنشاء مستخدم (R55) |
-| `/api/users` | PUT | perm:users.manage edit | تعديل (photo/title/password/role) (R55) |
+| `/api/users` | PUT | perm:users.manage edit | تعديل (photo/title/**username**/password/role) (R55 · R63: الاسم) |
 | `/api/users` | DELETE | perm:users.manage edit | حذف (R55) |
 | `/api/health` | GET | none | فحص حيوية: `{ok, db, boot, users, months, employees, stats}` (R48: على جداول marib · R56: `db` = neon/pglite — إثبات مرئي إن الإنتاج على Neon · R57: `boot` = fast/full · R62: `stats` = عدادات حية — uptime + q{count/slow/ms_total/errors} + srv_errors + last_error + mem.rss_mb + node) |
 | `/api/settings` | GET | any | كل الإعدادات |
@@ -28,15 +28,19 @@
 | `/api/perms` | GET ?me=1 | any | صلاحياتي الفعّالة |
 | `/api/perms` | PUT | perm:users.manage edit | set override (R55) |
 | `/api/perms` | DELETE | perm:users.manage edit | clear override (R55) |
-| `/api/entries/production` | GET | perm:data.view | ?month=YYYY-MM |
+| `/api/entries/production` | GET | **entry-read** (data.view أو data.upload — R63) | ?month=YYYY-MM |
 | `/api/entries/production` | POST | perm:data.upload | create |
 | `/api/entries/production` | DELETE | perm:data.upload | ?id= |
-| `/api/entries/absence` | GET | perm:data.view | ?month= + ?template=1 |
+| `/api/entries/employees` | GET | **entry-read** (R63) | الحد الأدنى لكومبوبوكس الإدخال: {code,name,nameTr,job,path} — بدل /api/manpower (كان محتاج manpower.view) |
+| `/api/entries/absence` | GET | **entry-read** | ?month= + ?template=1 |
 | `/api/entries/absence` | POST | perm:data.upload | create (?action=import) |
 | `/api/entries/absence` | DELETE | perm:data.upload | ?id= |
-| `/api/entries/overtime` | GET | perm:data.view | ?month= |
+| `/api/entries/overtime` | GET | **entry-read** | ?month= |
 | `/api/entries/overtime` | POST | perm:data.upload | create |
 | `/api/entries/overtime` | DELETE | perm:data.upload | ?id= |
+| `/api/po` | GET | **entry-read** (كل الفروع: قايمة/تفاصيل/تيمبلت — R63) | ?po= + ?template=1 |
+| `/api/po` | POST | perm:data.upload | upsert / ?action=import |
+| `/api/po` | DELETE | perm:data.upload | ?po= |
 
 ## المسارات القديمة (Prisma) — اتمسحت في R48
 
@@ -62,6 +66,14 @@ audit.view       storage.view
 ```
 POST /api/manpower  action=import  →  يرجّع undoToken في الـ response
 POST /api/manpower  action=undo    →  ?undoToken=X  →  restoreFromSnapshot()
+```
+
+## حارس قراءة الإدخال (R63)
+
+```
+requireEntryRead = data.view (رؤية) أو data.upload (تعديل)
+المسارات المحروسة: entries/{production,absence,overtime,employees} GET + po GET
+السبب: مسؤول الإدخال اللي اللوحة/الاتزان مخفيين عنه كان كل القراءات بترجع 403
 ```
 
 ## العربي والتركي في الموظفين (R47 + R50)

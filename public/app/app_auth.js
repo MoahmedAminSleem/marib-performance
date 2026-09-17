@@ -21,6 +21,8 @@ var MaribAuth = (function () {
   var TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5q0-1 1-1h3q1 0 1 1v2M6.5 7l1 13q0 .5.5.5h8q.5 0 .5-.5l1-13"/><path d="M10 11v6M14 11v6"/></svg>';
   /* R27: tag = job title editor · camera = photo picker */
   var TAG_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.6 12V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.6 7.6a2 2 0 0 1 0 2.2z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/></svg>';
+  /* R63: قلم تعديل الاسم — نفس عائلة الأيقونات (stroke 2 / round) */
+  var REN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
   var CAM_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2l1.7-2.4h7.2L17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg>';
 
   /* ---------------- local toast (reuses the app node) ---------------- */
@@ -436,6 +438,45 @@ var MaribAuth = (function () {
   }
 
   /* ============================================================
+     R63 — صلاحيات حية من غير إعادة تحميل
+     reloadPerms كانت معمولة للتصدير من R55 ومحدش بيناديها أبدًا —
+     فتغيير صلاحيات يوزر والتاب عنده مفتوح ما كان بيأثر على واجهته
+     غير بعد refresh كامل (والسيرفر فيهم بيصد بـ 403 في شكل عشوائي
+     من وجهة نظر اليوزر). دلوقتي: أول ما اليوزر يرجع للتاب (focus)
+     الصلاحيات بتعيد التحميل — بحد أدنى 30 ثانية بين المحاولات —
+     والكروم والسطح الحالي بيتحققوا فورًا.
+     ============================================================ */
+  var lastPermSync = 0;
+  function revalidateSurface() {
+    var s = document.body.getAttribute("data-surface") || "";
+    var ok =
+      s === "balance" ? can("manpower.view", "view") :
+      s === "entry" ? can("data.upload", "edit") :
+      s === "dashboard" ? can("data.view", "view") : true;
+    if (!ok) {
+      toast(T("perm_changed"), "err");
+      showModeGate();
+    }
+  }
+  function watchPerms() {
+    function onWake() {
+      if (!me) return;
+      var now = Date.now();
+      if (now - lastPermSync < 30000) return;
+      lastPermSync = now;
+      loadPerms(function () {
+        if (!me) return;
+        refreshChrome();
+        revalidateSurface();
+      });
+    }
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) onWake();
+    });
+  }
+
+  /* ============================================================
      R37 — mode gate (تحليل الأداء / الاتزان)
      ============================================================ */
   var mgEl = null;
@@ -620,6 +661,9 @@ var MaribAuth = (function () {
     if (me && me.username === username) {
       if (patch.photo !== undefined) me.photo = patch.photo;
       if (patch.title !== undefined) me.title = patch.title;
+      /* R63: تعديل اسمي أنا — الاسم الجديد يبان في التوب بار فورًا
+         (الجلسة شغالة بالـ uid فمفيش حاجة تانية مطلوبة) */
+      if (patch.username !== undefined) me.username = patch.username;
       refreshChrome();
     }
   }
@@ -657,6 +701,8 @@ var MaribAuth = (function () {
             (titleTxt ? '<span class="us-title">' + esc(titleTxt) + '</span>' : "") + '</div>' +
           '</div>' +
           '<div class="us-acts">' +
+            /* R63: تعديل الاسم — القلم الأول في الصف */
+            '<button class="us-ic ren" type="button" title="' + esc(T("us_ren")) + '"' + lockAttrs + lockStyle + '>' + REN_SVG + '</button>' +
             '<label class="us-sw" title="' + esc(T("us_admin_lbl")) + '">' +
               '<input type="checkbox"' + (isAdmin({ role: u.role }) ? " checked" : "") + (isDev ? " disabled" : "") + '><i></i>' +
             '</label>' +
@@ -664,6 +710,12 @@ var MaribAuth = (function () {
             '<button class="us-ic chg" type="button" title="' + esc(T("us_chg")) + '"' + lockAttrs + lockStyle + '>' + KEY_SVG + '</button>' +
             '<button class="us-ic del" type="button" title="' + esc(T("us_del")) + '"' + ((isDev || isMe) ? " disabled" : "") + '>' + TRASH_SVG + '</button>' +
           '</div>' +
+        '</div>' +
+        /* R63: صف تعديل اسم المستخدم (نفس نمط صف اللقب) */
+        '<div class="us-sub us-ren-row">' +
+          '<input type="text" maxlength="40" placeholder="' + esc(T("us_ren_ph")) + '">' +
+          '<button class="us-save" type="button">' + esc(T("us_save")) + '</button>' +
+          '<button class="us-cancel" type="button">' + esc(T("us_cancel")) + '</button>' +
         '</div>' +
         /* R27: title editor row */
         '<div class="us-sub us-ttl-row">' +
@@ -709,6 +761,34 @@ var MaribAuth = (function () {
           toast(T("us_toast_saved"), "ok");
         }).catch(function (e) { toast(e && e.status === 403 ? T("us_no_admin") : T("us_toast_bad"), "err"); });
       });
+
+      /* ---- R63: username rename editor ---- */
+      var renBtn = block.querySelector(".us-ic.ren");
+      var renRow = block.querySelector(".us-ren-row");
+      var renInput = renRow.querySelector("input");
+      renBtn.addEventListener("click", function () {
+        var open = renRow.classList.contains("on");
+        closeSubs();
+        renRow.classList.toggle("on", !open);
+        if (!open) { renInput.value = u.username || ""; try { renInput.focus(); } catch (e) { } }
+      });
+      renRow.querySelector(".us-save").addEventListener("click", function () {
+        var v = renInput.value.replace(/[\u0000-\u001F\u007F]/g, "").trim();
+        if (v.length < 2 || v.length > 40) { toast(T("us_ren_bad"), "err"); return; }
+        if (v === (u.username || "")) { renRow.classList.remove("on"); return; }
+        MaribCloud.userUpdate(uid, { username: v }).then(function () {
+          renRow.classList.remove("on");
+          /* لو ده أنا — الاسم الجديد في التوب بار على طول */
+          syncMeAfterEdit(u.username, { username: v });
+          loadUsers();
+          toast(T("us_ren_saved"), "ok");
+        }).catch(function (e) {
+          if (e && e.status === 409) toast(T("us_ren_dup"), "err");
+          else if (e && e.status === 403) toast(T("us_no_admin"), "err");
+          else toast(T("us_ren_bad"), "err");
+        });
+      });
+      renRow.querySelector(".us-cancel").addEventListener("click", function () { renRow.classList.remove("on"); });
 
       /* ---- title editor ---- */
       var ttlBtn = block.querySelector(".us-ic.ttl");
@@ -832,7 +912,10 @@ var MaribAuth = (function () {
     var pop = $("usPop");
     if (!pop) return;
     function openUs() {
-      if (!isAdmin(me)) { toast(T("us_no_admin")); return; }
+      /* R63: كانت بتفحص الدور (isAdmin) مش الصلاحية — يوزر مُنح له
+         «إدارة المستخدمين» كان بيشوف الزرار (بيظهر بصلاحية users.manage
+         من R55) وبعدين يواجه «ممنوع» عند الفتح. الصح هو نفس فحص الزرار. */
+      if (!can("users.manage", "view")) { toast(T("us_no_admin"), "err"); return; }
       loadUsers();
       pop.classList.add("on");
     }
@@ -1002,6 +1085,7 @@ var MaribAuth = (function () {
     bindUsers();
     bindParallax();
     bindModeGate();   /* R37: تحليل الأداء / الاتزان chooser */
+    watchPerms();     /* R63: صلاحيات حية عند رجوع اليوزر للتاب */
     /* R26: link-opened tabs (right-click / Ctrl / middle-click on the nav
        links) arrive with ?_st=<token>. Chromium does NOT copy this tab's
        sessionStorage to them (only window.open / target=_blank get a

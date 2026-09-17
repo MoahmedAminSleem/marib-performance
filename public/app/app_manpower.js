@@ -2354,6 +2354,8 @@ var MaribManpower = (function () {
       return;
     }
     on = true;
+    /* R63: علامة السطح — عشان مراجعة الصلاحيات الحية تعرف إحنا فين */
+    document.body.setAttribute("data-surface", "balance");
     /* R55: التعديل صلاحية manpower.edit edit مش دور admin — الأدمن
        يمنحها لأي يوزر من لوحة الصلاحيات. الفلاج ده بيلف على كل أدوات
        التعديل: القلم / التحديد / الحذف / الإضافة / الأقسام / الشواغر */

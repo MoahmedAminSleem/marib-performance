@@ -132,6 +132,23 @@ export async function requirePermBody(
   return { user: me, level };
 }
 
+/* R63 — حارس قراءة الإدخال: مسؤول إدخال البيانات له الحق يقرأ اللي
+   بيشتغل عليه. المشكلة القديمة: قراءة /api/entries/* و /api/po كانت
+   محتاجة data.view (رؤية اللوحة) — فأي حد المالك مخبّي عنه اللوحة
+   (data.view=hidden) ومفتحه الإدخال (data.upload=edit) كانت كل
+   القراءات بترجع 403 في وشه: قوايم الشهر فاضية والكومبوبوكس ميت.
+   الدلالة الجديدة: القراءة مسموحة لصاحب data.view (رؤية) أو
+   صاحب data.upload (تعديل) — الكتابة زي ما هي data.upload edit بس. */
+export async function requireEntryRead(
+  req: NextRequest
+): Promise<{ user?: SessionUser; res?: NextResponse }> {
+  const a = await requirePerm(req, "data.view", "view");
+  if (!a.res) return a;
+  const b = await requirePerm(req, "data.upload", "edit");
+  if (!b.res) return b;
+  return { res: fail("forbidden", 403) };
+}
+
 export { isAdmin, isDev };
 export type { SessionUser };
 export function logger(mod: string): ChildLogger { return log.child(mod); }
