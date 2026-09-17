@@ -10,7 +10,7 @@
 | pg | 8.23 | Postgres للإنتاج (Vercel + Neon) |
 | XLSX (in-house) | — | مولّد Excel بدون مكتبات خارجية (`src/lib/marib/xlsx-writer.ts`) |
 | Tailwind | 4 | CSS pipeline لـ globals.css بس (SPA الستايل بتاعه في app.css) |
-| الترجمة | — | Google gtx + MyMemory عبر fetch مباشر (`lib/marib/translate.ts`) |
+| الترجمة | — | R50: الترجمة الفورية اتشالت — العربي/التركي من أعمدة الشيت (i18n_dict للواجهة) |
 
 > **R49:** الـ dependencies اتنضفت من 79 لـ 15 حزمة (بإذن المالك) — prisma
 > وz-ai-web-dev-sdk و63 حزمة تيمبلت ميتة اتشالوا. شوف `سير-العمل-R49.md`.
@@ -28,9 +28,8 @@ marib-performance-main/
 │   │   └── api/                  ← كل الـ API routes (نظام واحد: marib)
 │   │       ├── auth/route.ts     ← login/logout (marib_user)
 │   │       ├── perms/            ← R46: نظام الصلاحيات
-│   │       ├── translate/        ← R46: ترجمة فورية
 │   │       ├── entries/          ← R46: إدخال البيانات (production/absence/overtime)
-│   │       ├── manpower/         ← الاتزان (هيكل القوى العاملة)
+│   │       ├── manpower/         ← الاتزان (هيكل القوى العاملة + export/ للتصدير)
 │   │       ├── users/            ← إدارة المستخدمين
 │   │       ├── settings/         ← الإعدادات
 │   │       ├── audit/            ← سجل العمليات
@@ -38,12 +37,14 @@ marib-performance-main/
 │   │       └── health/           ← فحص الصحة (R48: على جداول marib)
 │   ├── lib/
 │   │   └── marib/                ← كل المنطق (نظام واحد)
-│   │       ├── db.ts             ← raw SQL driver (PGlite/pg) + BOOT_SQL + ensureBoot()
+│   │       ├── db.ts             ← raw SQL driver (PGlite/pg + driverName) + BOOT_SQL + ensureBoot()
 │   │       ├── session.ts        ← HMAC-signed cookie (marib_sess)
 │   │       ├── http.ts           ← helpers (requireUser/requireRole/requirePerm)
 │   │       ├── perms.ts          ← R46: نظام الصلاحيات
 │   │       ├── undo.ts           ← R46: snapshot/restore للتراجع
-│   │       ├── translate.ts      ← R46: Google gtx + MyMemory
+│   │       ├── manpower_io.ts    ← R52: منطق استيراد الاتزان
+│   │       ├── manpower_export.ts← R56: بناء تصدير الإكسل (4 شيتات + التيمبلت)
+│   │       ├── entries.ts        ← R56: منطق مشترك لمسارات الإدخال (مطابقة/خرائط/تحقق)
 │   │       ├── xlsx-writer.ts    ← مولّد Excel داخلي
 │   │       └── logger.ts        ← structured logging
 │   └── server/seed/
@@ -78,7 +79,7 @@ R48 مسحت نظام Prisma القديم بالكامل. اللي فاضل (و�
 |---|---|
 | **Cookie** | `marib_sess` (signed payload.signature — HMAC) |
 | **DB** | `marib_user` table (PGlite/Postgres) |
-| **Routes** | `/api/auth` (GET/POST/DELETE), `/api/manpower/*`, `/api/users/*`, `/api/settings/*`, `/api/perms/*`, `/api/entries/*`, `/api/translate/*`, `/api/health` |
+| **Routes** | `/api/auth` (GET/POST/DELETE), `/api/manpower/*`, `/api/users/*`, `/api/settings/*`, `/api/perms/*`, `/api/entries/*`, `/api/health` (R56: بيرجع حقل `db` = neon/pglite) |
 | **Login** | `/api/auth` (POST) — Amin / 2872002 |
 
 > الـ routes القديمة (`/api/auth/login`, `/api/auth/me`, `/api/auth/logout`,

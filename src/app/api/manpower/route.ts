@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requirePerm, requirePermBody } from "@/lib/marib/http";
 import { cleanStr, normCode, deptPath, logTransfer, hasArabic, importManpower } from "@/lib/marib/manpower_io";
+import { isDayStr } from "@/lib/marib/entries"; /* R56: توحيد تحقق التواريخ (كانت الـ regex مكررة) */
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -182,7 +183,7 @@ export async function POST(req: NextRequest) {
       const nameAr = cleanStr(body.name_ar, 90);   /* R47: العربي من المودال */
       const jobAr = cleanStr(body.job_ar, 90);     /* R47 */
       if (!name || !deptId) return fail("fields", 400);
-      if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) return fail("hire", 400);
+      if (hire && !isDayStr(hire)) return fail("hire", 400);
       if (code && code !== "جديد") {
         const dup = await q("SELECT 1 FROM marib_emp WHERE code = $1 LIMIT 1", [code]);
         if (dup.length) return fail("dup", 409);
@@ -242,7 +243,7 @@ export async function POST(req: NextRequest) {
         }
       }
       if (!name || !deptId) return fail("fields", 400);
-      if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) return fail("hire", 400);
+      if (hire && !isDayStr(hire)) return fail("hire", 400);
       await q(
         `UPDATE marib_emp SET code=$2, name=$3, job=$4, dept_id=$5, hire=$6, name_ar=$7, job_ar=$8, updated_at=now() WHERE id=$1`,
         [old.id, newCode, name, job, deptId, hire, nameAr || null, jobAr || null]
@@ -287,7 +288,7 @@ export async function POST(req: NextRequest) {
       const nameAr = cleanStr(body.name_ar, 90);   /* R47: العربي من المودال */
       const jobAr = cleanStr(body.job_ar, 90);     /* R47 */
       if (!id || !name) return fail("fields", 400);
-      if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) return fail("hire", 400);
+      if (hire && !isDayStr(hire)) return fail("hire", 400);
       const cur = await q("SELECT id, code, name, job, dept_id FROM marib_emp WHERE id = $1 AND vac = true LIMIT 1", [id]);
       if (!cur.length) return fail("none", 404);
       const old = cur[0];
@@ -365,10 +366,10 @@ export async function POST(req: NextRequest) {
       const oldPath = await deptPath(id);
       await q("UPDATE marib_dept SET name = $2 WHERE id = $1", [id, name]);
       const newPath = await deptPath(id);
-      const n = await q("SELECT COUNT(*)::int AS n FROM marib_emp WHERE dept_id = $1", [id]);
+      /* R56: استعلام COUNT كان بيتنفذ وبعدين بيترمي (void n) — حذفناه.
+         أرشيف إعادة التسمية مش بيستخدم عدد الموظفين أصلًا. */
       await logTransfer(actor, "—", cur[0].name as string, oldPath, null, newPath, null, "dept-rename");
       await audit(actor, "edit", "manpower-dept", name, { from: oldPath, to: newPath });
-      void n;
       return NextResponse.json({ ok: true });
     }
 

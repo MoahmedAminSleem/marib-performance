@@ -3,11 +3,14 @@
    POST → create a new production entry
    PUT  → update an entry
    DELETE → remove an entry
-   كل عملية بتسجل في الـ audit log. */
+   كل عملية بتسجل في الـ audit log.
+   R56: المنطق المشترك (خرائط الأقسام / تحقق الشهر والتاريخ)
+        اتنقل لـ lib/marib/entries.ts — نفس السلوك بالظبط. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requirePermBody, requirePerm } from "@/lib/marib/http";
+import { loadDeptMap, monthParam, isDayStr } from "@/lib/marib/entries";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,8 +22,8 @@ export async function GET(req: NextRequest) {
     const g = await requirePerm(req, "data.view", "view");
     if (g.res) return g.res;
 
-    const month = req.nextUrl.searchParams.get("month") || new Date().toISOString().slice(0, 7);
-    if (!/^\d{4}-\d{2}$/.test(month)) return fail("month", 400);
+    const month = monthParam(req.nextUrl.searchParams);
+    if (!month) return fail("month", 400);
 
     const rows = await q(
       `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, dept_id, dept_name, line_id, po_number, qty, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
@@ -29,12 +32,7 @@ export async function GET(req: NextRequest) {
     );
 
     /* dept + line names: pull them in one query and join client-side */
-    const deptIds = Array.from(new Set(rows.map((r) => r.dept_id).filter(Boolean))) as string[];
-    let deptMap: Record<string, string> = {};
-    if (deptIds.length) {
-      const dr = await q(`SELECT id, name FROM marib_dept WHERE id = ANY($1::text[])`, [deptIds]);
-      for (const r of dr) deptMap[r.id as string] = r.name as string;
-    }
+    const deptMap = await loadDeptMap(Array.from(new Set(rows.map((r) => r.dept_id).filter(Boolean))) as string[]);
 
     return NextResponse.json({
       month,
@@ -76,7 +74,7 @@ export async function POST(req: NextRequest) {
     const qty = parseInt(String(body.qty || "0"), 10);
     const note = String(body.note || "").trim().slice(0, 200);
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("date", 400);
+    if (!isDayStr(date)) return fail("date", 400);
     if (qty <= 0) return fail("qty", 400);
     if (!deptName && !deptId) return fail("dept", 400);
 

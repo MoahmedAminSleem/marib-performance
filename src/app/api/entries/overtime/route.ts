@@ -1,11 +1,14 @@
 /* /api/entries/overtime — R46-8: إدخال الأوفر تايم
    GET (?month=YYYY-MM) → list overtime entries
    POST → create an entry (select employee by name, hours)
-   DELETE → remove an entry */
+   DELETE → remove an entry
+   R56: المنطق المشترك (مطابقة الموظف / خرائط الأقسام / تحقق الشهر
+        والتاريخ) اتنقل لـ lib/marib/entries.ts — نفس السلوك بالظبط. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requirePermBody, requirePerm } from "@/lib/marib/http";
+import { matchEmployee, loadEmpMap, loadDeptMap, monthParam, isDayStr } from "@/lib/marib/entries";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,8 +20,8 @@ export async function GET(req: NextRequest) {
     const g = await requirePerm(req, "data.view", "view");
     if (g.res) return g.res;
 
-    const month = req.nextUrl.searchParams.get("month") || new Date().toISOString().slice(0, 7);
-    if (!/^\d{4}-\d{2}$/.test(month)) return fail("month", 400);
+    const month = monthParam(req.nextUrl.searchParams);
+    if (!month) return fail("month", 400);
 
     const rows = await q(
       `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, emp_id, emp_code, emp_name, dept_id, dept_name, line_id, hours, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
@@ -26,20 +29,8 @@ export async function GET(req: NextRequest) {
       [month]
     );
 
-    const empIds = Array.from(new Set(rows.map((r) => r.emp_id).filter(Boolean))) as string[];
-    let empMap: Record<string, { code: string; name: string; job: string; dept_id: string }> = {};
-    if (empIds.length) {
-      const er = await q(`SELECT id, code, name, job, dept_id FROM marib_emp WHERE id = ANY($1::text[])`, [empIds]);
-      for (const r of er) empMap[r.id as string] = {
-        code: r.code as string, name: r.name as string, job: r.job as string, dept_id: r.dept_id as string,
-      };
-    }
-    const deptIds = Array.from(new Set(rows.map((r) => r.dept_id).filter(Boolean))) as string[];
-    let deptMap: Record<string, string> = {};
-    if (deptIds.length) {
-      const dr = await q(`SELECT id, name FROM marib_dept WHERE id = ANY($1::text[])`, [deptIds]);
-      for (const r of dr) deptMap[r.id as string] = r.name as string;
-    }
+    const empMap = await loadEmpMap(Array.from(new Set(rows.map((r) => r.emp_id).filter(Boolean))) as string[]);
+    const deptMap = await loadDeptMap(Array.from(new Set(rows.map((r) => r.dept_id).filter(Boolean))) as string[]);
 
     return NextResponse.json({
       month,
@@ -87,21 +78,13 @@ export async function POST(req: NextRequest) {
     const hours = parseFloat(String(body.hours || "0"));
     const note = String(body.note || "").trim().slice(0, 200);
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("date", 400);
+    if (!isDayStr(date)) return fail("date", 400);
     if (hours <= 0 || hours > 24) return fail("hours", 400);
     if (!empCode && !empName) return fail("emp", 400);
 
-    /* match employee by code or name */
-    let empId: string | null = null;
-    let resolvedDeptId: string | null = deptId || null;
-    if (empCode) {
-      const er = await q("SELECT id, dept_id FROM marib_emp WHERE code = $1 LIMIT 1", [empCode]);
-      if (er.length) { empId = er[0].id as string; resolvedDeptId = (er[0].dept_id as string) || resolvedDeptId; }
-    }
-    if (!empId && empName) {
-      const er = await q("SELECT id, dept_id FROM marib_emp WHERE name = $1 LIMIT 1", [empName]);
-      if (er.length) { empId = er[0].id as string; resolvedDeptId = (er[0].dept_id as string) || resolvedDeptId; }
-    }
+    /* match employee by code or name — shared helper (R56). القسم
+       النصي من الطلب هو fallback: بيفضل لو الموظف ملقوش أو من غير قسم. */
+    const { empId, deptId: resolvedDeptId } = await matchEmployee(empCode, empName, deptId || null);
 
     const monthKey = date.slice(0, 7);
     const id = crypto.randomUUID();

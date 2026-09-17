@@ -3,11 +3,14 @@
    POST → create an absence entry
    POST /import → upload Excel template (code+name column), apply
    GET /template → download the absence Excel template
-   DELETE → remove an entry */
+   DELETE → remove an entry
+   R56: المنطق المشترك (مطابقة الموظف / خرائط الأقسام / تحقق الشهر
+        والتاريخ) اتنقل لـ lib/marib/entries.ts — نفس السلوك بالظبط. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requirePermBody, requirePerm } from "@/lib/marib/http";
+import { matchEmployee, loadEmpMap, loadDeptMap, monthParam, isDayStr } from "@/lib/marib/entries";
 import { XBook } from "@/lib/marib/xlsx-writer";
 
 export const dynamic = "force-dynamic";
@@ -32,8 +35,8 @@ export async function GET(req: NextRequest) {
     const g = await requirePerm(req, "data.view", "view");
     if (g.res) return g.res;
 
-    const month = sp.get("month") || new Date().toISOString().slice(0, 7);
-    if (!/^\d{4}-\d{2}$/.test(month)) return fail("month", 400);
+    const month = monthParam(sp);
+    if (!month) return fail("month", 400);
 
     const rows = await q(
       `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, emp_id, emp_code, emp_name, dept_id, reason, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
@@ -41,20 +44,8 @@ export async function GET(req: NextRequest) {
       [month]
     );
 
-    const empIds = Array.from(new Set(rows.map((r) => r.emp_id).filter(Boolean))) as string[];
-    let empMap: Record<string, { code: string; name: string; job: string; dept_id: string }> = {};
-    if (empIds.length) {
-      const er = await q(`SELECT id, code, name, job, dept_id FROM marib_emp WHERE id = ANY($1::text[])`, [empIds]);
-      for (const r of er) empMap[r.id as string] = {
-        code: r.code as string, name: r.name as string, job: r.job as string, dept_id: r.dept_id as string,
-      };
-    }
-    const deptIds = Array.from(new Set(rows.map((r) => r.dept_id).filter(Boolean))) as string[];
-    let deptMap: Record<string, string> = {};
-    if (deptIds.length) {
-      const dr = await q(`SELECT id, name FROM marib_dept WHERE id = ANY($1::text[])`, [deptIds]);
-      for (const r of dr) deptMap[r.id as string] = r.name as string;
-    }
+    const empMap = await loadEmpMap(Array.from(new Set(rows.map((r) => r.emp_id).filter(Boolean))) as string[]);
+    const deptMap = await loadDeptMap(Array.from(new Set(rows.map((r) => r.dept_id).filter(Boolean))) as string[]);
 
     return NextResponse.json({
       month,
@@ -99,20 +90,11 @@ export async function POST(req: NextRequest) {
     const reason = String(body.reason || "").trim().slice(0, 100);
     const note = String(body.note || "").trim().slice(0, 200);
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("date", 400);
+    if (!isDayStr(date)) return fail("date", 400);
     if (!empCode && !empName) return fail("emp", 400);
 
-    /* try to match the employee by code (preferred) or name */
-    let empId: string | null = null;
-    let deptId: string | null = null;
-    if (empCode) {
-      const er = await q("SELECT id, dept_id FROM marib_emp WHERE code = $1 LIMIT 1", [empCode]);
-      if (er.length) { empId = er[0].id as string; deptId = (er[0].dept_id as string) || null; }
-    }
-    if (!empId && empName) {
-      const er = await q("SELECT id, dept_id FROM marib_emp WHERE name = $1 LIMIT 1", [empName]);
-      if (er.length) { empId = er[0].id as string; deptId = (er[0].dept_id as string) || null; }
-    }
+    /* match the employee by code (preferred) or name — shared helper (R56) */
+    const { empId, deptId } = await matchEmployee(empCode, empName);
 
     const monthKey = date.slice(0, 7);
     const id = crypto.randomUUID();
@@ -204,7 +186,7 @@ async function downloadTemplate(req: NextRequest) {
 
     const buf = wb.build();
     /* (R48) نفس الـ cast المتبع في manpower/export — Uint8Array
-       مقبول runtime كس body، بس TS محتاج توضيح. */
+       مقبول runtime كـ body، بس TS محتاج توضيح. */
     return new NextResponse(buf as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -220,8 +202,6 @@ async function downloadTemplate(req: NextRequest) {
 /* R46-8: import the absence template — read the Excel, parse rows,
    match each to an employee by code/name, insert into marib_absence. */
 async function importTemplate(req: NextRequest) {
-  /* this is a placeholder — full implementation would parse the uploaded
-     xlsx file. For now, accept a JSON body of rows. */
   try {
     const g = await requirePermBody(req, "data.upload", "edit");
     if (g.res) return g.res;
@@ -231,7 +211,7 @@ async function importTemplate(req: NextRequest) {
     if (!body) return fail("body", 413);
     const date = String(body.date || "");
     const rows = Array.isArray(body.rows) ? body.rows : [];
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("date", 400);
+    if (!isDayStr(date)) return fail("date", 400);
     if (!rows.length) return fail("rows", 400);
 
     const monthKey = date.slice(0, 7);
@@ -245,15 +225,7 @@ async function importTemplate(req: NextRequest) {
       const reason = String(arr[3] || "").trim().slice(0, 100);
       if (!empCode && !empName) continue;
 
-      let empId: string | null = null, deptId: string | null = null;
-      if (empCode) {
-        const er = await q("SELECT id, dept_id FROM marib_emp WHERE code = $1 LIMIT 1", [empCode]);
-        if (er.length) { empId = er[0].id as string; deptId = (er[0].dept_id as string) || null; }
-      }
-      if (!empId && empName) {
-        const er = await q("SELECT id, dept_id FROM marib_emp WHERE name = $1 LIMIT 1", [empName]);
-        if (er.length) { empId = er[0].id as string; deptId = (er[0].dept_id as string) || null; }
-      }
+      const { empId, deptId } = await matchEmployee(empCode, empName);
 
       if (!empId) unmatched++;
       const id = crypto.randomUUID();

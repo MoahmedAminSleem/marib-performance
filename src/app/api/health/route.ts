@@ -3,7 +3,7 @@
    اللي الفرونت مش بيستخدمه خالص — اتنقل على نظام marib الحي، فالتشيك
    بقى بيبص على الجداول الشغالة فعلًا (المستخدمين، الشهور، الموظفين). */
 
-import { q, ensureBoot } from "@/lib/marib/db";
+import { q, ensureBoot, driverName } from "@/lib/marib/db";
 import { logger } from "@/lib/marib/http";
 
 const lg = logger("health");
@@ -23,6 +23,9 @@ export async function GET() {
     lg.info("health ok", { ms: Date.now() - t0 });
     return Response.json({
       ok: true,
+      /* R56: db = neon على الإنتاج (Vercel) و pglite محليًا —
+         إثبات مرئي إن الداتا بتتحفظ على سيرفر Neon. */
+      db: driverName(),
       users: users[0]?.n ?? 0,
       months: months[0]?.n ?? 0,
       employees: emps[0]?.n ?? 0,

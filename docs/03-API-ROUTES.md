@@ -10,22 +10,24 @@
 | `/api/auth` | GET | any | session check → `{user}` |
 | `/api/auth` | POST | none | login → sets cookie |
 | `/api/auth` | DELETE | any | logout |
-| `/api/manpower` | GET | any | الهيكل الكامل (depts+emps+req+transfers+tr+root) |
-| `/api/manpower` | POST | admin+ | add/edit/fill/vacAdd/vacDel/deptAdd/deptRename/deptMove/deptDelete/req/import/undo/trSync — edit/add/fill/import بيقبلوا `name_ar`/`job_ar` + حفظ تلقائي للعربي (R47)، و import بيقبل `arCol` |
-| `/api/manpower/export` | GET | any | تنزيل Excel (?template=1 ?lang=ar\|en\|tr) |
-| `/api/users` | GET | admin | قائمة المستخدمين |
-| `/api/users` | POST | admin | إنشاء مستخدم |
-| `/api/users` | PUT | admin | تعديل (photo/title/password/role) |
-| `/api/users` | DELETE | admin | حذف |
-| `/api/health` | GET | none | فحص حيوية: `{ok, users, months, employees}` (R48: على جداول marib) |
+| `/api/data` | GET | perm:data.view | كل الشهور packed + lastSync (R55) |
+| `/api/data` | POST | perm:data.upload | استبدال شهر كامل (transaction) (R55) |
+| `/api/manpower` | GET | perm:manpower.view | الهيكل الكامل (depts+emps+req+transfers+tr+root) (R55) |
+| `/api/manpower` | POST | perm:manpower.edit (و import → manpower.import) | add/edit/editMany/del/delMany/fill/vacAdd/vacDel/deptAdd/deptRename/deptMove/deptDelete/req/archDel/import/undo/rootSet — edit/add/fill بيقبلوا `name_ar`/`job_ar` + حفظ تلقائي للعربي (R47) |
+| `/api/manpower/export` | GET | perm:manpower.export | تنزيل Excel (?template=1 ?lang=ar\|tr) — البناء في lib/marib/manpower_export.ts (R56) |
+| `/api/users` | GET | perm:users.manage | قائمة المستخدمين (R55) |
+| `/api/users` | POST | perm:users.manage edit | إنشاء مستخدم (R55) |
+| `/api/users` | PUT | perm:users.manage edit | تعديل (photo/title/password/role) (R55) |
+| `/api/users` | DELETE | perm:users.manage edit | حذف (R55) |
+| `/api/health` | GET | none | فحص حيوية: `{ok, db, users, months, employees}` (R48: على جداول marib · R56: `db` = neon/pglite — إثبات مرئي إن الإنتاج على Neon) |
 | `/api/settings` | GET | any | كل الإعدادات |
-| `/api/settings` | PUT | admin+ | حفظ إعداد |
+| `/api/settings` | PUT | perm:settings.edit | حفظ إعداد (storage_quota/mhome: dev فقط فوق الصلاحية) (R55) |
+| `/api/storage` | GET | perm:storage.view | قياس مساحة القاعدة + أكبر الجداول (R55) |
 | `/api/audit` | GET | perm:audit.view | سجل العمليات (?from=?to=) |
-| `/api/perms` | GET | admin | كل المستخدمين + الصلاحيات |
+| `/api/perms` | GET | perm:users.manage view | كل المستخدمين + الصلاحيات (R55) |
 | `/api/perms` | GET ?me=1 | any | صلاحياتي الفعّالة |
-| `/api/perms` | PUT | admin | set override |
-| `/api/perms` | DELETE | admin | clear override |
-| `/api/translate` | GET | any | ?term=X&to=ar\|en\|tr → ترجمة فورية |
+| `/api/perms` | PUT | perm:users.manage edit | set override (R55) |
+| `/api/perms` | DELETE | perm:users.manage edit | clear override (R55) |
 | `/api/entries/production` | GET | perm:data.view | ?month=YYYY-MM |
 | `/api/entries/production` | POST | perm:data.upload | create |
 | `/api/entries/production` | DELETE | perm:data.upload | ?id= |
@@ -62,12 +64,12 @@ POST /api/manpower  action=import  →  يرجّع undoToken في الـ respons
 POST /api/manpower  action=undo    →  ?undoToken=X  →  restoreFromSnapshot()
 ```
 
-## العربي في الموظفين (R47)
+## العربي والتركي في الموظفين (R47 + R50)
 
 ```
 POST /api/manpower  action=edit    →  body: { ..., name_ar, job_ar }  (فاضي = مسح صريح)
-POST /api/manpower  action=import  →  body: { rows: [code,name,dept,sec,sub,job,note,hire,vac,mach,del,nameAr,jobAr], arCol: true|false }
-  - arCol=true   → أعمدة العربي موجودة في الشيت (القيمة الفاضية = فاضية)
-  - arCol=false  → شيت قديم: تغيير اسم عربي لإنجليزي بيتحفظ العربي القديم في name_ar تلقائيًا
-التيمبلت (?template=1) فيه عمودي «الأسم بالعربي» و«الوظيفة بالعربي» (12 عمود).
+POST /api/manpower  action=import  →  rows من أعمدة Database بتاعة الشيت
+التيمبلت (?template=1) بقى 15 عمود من R50 — العربي هو العمود الأساسي
+وجنب كل حاجة حروفية عمود TR (التركي): الاسم/الادارة/القسم/القسم
+الداخلي/الوظيفة. الترجمة الفورية و /api/translate اتشالوا في R50.
 ```

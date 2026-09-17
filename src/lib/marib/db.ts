@@ -49,6 +49,15 @@ export async function q(sql: string, params: unknown[] = []): Promise<Row[]> {
   return r.rows || [];
 }
 
+/** R56: الـ driver الشغال دلوقتي — /api/health بيرجعه للمراقبة،
+ *  عشان المالك يتأكد بعينه إن النسخة المنشورة على Vercel بتكتب
+ *  على Neon (postgres URL) مش على القاعدة المحلية (pglite).
+ *  نفس شرط الاختيار اللي createDriver بيستخدمه بالظبط. */
+export function driverName(): "neon" | "pglite" {
+  const url = process.env.DATABASE_URL || "";
+  return url.startsWith("postgres://") || url.startsWith("postgresql://") ? "neon" : "pglite";
+}
+
 /** run one statement without params — DDL / seeding */
 export async function exec(sql: string): Promise<void> {
   await q(sql);
