@@ -19,7 +19,7 @@
 | `/api/users` | POST | perm:users.manage edit | إنشاء مستخدم (R55) |
 | `/api/users` | PUT | perm:users.manage edit | تعديل (photo/title/password/role) (R55) |
 | `/api/users` | DELETE | perm:users.manage edit | حذف (R55) |
-| `/api/health` | GET | none | فحص حيوية: `{ok, db, users, months, employees}` (R48: على جداول marib · R56: `db` = neon/pglite — إثبات مرئي إن الإنتاج على Neon) |
+| `/api/health` | GET | none | فحص حيوية: `{ok, db, boot, users, months, employees, stats}` (R48: على جداول marib · R56: `db` = neon/pglite — إثبات مرئي إن الإنتاج على Neon · R57: `boot` = fast/full · R62: `stats` = عدادات حية — uptime + q{count/slow/ms_total/errors} + srv_errors + last_error + mem.rss_mb + node) |
 | `/api/settings` | GET | any | كل الإعدادات |
 | `/api/settings` | PUT | perm:settings.edit | حفظ إعداد (storage_quota/mhome: dev فقط فوق الصلاحية) (R55) |
 | `/api/storage` | GET | perm:storage.view | قياس مساحة القاعدة + أكبر الجداول (R55) |

@@ -5,8 +5,46 @@
 
 import fs from "node:fs";
 import path from "path";
+import { log } from "./logger";
+import { stats, noteError } from "./stats";
 
 type Row = Record<string, unknown>;
+
+/* R62 (observability): قياس كل استعلام — عدد/زمن/بطيء/فاشل —
+   والعدادات دي هي اللي /api/health بيعرضها في stats. السجل البطيء
+   بيكتب رأس الـ SQL بس (80 حرف بعد تطبيع المسافات) + عدد البارامترات
+   — عمره ما بيكتب قيم البارامترات (أسماء موظفين وما شابه). */
+const dbLog = log.child("db");
+const SLOW_MS = 250;
+
+function sqlHead(sql: string): string {
+  return sql.slice(0, 80).replace(/\s+/g, " ");
+}
+
+async function timedQuery(
+  run: Promise<{ rows: Row[] }>,
+  sql: string,
+  nParams: number,
+  tx = false
+): Promise<Row[]> {
+  const s = stats();
+  const t0 = Date.now();
+  try {
+    const r = await run;
+    const ms = Date.now() - t0;
+    s.qCount++;
+    s.qMs += ms;
+    if (ms > SLOW_MS) {
+      s.qSlow++;
+      dbLog.warn(tx ? "slow query (tx)" : "slow query", { ms, head: sqlHead(sql), params: nParams });
+    }
+    return r.rows || [];
+  } catch (e) {
+    s.qErrors++;
+    noteError("q: " + (e instanceof Error ? e.message : String(e)) + " — " + sqlHead(sql));
+    throw e;
+  }
+}
 
 /* (R48) نوع الـ Pool من pg — الـ dynamic import بيرجّع قيمة مش نوع،
    فبنستخدم type-only import بدال استخدام Pool كنوع. */
@@ -51,8 +89,7 @@ async function createDriver(): Promise<Driver> {
 /** run one SQL statement with $1.. params → rows */
 export async function q(sql: string, params: unknown[] = []): Promise<Row[]> {
   if (!g.__maribDriver) g.__maribDriver = await createDriver();
-  const r = await g.__maribDriver.query(sql, params);
-  return r.rows || [];
+  return timedQuery(g.__maribDriver.query(sql, params), sql, params.length);
 }
 
 /** R56: الـ driver الشغال دلوقتي — /api/health بيرجعه للمراقبة،
@@ -83,7 +120,8 @@ export async function withTransaction(fn: (run: (sql: string, params?: unknown[]
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      await fn((sql, params) => client.query(sql, (params || []) as unknown[]).then((r) => r.rows || []));
+      /* R62: نفس قياس q() لجمل المعاملة (الاستيراد الثقيل بيشتغل هنا) */
+      await fn((sql, params) => timedQuery(client.query(sql, (params || []) as unknown[]), sql, (params || []).length, true));
       await client.query("COMMIT");
     } catch (e) {
       await client.query("ROLLBACK").catch(() => {});

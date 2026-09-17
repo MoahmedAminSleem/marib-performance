@@ -10,6 +10,7 @@ import { ensureBoot } from "@/lib/marib/db";
 import { currentUser, sessionUser, isAdmin, isDev, type SessionUser } from "@/lib/marib/session";
 import { checkPerm, type PermLevel } from "@/lib/marib/perms";
 import { log, type ChildLogger } from "@/lib/marib/logger";
+import { stats, noteError } from "@/lib/marib/stats";
 
 export const MAX_BODY_BYTES = 8 * 1024 * 1024; // 8 MB — months of sheets fit easily
 
@@ -24,6 +25,12 @@ export function fail(code: string, status = 400): NextResponse {
 }
 
 export function serverFail(mod: string, method: string, e: unknown): NextResponse {
+  /* R62 (observability): كل 5xx بيزوّد العداد ويسجل آخر خطأ بسياقه
+     (المسار + الميثود + الرسالة) — /api/health بيعرضهم في stats.
+     الرد نفسه زي ما هو بالبايت: {error:"server"} 500. */
+  const s = stats();
+  s.srvErrors++;
+  noteError(mod + "." + method + ": " + (e instanceof Error ? e.message : String(e)));
   log.child(mod).error(method + " failed", { err: e });
   return fail("server", 500);
 }

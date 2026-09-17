@@ -4,6 +4,7 @@
    بقى بيبص على الجداول الشغالة فعلًا (المستخدمين، الشهور، الموظفين). */
 
 import { q, ensureBoot, driverName, bootInfo } from "@/lib/marib/db";
+import { statsSnapshot } from "@/lib/marib/stats";
 import { logger } from "@/lib/marib/http";
 
 const lg = logger("health");
@@ -33,6 +34,11 @@ export async function GET() {
       users: users[0]?.n ?? 0,
       months: months[0]?.n ?? 0,
       employees: emps[0]?.n ?? 0,
+      /* R62 (observability): رابط واحد بيجاوب — النسخة شغالة من
+         قد إيه · عملت قد إيه استعلام وبكام زمن وفيه كام بطيء ·
+         آخر خطأ إيه وامتى · الذاكرة قد إيه. عدادات حية بالطبيعة
+         (بتتصفّر مع كل عملية جديدة) زي boot بالظبط. */
+      stats: statsSnapshot(),
     });
   } catch (e) {
     lg.error("health failed", { err: String(e), ms: Date.now() - t0 });
