@@ -6,23 +6,23 @@
 
 import { SKELETON } from "./skeleton";
 
-/* R52: ?v=r54 على كل سكريبت — cache-busting بعد كل رفع (نفس فكرة app.css).
+/* R52: ?v=r55 على كل سكريبت — cache-busting بعد كل رفع (نفس فكرة app.css).
    R52 refactoring: app_main اتقسم 4 وحدات — core (الحالة + الأدوات +
    الفلاتر + الدريو) + app_pages (عرض الصفحات) + app_entries (إدخال
    البيانات) + app_admin (الأوديت/التخزين/الصلاحيات) — كلهم بعد app_main
    عشان جسر __maribCtx يبقى جاهز، وقبل app_auth اللي بيبدأ التشغيل. */
 const SCRIPTS = [
-  "/app/app_core.js?v=r54",      // MaribCore — parsing + the 42 measures
-  "/app/i18n_dict.js?v=r54",     // AR / EN / TR dictionary
-  "/app/i18n_core.js?v=r54",     // i18n engine
-  "/app/app_charts.js?v=r54",    // MaribCharts
-  "/app/marib_cloud.js?v=r54",   // server sync client (R23)
-  "/app/app_main.js?v=r54",      // App core — state + utils + filters + drill + settings
-  "/app/app_pages.js?v=r54",     // R52 — عرض صفحات التحليل + بيت المدير
-  "/app/app_entries.js?v=r54",   // R52 — إدخال البيانات (إنتاج/غياب/أوفر تايم)
-  "/app/app_admin.js?v=r54",     // R52 — الأوديت + التخزين + الصلاحيات
-  "/app/app_auth.js?v=r54",      // MaribAuth — server login gate
-  "/app/app_manpower.js?v=r54",  // R37 — الاتزان (manpower balance)
+  "/app/app_core.js?v=r55",      // MaribCore — parsing + the 42 measures
+  "/app/i18n_dict.js?v=r55",     // AR / EN / TR dictionary
+  "/app/i18n_core.js?v=r55",     // i18n engine
+  "/app/app_charts.js?v=r55",    // MaribCharts
+  "/app/marib_cloud.js?v=r55",   // server sync client (R23)
+  "/app/app_main.js?v=r55",      // App core — state + utils + filters + drill + settings
+  "/app/app_pages.js?v=r55",     // R52 — عرض صفحات التحليل + بيت المدير
+  "/app/app_entries.js?v=r55",   // R52 — إدخال البيانات (إنتاج/غياب/أوفر تايم)
+  "/app/app_admin.js?v=r55",     // R52 — الأوديت + التخزين + الصلاحيات
+  "/app/app_auth.js?v=r55",      // MaribAuth — server login gate
+  "/app/app_manpower.js?v=r55",  // R37 — الاتزان (manpower balance)
 ];
 /* xlsx.full.min.js (~950KB) is NOT loaded upfront anymore: App.ensureXLSX()
    pulls it on first upload/export (R24 perf — the first paint got heavy). */

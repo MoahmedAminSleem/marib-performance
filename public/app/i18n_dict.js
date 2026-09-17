@@ -435,7 +435,11 @@ window.MARIB_I18N_DICT = {
   us_toast_saved: { ar: "تم الحفظ", en: "Saved", tr: "Kaydedildi" },
   us_toast_del:   { ar: "تم حذف المستخدم", en: "User deleted", tr: "Kullanıcı silindi" },
   us_toast_nodel: { ar: "مينفعش تحذف الحساب ده", en: "This account can't be deleted", tr: "Bu hesap silinemez" },
-  us_no_admin:    { ar: "القسم ده للأدمن بس", en: "This section is for admins only", tr: "Bu bölüm yalnızca yöneticilere açık" },
+perm_denied:   { ar: "ماعندكش صلاحية كفاية للعملية دي", en: "You don't have permission for this", tr: "Bu işlem için yetkiniz yok" },
+  perm_no_dash:  { ar: "رؤية اللوحة متاحةش لحسابك — راجع الأدمن", en: "Dashboard view is not enabled for your account — ask the admin", tr: "Hesabınız için pano görüntüsü etkin değil — yöneticiye sorun" },
+  perm_no_mp:    { ar: "رؤية الاتزان متاحةش لحسابك — راجع الأدمن", en: "Balance view is not enabled for your account — ask the admin", tr: "Hesabınız için denge görüntüsü etkin değil — yöneticiye sorun" },
+  perm_none:     { ar: "مفيش أي شاشات متاحة لحسابك — كلم الأدمن يفعّللك صلاحيات", en: "No screens are enabled for your account — ask the admin to grant you permissions", tr: "Hesabınız için etkin ekran yok — yöneticiden izin isteyin" },
+    us_no_admin:    { ar: "القسم ده للأدمن بس", en: "This section is for admins only", tr: "Bu bölüm yalnızca yöneticilere açık" },
   us_hello:       { ar: "أهلًا بيك، ", en: "Welcome, ", tr: "Hoş geldin, " },
   toast_logout:   { ar: "تم تسجيل الخروج", en: "Signed out", tr: "Çıkış yapıldı" },
 

@@ -1,15 +1,17 @@
-/* /api/users — user management (admin/dev only)
+/* /api/users — user management
    GET list · POST create · PUT password/role/photo/title · DELETE remove
    — every change audited.
    R25: refactored onto the shared http helpers + structured logging.
    R27: photo + title are ADMIN-set (for any user) from the users modal —
    the R26 self-service photo branch is gone by request; regular users
-   can no longer patch anything here (403 as before). */
+   can no longer patch anything here (403 as before).
+   R55: الحارس بقى صلاحية users.manage (view للقراءة، edit للتغيير)
+   بدل دور admin — الأدمن يقدر يمنح يوزر إدارة اليوزرين من اللوحة. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
-import { hashPassword, isDev, isAdmin } from "@/lib/marib/session";
-import { fail, serverFail, readJson, logger, requireRoleBody, requireUserBody, type SessionUser } from "@/lib/marib/http";
+import { hashPassword, isDev } from "@/lib/marib/session";
+import { fail, serverFail, readJson, logger, requirePermBody, type SessionUser } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -25,10 +27,9 @@ const TITLE_MAX = 40;
 
 export async function GET(req: NextRequest) {
   try {
-    /* R27 review#1: live role re-check (not just the signed cookie) —
-       the list now carries every user's photo+title, so a demoted
-       admin must lose READ access at once too */
-    const g = await requireRoleBody(req, "admin");
+    /* R27 review#1: live check (not just the signed cookie) — the list
+       carries every user's photo+title. R55: الحارس users.manage view. */
+    const g = await requirePermBody(req, "users.manage", "view");
     if (g.res) return g.res;
     const rows = await q(
       "SELECT id, username, role, photo, title, created_at, created_by FROM marib_user ORDER BY created_at ASC"
@@ -41,7 +42,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const g = await requireRoleBody(req, "admin");
+    /* R55: إنشاء يوزر = users.manage edit */
+    const g = await requirePermBody(req, "users.manage", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 
@@ -70,13 +72,13 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    /* R27: EVERY patch (photo / title / password / role) is admin or
-       dev — a regular user gets 403. The photo no longer needs the
-       self-service branch: admins set photos from the users modal. */
-    const g = await requireUserBody(req);
+    /* R27: EVERY patch (photo / title / password / role) needs
+       users.manage edit — a regular user gets 403. The photo no longer
+       needs the self-service branch: admins set photos from the users
+       modal. */
+    const g = await requirePermBody(req, "users.manage", "edit");
     if (g.res) return g.res;
     const me = g.user!;
-    if (!isAdmin(me)) return fail("admin", 403);
 
     const body = await readJson(req);
     if (!body) return fail("body", 413);
@@ -132,7 +134,8 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const g = await requireRoleBody(req, "admin");
+    /* R55: حذف يوزر = users.manage edit */
+    const g = await requirePermBody(req, "users.manage", "edit");
     if (g.res) return g.res;
     const me = g.user! as SessionUser;
 

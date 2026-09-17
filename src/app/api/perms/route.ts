@@ -1,14 +1,16 @@
 /* /api/perms — R46 نظام الصلاحيات
    GET  (?me=1) → صلاحيات المستخدم الحالي الفعّالة (لأي يوزر)
-   GET  (افتراضي) → كل المستخدمين + كل الـ overrides (للأدمن بس)
-   PUT  → set/update override لمستخدم + ميزة (للأدمن بس)
-   DELETE → مسح override (للأدمن بس)
-   — كل تغيير بيتسجل في الـ audit log. */
+   GET  (افتراضي) → كل المستخدمين + كل الـ overrides (users.manage view)
+   PUT  → set/update override لمستخدم + ميزة (users.manage edit)
+   DELETE → مسح override (users.manage edit)
+   — كل تغيير بيتسجل في الـ audit log.
+   R55: الحارس بقى صلاحية users.manage مش دور admin — الأدمن يقدر
+   يمنح يوزر إدارة الصلاحيات من اللوحة نفسها. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { PERM_KEYS, PERM_KEY_SET, loadUserPerms, loadAllPerms, effectiveLevel, type PermLevel } from "@/lib/marib/perms";
-import { fail, serverFail, readJson, logger, requireRoleBody } from "@/lib/marib/http";
+import { fail, serverFail, readJson, logger, requirePermBody, requireUserBody } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -23,7 +25,8 @@ export async function GET(req: NextRequest) {
        بترجع { perms: { feature: effectiveLevel } } لكل PERM_KEYS. */
     const meParam = req.nextUrl.searchParams.get("me");
     if (meParam === "1") {
-      const g = await requireRoleBody(req, "user");
+      /* أي يوزر داخل — بياخد صلاحياته هو بس (مش حد تاني) */
+      const g = await requireUserBody(req);
       if (g.res) return g.res;
       const me = g.user!;
       const overrides = await loadUserPerms(me.uid);
@@ -32,8 +35,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ perms });
     }
 
-    /* default GET — admin only — كل المستخدمين + كل الـ overrides. */
-    const g = await requireRoleBody(req, "admin");
+    /* default GET — users.manage view — كل المستخدمين + الـ overrides. */
+    const g = await requirePermBody(req, "users.manage", "view");
     if (g.res) return g.res;
 
     const users = await q(
@@ -62,7 +65,8 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const g = await requireRoleBody(req, "admin");
+    /* R55: تعديل صلاحية يوزر = users.manage edit */
+    const g = await requirePermBody(req, "users.manage", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 
@@ -101,7 +105,8 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const g = await requireRoleBody(req, "admin");
+    /* R55: مسح صلاحية يوزر = users.manage edit */
+    const g = await requirePermBody(req, "users.manage", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 

@@ -15,12 +15,14 @@
      4. "الأرشيف"       — the transfer archive (incl. خروج rows)
    Same math as the client: actual = filled rows, required = manual
    override if set else all rows beneath, variance = actual − required.
-   Any signed-in user may export (read-only data). Denim/gold theme. */
+   Any signed-in user may export (read-only data). Denim/gold theme.
+   R55: بقى محتاج صلاحية manpower.export (view) — الأدمن يقدر يمنع
+   التصدير عن أي يوزر من لوحة الصلاحيات. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { XBook, XSheet, XStyle } from "@/lib/marib/xlsx-writer";
 import { q } from "@/lib/marib/db";
-import { serverFail, requireUser } from "@/lib/marib/http";
+import { serverFail, requirePerm } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -97,7 +99,8 @@ function statusCell(sh: XSheet, r: number, c: number, variance: number, fill = "
 
 export async function GET(req: NextRequest) {
   try {
-    const g = await requireUser(req, "manpower", "EXPORT");
+    /* R55: التصدير صلاحية manpower.export — مش أي يوزر داخل */
+    const g = await requirePerm(req, "manpower.export", "view");
     if (g.res) return g.res;
 
     /* ---------- R50: ?lang=ar|tr — الترجمة من أعمدة الشيت ----------

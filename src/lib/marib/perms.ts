@@ -87,16 +87,23 @@ export const PERM_KEY_SET: Set<string> = new Set(PERM_KEYS.map((k) => k.key));
 
 /* ---------------- default fallback by role ---------------- */
 
-/** المستوى الافتراضي لو مفيش override — بيرجع للـ role. */
+/** المستوى الافتراضي لو مفيش override — بيرجع للـ role.
+ *  R55: الافتراضيات اتظبطت على السلوك الفعلي للـ API قبل الصلاحيات:
+ *  الأدمن كان بيدير اليوزرين والإعدادات بالكامل عن طريق دوره، فلو
+ *  خلينا users.manage="view" ليه كان هيتقفل فجأة (رجوعية). */
 export function defaultForRole(role: SessionUser["role"], feature: string): PermLevel {
   /* dev: كل حاجة edit — what good is a developer account you can't use? */
   if (role === "dev") return "edit";
-  /* admin: edit كل حاجة ما عدا users.manage — دي dev-only عادة. */
-  if (role === "admin") {
-    if (feature === "users.manage") return "view"; /* admin sees the list, dev promotes/demotes */
-    return "edit";
+  /* admin: edit كل حاجة — زي ما كان الـ API سايح بالظبط قبل R55
+   *  (requireRole admin = تحكم كامل في اليوزرين والإعدادات). */
+  if (role === "admin") return "edit";
+  /* user: view by default — الأدمن يقدر يرفع أي ميزة لـ edit لليوزر ده.
+   *  R55: الأسطح الإدارية (إدارة اليوزرين / السجل / التخزين) مقفولة
+   *  لليوزر العادي افتراضيًا — كانت هترجع "view" وده كان هيفضح قايمة
+   *  اليوزرين ومساحة الداتابيز لكل واحد داخل. */
+  if (feature === "users.manage" || feature === "audit.view" || feature === "storage.view") {
+    return "hidden";
   }
-  /* user: view only by default — الأدمن يقدر يرفع أي ميزة لـ edit لليوزر ده. */
   return "view";
 }
 

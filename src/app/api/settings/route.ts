@@ -1,13 +1,16 @@
 /* /api/settings — app settings stored on the server (Neon)
-   GET → { targets, groups, storage_quota, mhome }   (any signed-in user)
-   PUT → { key, value }  · targets & groups: admin/dev · storage_quota: dev
+   GET → { targets, groups, storage_quota, mhome }   (any signed-in user —
+         الأهداف والتصنيفات جزء من رسم اللوحة نفسها لكل العارضين)
+   PUT → { key, value }  · R55: settings.edit edit هي الحارس
+         (targets/groups/theme — الأدمن يمنحها من لوحة الصلاحيات)
+         · storage_quota & mhome: dev only (فوق الصلاحية)
          every change is audited (old → new)
    R25: refactored onto the shared http helpers + structured logging. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
-import { isAdmin, isDev } from "@/lib/marib/session";
-import { fail, serverFail, readJson, logger, requireUser, requireRoleBody } from "@/lib/marib/http";
+import { isDev } from "@/lib/marib/session";
+import { fail, serverFail, readJson, logger, requireUser, requirePermBody } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -35,7 +38,9 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const g = await requireRoleBody(req, "user");
+    /* R55: تعديل الإعدادات صلاحية settings.edit edit — الصلاحية هي
+       الحارس على targets/groups/theme (كانت دور admin مقفول). */
+    const g = await requirePermBody(req, "settings.edit", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 
@@ -46,10 +51,6 @@ export async function PUT(req: NextRequest) {
     if (!KEYS.includes(key)) return fail("key", 400);
     if (key === "storage_quota" || key === "mhome") {   /* R30: mhome = dev only */
       if (!isDev(me)) return fail("dev", 403);
-    } else if (key === "theme") {                        /* R42: الثيم الافتراضي للموقع — أدمن */
-      if (!isAdmin(me)) return fail("admin", 403);
-    } else if (!isAdmin(me)) {
-      return fail("admin", 403);
     }
 
     const prev = await q("SELECT value FROM marib_setting WHERE key = $1", [key]);

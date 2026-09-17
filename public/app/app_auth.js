@@ -67,6 +67,40 @@ var MaribAuth = (function () {
   function roleKey(r) { return r === "dev" ? "us_role_dev" : r === "admin" ? "us_role_admin" : "us_role_user"; }
 
   /* ============================================================
+     R55 — الصلاحيات الفعلية (effective perms)
+     المشكلة: لوحة الصلاحيات كانت بتتكتب في الداتابيز ومحدش بيقراها —
+     مفيش سطر واحد في الواجهة كان بيسأل "ده مسموح له؟". دلوقتي بعد
+     كل login/session بنجيب /api/perms?me=1 (المستويات الفعّالة بعد
+     دمج overrides الأدمن مع افتراض الدور) وكل الواجهة بتسأل can().
+     السيرفر بيصد برضه على كل مسار — الواجهة دي للاحترام البصري
+     بس، مش خط الدفاع (لو حد عدّل الـ DOM من الديف تولز الـ API
+     هيرجّعله 403).
+     ============================================================ */
+  var myPerms = null;   /* { "data.view": "hidden"|"view"|"edit", … } أو null */
+  var PERM_ORDER = { hidden: 0, view: 1, edit: 2 };
+  function permLevel(feature) {
+    if (!me) return "hidden";
+    var lvl = myPerms && myPerms[feature];
+    if (lvl) return lvl;
+    /* fallback مطابق لـ defaultForRole على السيرفر — لو فشل الفيتش
+       ما نفتحش أبواب بالغلط (fail-safe مش fail-open) */
+    if (me.role === "dev" || me.role === "admin") return "edit";
+    if (feature === "users.manage" || feature === "audit.view" || feature === "storage.view") return "hidden";
+    return "view";
+  }
+  function can(feature, min) {
+    return PERM_ORDER[permLevel(feature)] >= PERM_ORDER[min || "view"];
+  }
+  function loadPerms(next) {
+    if (!me) { myPerms = null; if (next) next(); return; }
+    fetch("/api/perms?me=1", { credentials: "include" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { myPerms = (d && d.perms) || null; })
+      .catch(function () { /* الفالباك جوه permLevel بيكفي */ })
+      .then(function () { if (next) next(); });
+  }
+
+  /* ============================================================
      password theater — machine sews, ripper unpicks
      ============================================================ */
   var pwVisible = false, animating = false, curEnd = null;
@@ -308,6 +342,7 @@ var MaribAuth = (function () {
 
   function showLogin() {
     me = null;
+    myPerms = null;   /* R55: صلاحيات اليوزر السابق مالهاش لازمة */
     closeAppModals();
     document.title = I18N.t("brand_name");   /* R42: العنوان بيقول أنا فين */
     /* R37: leaving via logout also drops the الاتزان surface — the login
@@ -362,24 +397,42 @@ var MaribAuth = (function () {
 
   function enterApp(fresh) {
     hideLogin();
-    refreshChrome();
-    if (fresh && me) toast(T("us_hello") + me.username, "ok");
-    /* R37: after login the user picks the surface — تحليل الأداء (the
-       existing dashboard) or الاتزان (the manpower hierarchy). The
-       gate re-opens any time from the topbar ⇄ button.
-       R46: نحفظ آخر اختيار في localStorage عشان الريفرش ما يرجعش
-       للبوابة — اليوزر يفضل في نفس الصفحة اللي كان فيها. */
-    var lastMode = null;
-    try { lastMode = localStorage.getItem("marib_last_mode"); } catch (e) { }
-    if (lastMode === "dashboard" && window.App && App.enterDash) {
-      App.enterDash();
-      return;
-    }
-    if (lastMode === "balance" && window.MaribManpower && MaribManpower.show) {
-      MaribManpower.show();
-      return;
-    }
-    showModeGate();
+    /* R55: الصلاحيات قبل أي قرار دخول — الوضع المحفوظ والبوابة
+       بيتحكموا فيهم data.view / manpower.view. من غير الصلاحيات
+       مش بنفتح أي سطح. */
+    loadPerms(function () {
+      refreshChrome();
+      if (fresh && me) toast(T("us_hello") + me.username, "ok");
+      /* R37: after login the user picks the surface — تحليل الأداء (the
+         existing dashboard) or الاتزان (the manpower hierarchy). The
+         gate re-opens any time from the topbar ⇄ button.
+         R46: نحفظ آخر اختيار في localStorage عشان الريفرش ما يرجعش
+         للبوابة — اليوزر يفضل في نفس الصفحة اللي كان فيها.
+         R55: الوضع المحفوظ بيتحقق من الصلاحية الأول — يوزر متخفية
+         عنه اللوحة بيدخل على المسموح بس. */
+      var dash = can("data.view", "view"), mp = can("manpower.view", "view");
+      if (!dash && !mp) { showModeGate(); return; }   /* البوابة هتقول مفيش حاجة */
+      var lastMode = null;
+      try { lastMode = localStorage.getItem("marib_last_mode"); } catch (e) { }
+      if (lastMode === "dashboard" && dash && window.App && App.enterDash) {
+        App.enterDash();
+        return;
+      }
+      if (lastMode === "balance" && mp && window.MaribManpower && MaribManpower.show) {
+        MaribManpower.show();
+        return;
+      }
+      /* آخر وضع كان ممنوع → ندخل على المسموح الوحيد على طول */
+      if (!dash && mp && window.MaribManpower && MaribManpower.show) {
+        MaribManpower.show();
+        return;
+      }
+      if (dash && !mp && window.App && App.enterDash) {
+        App.enterDash();
+        return;
+      }
+      showModeGate();
+    });
   }
 
   /* ============================================================
@@ -392,6 +445,15 @@ var MaribAuth = (function () {
       /* skeleton without the gate (older cache) — straight to the dashboard */
       if (window.App && App.enterDash) App.enterDash();
       return;
+    }
+    /* R55: زرار السطح الممنوع مش هيظهر — البوابة نفسها بتسمع الصلاحيات */
+    var dash = can("data.view", "view"), mp = can("manpower.view", "view");
+    var d = $("mgDash"), m = $("mgMp"), tt = $("mgTitle");
+    if (d) d.style.display = dash ? "" : "none";
+    if (m) m.style.display = mp ? "" : "none";
+    if (tt) {
+      /* مفيش سطح مسموح → العنوان نفسه بيقول الحكاية ويفضل زرار الخروج بس */
+      tt.textContent = (!dash && !mp) ? T("perm_none") : T("th_gate_title");
     }
     mgEl.hidden = false;
     document.title = I18N.t("th_gate_title") + " — " + I18N.t("brand_name");   /* R42 */
@@ -407,11 +469,14 @@ var MaribAuth = (function () {
   function bindModeGate() {
     var d = $("mgDash"), m = $("mgMp");
     if (d) d.addEventListener("click", function () {
+      /* R55: حماية مزدوجة — الزرار مخفي أصلاً، بس لو حد وصله */
+      if (!can("data.view", "view")) { toast(T("perm_no_dash"), "err"); return; }
       try { localStorage.setItem("marib_last_mode", "dashboard"); } catch (e) { }
       hideModeGate();
       if (window.App && App.enterDash) App.enterDash();
     });
     if (m) m.addEventListener("click", function () {
+      if (!can("manpower.view", "view")) { toast(T("perm_no_mp"), "err"); return; }
       try { localStorage.setItem("marib_last_mode", "balance"); } catch (e) { }
       hideModeGate();
       if (window.MaribManpower && MaribManpower.show) MaribManpower.show();
@@ -447,16 +512,34 @@ var MaribAuth = (function () {
         chip.style.display = "flex";
       } else chip.style.display = "none";
     }
-    var b = $("btnUsers"), o = $("btnLogout"), g = $("btnSettings");
-    if (b) b.style.display = isAdmin(me) ? "" : "none";
+    var o = $("btnLogout");
     if (o) o.style.display = me ? "" : "none";
-    if (g) g.style.display = me ? "" : "none";
-    /* R44: لوجو المستخدمين الجديد (شريط العنوان + البوابة + الاتزان) — أدمن بس */
-    var adm = isAdmin(me);
-    ["tbUsersBtn", "mgUsers", "mpUsersBtn"].forEach(function (id) {
+    /* R55: كل أزرار الوصول بتتقفل بالصلاحية الفعلية مش بالدور —
+       دي كانت فكرة «زراير وخلاص»: الزرار كان بيبان للأدمن بس لكن
+       المسارات نفسها كانت مفتوحة لأي يوزر. */
+    var sv = !!(me && can("settings.view", "view"));
+    var um = !!(me && can("users.manage", "view"));
+    var dv = !!(me && can("data.view", "view"));
+    var du = !!(me && can("data.upload", "edit"));
+    ["btnSettings", "tbSetBtn", "mgSettings", "mpSetBtn"].forEach(function (id) {
       var el = $(id);
-      if (el) el.style.display = adm ? "" : "none";
+      if (el) el.style.display = sv ? "" : "none";
     });
+    ["btnUsers", "tbUsersBtn", "mgUsers", "mpUsersBtn"].forEach(function (id) {
+      var el = $(id);
+      if (el) el.style.display = um ? "" : "none";
+    });
+    /* R44: زراير البيانات (شريط العنوان + البوابة + الاتزان) — data.view */
+    ["tbDataBtn", "mgData", "mpDataBtn"].forEach(function (id) {
+      var el = $(id);
+      if (el) el.style.display = dv ? "" : "none";
+    });
+    /* R44: زرار الداتا إنتري في البوابة — data.upload edit */
+    var ent = $("mgEntry");
+    if (ent) ent.style.display = du ? "" : "none";
+    /* زرار التبديل ⇄ مش لازمة لو سطح واحد بس مسموح */
+    var sw = $("btnSwap");
+    if (sw) sw.style.display = (me && dv && can("manpower.view", "view")) ? "" : "none";
     /* R26/R27: photo circle + name + job title (title row, topbar chip) */
     if (window.MaribMe) { try { window.MaribMe.set(me); } catch (e) { } }
   }
@@ -974,6 +1057,10 @@ var MaribAuth = (function () {
     me: function () { return me; },
     isAdmin: function () { return isAdmin(me); },
     isDev: function () { return isDev(me); },
+    /* R55: الصلاحيات الفعلية — كل الواجهة بتسألهم */
+    can: can,
+    permLevel: permLevel,
+    reloadPerms: function (next) { loadPerms(next); },
     veilOff: veilOff,
     /* R37: both surfaces reopen the mode gate through this handle */
     showGate: showModeGate,

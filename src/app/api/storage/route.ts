@@ -1,15 +1,17 @@
-/* /api/storage — Neon database storage meter (dev/Amin only)
+/* /api/storage — Neon database storage meter
    Reports the real Postgres size (pg_database_size, with a
    sum-of-relations fallback) + the biggest tables, against the
    plan quota (stored in settings).
    R25: default quota corrected to 0.5 GB — the VERIFIED Neon Free
    plan limit (neon.com/pricing: "0.5 GB of storage per project").
    The previous 3 GB figure was an unverified default. A dev can
-   still override it from the settings panel (Launch = 5 GB+). */
+   still override it from the settings panel (Launch = 5 GB+).
+   R55: الحارس بقى صلاحية storage.view (view) — dev/admin افتراضيًا،
+   واليوزر العادي مخفي له إلا لو الأدمن منحه من لوحة الصلاحيات. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q } from "@/lib/marib/db";
-import { serverFail, logger, requireRole } from "@/lib/marib/http";
+import { serverFail, logger, requirePerm } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -20,7 +22,8 @@ const DEFAULT_QUOTA = 0.5 * 1024 * 1024 * 1024; // 0.5 GB — Neon Free plan (ve
 
 export async function GET(req: NextRequest) {
   try {
-    const g = await requireRole(req, "dev", "storage", "GET");
+    /* R55: رؤية التخزين صلاحية storage.view — dev/admin افتراضيًا */
+    const g = await requirePerm(req, "storage.view", "view");
     if (g.res) return g.res;
 
     let bytes = 0;

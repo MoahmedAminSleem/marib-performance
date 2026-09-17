@@ -1456,10 +1456,12 @@ var App = (function () {
         }).catch(function () { buildClsList(null); });
       }
     }
-    if (view === "audit" && MaribAuth.isDev && MaribAuth.isDev()) AppAdmin.auditReset();
-    if (view === "storage" && MaribAuth.isDev && MaribAuth.isDev()) AppAdmin.loadStorage();
+    /* R55: تحميل بيانات كل خانة بصلاحيتها — السيرفر بيصد برضه */
+    var canP2 = function (f, m) { return !!(MaribAuth.can && MaribAuth.can(f, m)); };
+    if (view === "audit" && canP2("audit.view", "view")) AppAdmin.auditReset();
+    if (view === "storage" && canP2("storage.view", "view")) AppAdmin.loadStorage();
     if (view === "mhome" && MaribAuth.isDev && MaribAuth.isDev()) AppAdmin.loadMhome();
-    if (view === "perms" && MaribAuth.isAdmin && MaribAuth.isAdmin()) AppAdmin.loadPerms();
+    if (view === "perms" && canP2("users.manage", "view")) AppAdmin.loadPerms();
   }
 
   function goSettingsHome() {
@@ -1505,6 +1507,11 @@ var App = (function () {
     return (mn !== mk ? mn : String(key).slice(5, 7)) + " " + String(key).slice(0, 4);
   }
   function openDataPop() {
+    /* R55: جدول الشهور قراءة — محتاج data.view view بس */
+    if (window.MaribAuth && MaribAuth.can && !MaribAuth.can("data.view", "view")) {
+      toast(T("perm_denied"), "err");
+      return;
+    }
     var pop = $("dpPop");
     if (!pop) return;
     var host = $("dpMonths");
@@ -1533,19 +1540,28 @@ var App = (function () {
   window.__maribDataPop = { open: openDataPop, refresh: dpRenderMonths };   /* used by الاتزان + gate */
 
   function openSettings() {
-    var admin = MaribAuth.isAdmin ? MaribAuth.isAdmin() : false;
     var dev = MaribAuth.isDev ? MaribAuth.isDev() : false;
-    /* role-filter the category boxes (R27):
-       targets = admin+ · groups = everyone · audit/storage = dev only ·
-       perms (R46-2) = admin+ (admin can manage regular users; dev sees all) */
+    var canP = function (f, m) { return !!(MaribAuth.can && MaribAuth.can(f, m)); };
+    /* R55: الخانات بالصلاحية الفعلية مش بالدور — لوحة الصلاحيات بقت
+       حقيقية: أي مفتاح بتغيره بيغير إيه اللي البيان هنا فعلًا:
+       targets = settings.edit edit · groups/theme = settings.view ·
+       audit = audit.view · storage = storage.view ·
+       perms = users.manage view · mhome = dev بس (مفيش ليها مفتاح) */
     var bx = document.querySelectorAll("#setHome .set-box");
     bx.forEach(function (b) {
       var v = b.getAttribute("data-view");
-      var show = v === "targets" ? admin : (v === "groups" || v === "theme" ? true : (v === "perms" ? admin : dev));
+      var show =
+        v === "targets" ? canP("settings.edit", "edit") :
+        (v === "groups" || v === "theme") ? canP("settings.view", "view") :
+        v === "audit" ? canP("audit.view", "view") :
+        v === "storage" ? canP("storage.view", "view") :
+        v === "perms" ? canP("users.manage", "view") :
+        v === "mhome" ? dev : true;
       b.style.display = show ? "" : "none";
     });
     syncThemeCards();
-    var cs = $("clsSave"); if (cs) cs.disabled = !admin;
+    /* R55: حفظ التصنيف محتاج settings.edit edit (السيرفر بيفحصها كمان) */
+    var cs = $("clsSave"); if (cs) cs.disabled = !canP("settings.edit", "edit");
     goSettingsHome();
     tgFill();
     buildClsList();
@@ -1573,9 +1589,19 @@ var App = (function () {
      the topbar mini chip (photo + name, top-left) stays in sync with
      the signed-in user. R31: the me-badge that sat beside the page
      title is gone — it duplicated the topbar chip. */
+  /* R55: أدوات الرفع بتتقفل للي ماعندوش data.upload edit — قواعد الإخفاء
+     في آخر app.css (القاعدة body.no-upload). بيندها مع كل دخول/خروج
+     لأن MaribAuth بينادي MaribMe.set من refreshChrome بعد تحميل الصلاحيات. */
+  function applyPermChrome() {
+    var A = window.MaribAuth;
+    var up = !!(A && A.can && A.can("data.upload", "edit"));
+    document.body.classList.toggle("no-upload", !up);
+  }
+
   window.MaribMe = {
     set: function (u) {
       setAvPhoto($("ucAv"), null, null, u ? u.photo : null, u ? u.username : "");
+      applyPermChrome();
     }
   };
 
@@ -1607,7 +1633,8 @@ var App = (function () {
 
   function bindTargetsPanel() {
     $("tgSave").addEventListener("click", function () {
-      if (!(MaribAuth.isAdmin && MaribAuth.isAdmin())) { toast(T("toast_need_admin"), "err"); return; }
+      /* R55: حفظ الأهداف محتاج settings.edit edit (نفس فحص السيرفر) */
+      if (!(MaribAuth.can && MaribAuth.can("settings.edit", "edit"))) { toast(T("toast_need_admin"), "err"); return; }
       var ok = true, o = {};
       TG_FIELDS.forEach(function (fd) {
         var v = parseFloat($(fd[0]).value);
@@ -2170,6 +2197,13 @@ var App = (function () {
      Same flow the old enterApp ran: fetch the server months once per
      session, then only re-use them (server stays light on every swap). */
   function enterDash(page) {
+    /* R55: دخول شاشة التحليل محتاج data.view — السيرفر بيصد /api/data
+       برضه (403)، دي حماية الواجهة من أول خطوة */
+    if (window.MaribAuth && MaribAuth.can && !MaribAuth.can("data.view", "view")) {
+      toast(T("perm_no_dash"), "err");
+      if (MaribAuth.showGate) MaribAuth.showGate();
+      return;
+    }
     if (window.MaribManpower && MaribManpower.hide) { try { MaribManpower.hide(); } catch (e) { } }
     /* R43: الدخول من زرار «البيانات» في البوابة لازم يقفل البوابة نفسها */
     if (window.MaribAuth && MaribAuth.hideGate) { try { MaribAuth.hideGate(); } catch (e) { } }

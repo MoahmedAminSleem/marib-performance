@@ -4153,3 +4153,15 @@ html[data-theme="light"] .mp-t h2{color:#F1E4C9}
 html[data-theme="light"] .mp-t small{color:#C9B583}
 html[data-theme="light"] .mp-tab{color:#C9D4E4}
 html[data-theme="light"] .mp-tab:hover{color:#F1E4C9}
+
+/* ============================================================
+   R55 — الصلاحيات الفعلية: أدوات الرفع بتتقفل للي ماعندوش
+   data.upload edit. الجسم بياخد no-upload من applyPermChrome
+   في app_main.js (بعد تحميل صلاحيات اليوزر). السيرفر بيصد
+   POST /api/data برضه — دي طبقة الواجهة بس.
+   ============================================================ */
+body.no-upload #dropZone,
+body.no-upload .dt-hero,
+body.no-upload #dpFolder,
+body.no-upload #dpExcel,
+body.no-upload #ndBtn { display: none !important; }

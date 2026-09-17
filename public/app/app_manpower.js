@@ -2352,21 +2352,38 @@ var MaribManpower = (function () {
 
   /* ---------------- show / hide ---------------- */
   function show() {
+    /* R55: فتح الاتزان محتاج manpower.view — السيرفر بيصد /api/manpower
+       برضه (403)، دي حماية الواجهة */
+    if (window.MaribAuth && MaribAuth.can && !MaribAuth.can("manpower.view", "view")) {
+      toast(T("perm_no_mp"), "err");
+      if (window.MaribAuth && MaribAuth.showGate) MaribAuth.showGate();
+      return;
+    }
     on = true;
-    ADMIN = !!(window.MaribAuth && MaribAuth.isAdmin && MaribAuth.isAdmin());
+    /* R55: التعديل صلاحية manpower.edit edit مش دور admin — الأدمن
+       يمنحها لأي يوزر من لوحة الصلاحيات. الفلاج ده بيلف على كل أدوات
+       التعديل: القلم / التحديد / الحذف / الإضافة / الأقسام / الشواغر */
+    ADMIN = !!(window.MaribAuth && MaribAuth.can && MaribAuth.can("manpower.edit", "edit"));
     document.body.classList.add("mp-on");
     var w = $("mpWrap");
     if (w) w.hidden = false;
+    /* R55: الاستيراد والتصدير ليهم مفاتيحهم — manpower.import edit
+       وmanpower.export view (التيمبلت تصدير برضه) */
+    var canImp = !!(window.MaribAuth && MaribAuth.can && MaribAuth.can("manpower.import", "edit"));
+    var canExp = !!(window.MaribAuth && MaribAuth.can && MaribAuth.can("manpower.export", "view"));
     var add = $("mpAddBtn"), imp = $("mpImportBtn"), dad = $("mpDeptBtn"), exp = $("mpExportBtn");
     if (add) add.style.display = ADMIN ? "" : "none";
-    if (imp) imp.style.display = ADMIN ? "" : "none";
+    if (imp) imp.style.display = canImp ? "" : "none";
     if (dad) dad.style.display = ADMIN ? "" : "none";
-    if (exp) exp.style.display = "";   /* R39: التصدير متاح لكل المسجلين — قراءة بس */
-    /* R42: الأزرار الجديدة — عجز + تحديد + تيمبلت للأدمن، التبديل للكل */
+    if (exp) exp.style.display = canExp ? "" : "none";   /* R39→R55: التصدير بقى بصلاحية */
+    /* R42: الأزرار الجديدة — عجز + تحديد + تيمبلت، التبديل للكل */
     var vac = $("mpVacBtn"), sel = $("mpSelBtn"), tpl = $("mpTmplBtn"), ordB = $("mpOrdBtn");
     if (vac) vac.style.display = ADMIN ? "" : "none";
     if (sel) sel.style.display = ADMIN ? "" : "none";
-    if (tpl) tpl.style.display = ADMIN ? "" : "none";
+    if (tpl) tpl.style.display = canExp ? "" : "none";
+    /* R55: زرار قائمة الاستيراد/التصدير كله يختفى لو الاتنين مقفولين */
+    var ieb = $("mpImpExpBtn");
+    if (ieb) ieb.style.display = (canImp || canExp) ? "" : "none";
     if (ordB) {
       ordB.style.display = "";
       syncOrdBtn();

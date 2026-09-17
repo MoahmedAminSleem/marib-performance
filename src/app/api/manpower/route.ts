@@ -13,11 +13,14 @@
          Actual/required rule (the owner's): every row = one required
          position; a row with an empty name = a vacancy (missing).
          required(node) = rows, actual(node) = filled rows, the manual
-         req value is an override on top. */
+         req value is an override on top.
+   R55: الصلاحيات الفعلية — GET محتاج manpower.view وPOST محتاج
+         manpower.edit edit (والاستيراد manpower.import edit) — كان
+         الدور admin هو الحارس والأدمن مقدرش يمنح يوزر تعديل الاتزان. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
-import { fail, serverFail, readJson, logger, requireUser, requireRoleBody } from "@/lib/marib/http";
+import { fail, serverFail, readJson, logger, requirePerm, requirePermBody } from "@/lib/marib/http";
 import { cleanStr, normCode, deptPath, logTransfer, hasArabic, importManpower } from "@/lib/marib/manpower_io";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +32,8 @@ const lg = logger("manpower");
 
 export async function GET(req: NextRequest) {
   try {
-    const g = await requireUser(req, "manpower", "GET");
+    /* R55: رؤية الاتزان = manpower.view — مش أي يوزر داخل */
+    const g = await requirePerm(req, "manpower.view", "view");
     if (g.res) return g.res;
 
     /* R50: label_tr للأقسام + name_tr/job_tr للموظفين (التركي من الشيت) */
@@ -69,15 +73,20 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    /* editing the manpower structure is an admin+ job — viewers get 403 */
-    const g = await requireRoleBody(req, "admin");
-    if (g.res) return g.res;
-    const me = g.user!;
-    const actor = me.username;
-
+    /* R55: التعديل صلاحية manpower.edit edit — الأدمن يمنحها لأي يوزر
+       من لوحة الصلاحيات. الاستيراد وحده له مفتاحه manpower.import.
+       نقرأ البادي الأول عشان نعرف الأكشن (requirePermBody مش بياكله). */
     const body = await readJson(req);
     if (!body) return fail("body", 413);
     const action = String(body.action || "");
+    const g = await requirePermBody(
+      req,
+      action === "import" ? "manpower.import" : "manpower.edit",
+      "edit"
+    );
+    if (g.res) return g.res;
+    const me = g.user!;
+    const actor = me.username;
 
     /* ---------- R42: تسمية الجذر (مأرب 3 / Marib 3) لكل لغة ---------- */
     if (action === "rootSet") {

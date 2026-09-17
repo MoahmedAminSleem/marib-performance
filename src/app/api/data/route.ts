@@ -3,11 +3,15 @@
    POST → full month sync: replaces the month's rows completely
           (re-uploading the same file = upsert + delete of missing rows)
    R25: refactored onto the shared http helpers + structured logging
-   (every sync is logged with its month + row counts). */
+   (every sync is logged with its month + row counts).
+   R55: الصلاحيات الفعلية — GET محتاج data.view (كان أي يوزر داخل
+   ياخد كل بيانات اللوحة!) وPOST محتاج data.upload edit (كان دور
+   admin بس — يوزر ممنوح الصلاحية كان مرفوض والأدمن المخصوم كان
+   بيفضل يرفع). */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit, withTransaction } from "@/lib/marib/db";
-import { fail, serverFail, readJson, logger, requireUser, requireRoleBody } from "@/lib/marib/http";
+import { fail, serverFail, readJson, logger, requirePerm, requirePermBody } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,7 +37,8 @@ function validPack(pack: unknown): pack is Record<string, Packed> {
 
 export async function GET(req: NextRequest) {
   try {
-    const g = await requireUser(req, "data", "GET");   /* sync session check, like the original */
+    /* R55: مين يقدر يشوف اللوحة — data.view هو الحارس (مش مجرد زرار) */
+    const g = await requirePerm(req, "data.view", "view");
     if (g.res) return g.res;
 
     const rows = await q(
@@ -77,8 +82,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    /* replacing a month on the server is destructive — admin/dev only */
-    const g = await requireRoleBody(req, "admin");
+    /* R55: رفع/استبدال شهر = data.upload edit — الصلاحية مش الدور.
+       استبدال الشهر مدمر، فالحد الأدنى edit زي ما اللوحة بتعد. */
+    const g = await requirePermBody(req, "data.upload", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 
