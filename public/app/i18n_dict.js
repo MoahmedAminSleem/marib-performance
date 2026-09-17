@@ -634,6 +634,8 @@ pg_data: { ar: ["البيانات", "DATA SYNC"], en: ["Data", "DATA SYNC"], tr:
    R37 — الاتزان (manpower balance) + mode gate after login
    ============================================================ */
 mg_title:    { ar: "اختار واجهة البدء", en: "Choose where to start", tr: "Nereden başlayalım" },
+mg_hello:    { ar: "أهلًا، ", en: "Welcome, ", tr: "Hoş geldin, " },   /* R64: ترحيب الرئيسية باسم اليوزر */
+nav_home:    { ar: "الرئيسية", en: "Home", tr: "Ana Sayfa" },           /* R64: عنوان التاب على الرئيسية */
 mg_dash:     { ar: "تحليل الأداء", en: "Dashboard", tr: "Panel" },
 mg_dash_sub: { ar: "رسومات ومؤشرات أداء المصنع", en: "Factory KPIs & charts", tr: "Fabrika performans grafikleri" },
 mg_mp:       { ar: "الاتزان", en: "Balance", tr: "Denge" },
@@ -774,6 +776,7 @@ nav_tt_swap: { ar: "التبديل بين الواجهتين", en: "Switch betwe
   pm_role_user:  { ar: "يوزر", en: "User", tr: "Kullanıcı" },
   pm_group_manpower: { ar: "الاتزان", en: "Balance", tr: "Denge" },
   pm_group_data: { ar: "اللوحة", en: "Dashboard", tr: "Panel" },
+  pm_group_entry: { ar: "صفحة إدخال البيانات", en: "Data Entry Page", tr: "Veri Girişi Sayfası" },   /* R64 */
   pm_group_users: { ar: "المستخدمين", en: "Users", tr: "Kullanıcılar" },
   pm_group_settings: { ar: "الإعدادات", en: "Settings", tr: "Ayarlar" },
   pm_group_audit: { ar: "السجل والتخزين", en: "Audit & Storage", tr: "Günlük ve Depolama" },
@@ -903,6 +906,7 @@ ent_unmatched_list:{ ar: "السجلات اللي ملقيتش لها موظف:"
 
   /* ---------- R50: بوابة + داتا إنتري + استيراد الشيت-هو-الحقيقة ---------- */
 mg_entry_sub:    { ar: "الإنتاج · الغياب · الأوفر تايم", en: "Production · absence · overtime", tr: "Üretim · devamsızlık · fazla mesai" },
+ent_viewonly:   { ar: "عرض فقط", en: "View only", tr: "Sadece görüntüle" },   /* R64: شارة قراءة فقط في الإدخال */
 ent_person:      { ar: "الموظف — اكتب الاسم أو الكود", en: "Employee — type name or code", tr: "Çalışan — ad veya kod yazın" },
 ent_person_picked:{ ar: "الموظف المختار", en: "Picked employee", tr: "Seçilen çalışan" },
 ent_add_code:    { ar: "إضافة كرقم", en: "Add as code", tr: "Kod olarak ekle" },

@@ -7,9 +7,11 @@
    POST ?action=import {rows}    → رفع التيمبلت (الواجهة بتقرا الإكسل
                                    وتبعت الصفوف — نفس نمط الغياب)
    DELETE ?po=                   → حذف PO من الريفرانس (الإنتاج بيفضل)
-   كل عملية كتابة بتسجل في الـ audit log. الأذونات: القراءة حارس
-   الإدخال (data.view أو data.upload — R63)، الكتابة data.upload edit —
-   نفس أذونات الإدخال نفسه. */
+   كل عملية كتابة بتسجل في الـ audit log. الأذونات (R64): القراءة حارس
+   الإدخال (entry.view أو entry.edit أو entry.po)، وإدارة العقود
+   (الكتابة/الحذف/رفع التيمبلت) entry.po edit — قسم الصلاحيات المخصوص
+   لصفحة الإدخال. التسجيل التلقائي من نموذج الإنتاج بيفضل مع entry.edit
+   (بيقعد جوا POST /api/entries/production). */
 
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
@@ -145,7 +147,8 @@ export async function POST(req: NextRequest) {
   try {
     if (req.nextUrl.searchParams.get("action") === "import") return importTemplate(req);
 
-    const g = await requirePermBody(req, "data.upload", "edit");
+    /* R64: إدارة العقود بمفتاحها الخاص — entry.po */
+    const g = await requirePermBody(req, "entry.po", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 
@@ -179,7 +182,8 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const g = await requirePermBody(req, "data.upload", "edit");
+    /* R64: حذف عقد PO — entry.po */
+    const g = await requirePermBody(req, "entry.po", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 
@@ -261,7 +265,8 @@ async function downloadTemplate(req: NextRequest) {
        الواجهة بتقرا الإكسل بالـ XLSX وتبعت الصفوف JSON) ---- */
 async function importTemplate(req: NextRequest) {
   try {
-    const g = await requirePermBody(req, "data.upload", "edit");
+    /* R64: رفع تيمبلت العقود — entry.po */
+    const g = await requirePermBody(req, "entry.po", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 

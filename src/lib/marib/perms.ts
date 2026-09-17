@@ -24,7 +24,7 @@ export interface PermKey {
   desc_en: string;
   desc_ar: string;
   /** grouping tag — used to render sections in the admin UI */
-  group: "manpower" | "data" | "users" | "settings" | "audit";
+  group: "manpower" | "data" | "entry" | "users" | "settings" | "audit";
 }
 
 /** قائمة بكل الميزات اللي الأدمن يقدر يتحكم فيها. مفيش حاجة تتعمل
@@ -57,6 +57,22 @@ export const PERM_KEYS: PermKey[] = [
     desc_en: "Upload Excel for a new month or refresh existing",
     desc_ar: "رفع إكسل لشهر جديد أو تحديث شهر موجود",
     group: "data" },
+  /* R64: صفحة إدخال البيانات — قسم مخصوص (طلب المالك): قبل كده كانت
+     الصفحة مربوطة بمفاتيح اللوحة (data.view/data.upload) فتحكم
+     المالك فيها كان غير مباشر ومربك. المفاتيح الثلاثة الجديدة بتفصل
+     صفحة الإدخال بالكامل عن اللوحة: الرؤية / الحفظ والتعديل / عقود الـ PO */
+  { key: "entry.view",  label_en: "View Data Entry",   label_ar: "رؤية صفحة الإدخال",
+    desc_en: "Open the data entry page and read its entries",
+    desc_ar: "فتح صفحة إدخال البيانات وقراءة سجلاتها",
+    group: "entry" },
+  { key: "entry.edit", label_en: "Edit Data Entry",    label_ar: "تعديل صفحة الإدخال",
+    desc_en: "Add / delete production, absence and overtime entries + templates",
+    desc_ar: "إضافة وحذف سجلات الإنتاج والغياب والأوفر تايم + التيمبلت",
+    group: "entry" },
+  { key: "entry.po",    label_en: "Manage PO Contracts", label_ar: "إدارة عقود الشراء",
+    desc_en: "Upload PO template, add / edit / delete contract quantities",
+    desc_ar: "رفع تيمبلت الـ PO وإضافة وتعديل وحذف كميات العقود",
+    group: "entry" },
   /* users / المستخدمين */
   { key: "users.manage", label_en: "Manage Users",     label_ar: "إدارة المستخدمين",
     desc_en: "Create / delete users, set passwords and roles",
@@ -100,8 +116,13 @@ export function defaultForRole(role: SessionUser["role"], feature: string): Perm
   /* user: view by default — الأدمن يقدر يرفع أي ميزة لـ edit لليوزر ده.
    *  R55: الأسطح الإدارية (إدارة اليوزرين / السجل / التخزين) مقفولة
    *  لليوزر العادي افتراضيًا — كانت هترجع "view" وده كان هيفضح قايمة
-   *  اليوزرين ومساحة الداتابيز لكل واحد داخل. */
-  if (feature === "users.manage" || feature === "audit.view" || feature === "storage.view") {
+   *  اليوزرين ومساحة الداتابيز لكل واحد داخل.
+   *  R64: صفحة الإدخال كمان مقفولة افتراضيًا — قبل كده كانت محتاجة
+   *  data.upload=edit (مفتاح اللوحة) عشان تتفتح، والافتراضي بتاع
+   *  اليوزر "view" فمحدش كانشوفها غير الممنوحين. نفس السلوك بالظبط
+   *  بس من مفتاحها الخاص دلوقتي. */
+  if (feature === "users.manage" || feature === "audit.view" || feature === "storage.view"
+    || feature === "entry.view" || feature === "entry.edit" || feature === "entry.po") {
     return "hidden";
   }
   return "view";

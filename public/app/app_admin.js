@@ -265,6 +265,12 @@ var AppAdmin = (function (ctx) {
      view | edit. Changes save immediately on dropdown change.
      ============================================================ */
   var PM_DATA = null;  /* { users: [{id,username,role,perms}], features: [...] } */
+  /* R64: المفاتيح اللي افتراضها «مخفي» لليوزر العادي — نفس منطق
+     defaultForRole السيرفري (perms.ts). المرجع الوحيد للاتنين. */
+  var PM_HIDDEN_USER = {
+    "users.manage": 1, "audit.view": 1, "storage.view": 1,
+    "entry.view": 1, "entry.edit": 1, "entry.po": 1
+  };
   function loadPerms() {
     var rowsHost = $("pmRows");
     var usersHead = $("pmUsersHead");
@@ -313,20 +319,23 @@ var AppAdmin = (function (ctx) {
       var cls = u.role === "admin" ? "admin" : (u.role === "dev" ? "dev" : "");
       return '<div class="pm-uh ' + cls + '"><b>' + esc(u.username || "?") + "</b><small>" + esc(T("pm_role_" + (u.role || "user"))) + "</small></div>";
     }).join("");
-    /* group features by group key */
+    /* group features by group key
+       R64: قسم «صفحة إدخال البيانات» جوه اللوحة — بعد اللوحة وقبل
+       المستخدمين (ترتيب PERM_KEYS في السيرفر). */
     var groups = {};
-    var groupOrder = ["manpower", "data", "users", "settings", "audit"];
+    var groupOrder = ["manpower", "data", "entry", "users", "settings", "audit"];
     features.forEach(function (f) {
       var g = f.group || "audit";
       if (!groups[g]) groups[g] = [];
       groups[g].push(f);
     });
     /* R63: نفس منطق defaultForRole السيرفري — عشان نعرض للمالك
-       المستوى الفعلي جنب كل اختيار ("افتراضي" كان صندوق أسود). */
+       المستوى الفعلي جنب كل اختيار ("افتراضي" كان صندوق أسود).
+       R64: مفاتيح صفحة الإدخال مخفية افتراضيًا لليوزر (نفس سلوك
+       السيرفر — القسم له مفاتيحه الخاصة دلوقتي). */
     function pmDefaultFor(role, key) {
       if (role === "dev" || role === "admin") return "edit";
-      if (key === "users.manage" || key === "audit.view" || key === "storage.view") return "hidden";
-      return "view";
+      return PM_HIDDEN_USER[key] ? "hidden" : "view";
     }
     function pmEffective(u, key) {
       var ov = (u.perms && u.perms[key]) || "inherit";
@@ -401,7 +410,7 @@ var AppAdmin = (function (ctx) {
               if (chip) {
                 var eff = (level === "inherit")
                   ? (PM_DATA.users[i].role === "admin" ? "edit"
-                    : (feature === "users.manage" || feature === "audit.view" || feature === "storage.view") ? "hidden" : "view")
+                    : PM_HIDDEN_USER[feature] ? "hidden" : "view")
                   : level;
                 chip.setAttribute("data-eff", eff);
                 chip.textContent = T("pm_eff") + " " + T("pm_lg_" + eff);

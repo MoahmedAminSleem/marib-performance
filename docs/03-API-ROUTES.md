@@ -28,19 +28,19 @@
 | `/api/perms` | GET ?me=1 | any | صلاحياتي الفعّالة |
 | `/api/perms` | PUT | perm:users.manage edit | set override (R55) |
 | `/api/perms` | DELETE | perm:users.manage edit | clear override (R55) |
-| `/api/entries/production` | GET | **entry-read** (data.view أو data.upload — R63) | ?month=YYYY-MM |
-| `/api/entries/production` | POST | perm:data.upload | create |
-| `/api/entries/production` | DELETE | perm:data.upload | ?id= |
+| `/api/entries/production` | GET | **entry-read** (entry.view أو entry.edit أو entry.po — R64) | ?month=YYYY-MM |
+| `/api/entries/production` | POST | perm:entry.edit | create (التسجيل التلقائي لعقد PO الجديد جواه) |
+| `/api/entries/production` | DELETE | perm:entry.edit | ?id= |
 | `/api/entries/employees` | GET | **entry-read** (R63) | الحد الأدنى لكومبوبوكس الإدخال: {code,name,nameTr,job,path} — بدل /api/manpower (كان محتاج manpower.view) |
 | `/api/entries/absence` | GET | **entry-read** | ?month= + ?template=1 |
-| `/api/entries/absence` | POST | perm:data.upload | create (?action=import) |
-| `/api/entries/absence` | DELETE | perm:data.upload | ?id= |
+| `/api/entries/absence` | POST | perm:entry.edit | create (?action=import) |
+| `/api/entries/absence` | DELETE | perm:entry.edit | ?id= |
 | `/api/entries/overtime` | GET | **entry-read** | ?month= |
-| `/api/entries/overtime` | POST | perm:data.upload | create |
-| `/api/entries/overtime` | DELETE | perm:data.upload | ?id= |
+| `/api/entries/overtime` | POST | perm:entry.edit | create |
+| `/api/entries/overtime` | DELETE | perm:entry.edit | ?id= |
 | `/api/po` | GET | **entry-read** (كل الفروع: قايمة/تفاصيل/تيمبلت — R63) | ?po= + ?template=1 |
-| `/api/po` | POST | perm:data.upload | upsert / ?action=import |
-| `/api/po` | DELETE | perm:data.upload | ?po= |
+| `/api/po` | POST | perm:entry.po | upsert / ?action=import |
+| `/api/po` | DELETE | perm:entry.po | ?po= |
 
 ## المسارات القديمة (Prisma) — اتمسحت في R48
 
@@ -51,15 +51,22 @@
 >معاهم `src/lib/{db,auth,bootstrap}.ts` + seed JSONs القديمة.
 >و`/api/data` + `/api/storage` دول أصلًا على نظام marib (في الجدول فوق).
 
-## مفاتيح الصلاحيات (R46)
+## مفاتيح الصلاحيات (R46 + R64)
 
 ```
 manpower.view    manpower.edit    manpower.import    manpower.export
 data.view        data.upload
+entry.view       entry.edit       entry.po          (قسم صفحة الإدخال — R64)
 users.manage
 settings.view    settings.edit
 audit.view       storage.view
 ```
+
+- `entry.view` — فتح صفحة إدخال البيانات وقراءة سجلاتها (view)
+- `entry.edit` — إضافة/حذف سجلات الإنتاج والغياب والأوفر + التيمبلتات (edit)
+- `entry.po` — إدارة عقود الشراء: تيمبلت/إضافة/تعديل/حذف (edit)
+- الافتراضي لليوزر العادي: مخفي (زي ما الصفحة كانت مقفولة عمليًا قبل R64)
+- التوافق الرجعي: أي data.upload=edit قديم اترحّل تلقائيًا للمفاتيح دي (BOOT_VER 59)
 
 ## التراجع (Undo)
 
@@ -68,12 +75,13 @@ POST /api/manpower  action=import  →  يرجّع undoToken في الـ respons
 POST /api/manpower  action=undo    →  ?undoToken=X  →  restoreFromSnapshot()
 ```
 
-## حارس قراءة الإدخال (R63)
+## حارس قراءة الإدخال (R64)
 
 ```
-requireEntryRead = data.view (رؤية) أو data.upload (تعديل)
+requireEntryRead = entry.view (رؤية) أو entry.edit / entry.po (تعديل)
 المسارات المحروسة: entries/{production,absence,overtime,employees} GET + po GET
-السبب: مسؤول الإدخال اللي اللوحة/الاتزان مخفيين عنه كان كل القراءات بترجع 403
+السبب الأصلي (R63): مسؤول الإدخال اللي اللوحة/الاتزان مخفيين عنه كان كل القراءات بترجع 403
+R64: القسم بقى ليه مفاتيحه الخاصة — رؤية اللوحة (data.view) ملهاش علاقة بالإدخال
 ```
 
 ## العربي والتركي في الموظفين (R47 + R50)

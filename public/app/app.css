@@ -2043,39 +2043,102 @@ body.pg-home .tb-utils{display:flex}
 .dp-data-panel .dp-months h4{font-size:13.5px;font-weight:800;margin-bottom:8px}
 .dp-data-panel .card-head{margin:0 0 8px;padding:9px 12px 8px;border-radius:10px 10px 0 0}
 
-/* ---------- 1) mode gate — تحليل الأداء / الاتزان ---------- */
+/* ---------- 1) الصفحة الرئيسية (البوابة سابقًا) — R64 ----------
+   خلفية الدنيم المصورة (مرجع المالك + برومبته): أربع أطباق فوق بعض
+   — الصورة بتتحرك ببطء (drift) + بارالاكس الماوس (mgb-move
+   عبر --mgbx/--mgby)، حجاب مركزي فاضي (veil) عشان الأزرار في
+   النص تبان، إضاءة دافية بتتنفس (glow) + مسحة ضوء شفافة عابرة
+   (sweep) + فينييت الحواف (vign). كلها ناعمة جدًا — تقريبًا
+   غير محسوسة (زي ما المالك طلب بالحرف). */
 .mgate{
+  --mgbx:0;--mgby:0;
   position:fixed;inset:0;z-index:340;
   display:flex;align-items:center;justify-content:center;
-  background:rgba(6,12,20,.8);backdrop-filter:blur(7px);
-  opacity:0;transition:opacity .26s ease;
+  background:rgba(6,12,20,.42);
+  opacity:0;transition:opacity .6s ease;
 }
 .mgate.on{opacity:1}
 .mgate[hidden]{display:none}
-.mg-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.mg-bg .mg-thread{
-  position:absolute;height:2px;width:38%;
-  background:linear-gradient(90deg,transparent,rgba(217,168,107,.4),transparent);
-  animation:mgThread 3.6s ease-in-out infinite;
+.mg-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;background:#0C1420}
+/* الطبقة المتحركة — الصورة جواها عشان البارالاكس والـ drift مايعصروش على بعض */
+.mg-bg .mgb-move{
+  position:absolute;inset:-4%;
+  transform:translate(calc(var(--mgbx)*-14px),calc(var(--mgby)*-10px));
+  will-change:transform;
 }
-.mg-bg .t1{top:18%;animation-delay:0s}
-.mg-bg .t2{top:50%;animation-delay:1.2s;animation-direction:reverse}
-.mg-bg .t3{top:82%;animation-delay:2.4s}
-@keyframes mgThread{
-  0%{transform:translateX(-60%)}50%{transform:translateX(160%)}100%{transform:translateX(-60%)}
+.mg-bg .mgb-img{
+  width:100%;height:100%;object-fit:cover;display:block;
+  animation:mgbDrift 64s ease-in-out infinite alternate;
 }
-.mg-in{position:relative;display:flex;flex-direction:column;gap:26px;align-items:center;padding:28px}
+/* مركز هادي: الحجاب بيخفف التباين في النص (المركز فاضي في
+   التصميم عمدًا — مساحة سالبة مقروءة للأزرار) */
+.mg-bg .mgb-veil{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 64% 58% at 50% 46%,
+    rgba(9,15,24,.34) 0%,rgba(9,15,24,.55) 55%,rgba(7,11,19,.78) 100%);
+}
+/* إضاءة دافية بتتنفس — فوق يمين زي نافذة المصنع */
+.mg-bg .mgb-glow{
+  position:absolute;inset:0;opacity:.55;
+  background:radial-gradient(46% 40% at 70% 22%,rgba(217,168,107,.17),transparent 70%);
+  animation:mgbBreathe 12s ease-in-out infinite;
+}
+/* مسحة ضوء بطيئة جدًا تعبر الشاشة كل 26 ثانية */
+.mg-bg .mgb-sweep{
+  position:absolute;inset:-20%;
+  background:linear-gradient(105deg,transparent 42%,rgba(232,214,178,.06) 50%,transparent 58%);
+  animation:mgbSweep 26s linear infinite;
+}
+/* فينييت الحواف — العمق الفوتوغرافي */
+.mg-bg .mgb-vign{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 120% 100% at 50% 50%,transparent 58%,rgba(4,8,14,.5) 100%);
+}
+@keyframes mgbDrift{
+  0%{transform:scale(1.02) translate(0,0)}
+  100%{transform:scale(1.07) translate(1.6%,-1.1%)}
+}
+@keyframes mgbBreathe{
+  0%,100%{opacity:.45}
+  50%{opacity:.85}
+}
+@keyframes mgbSweep{
+  0%{transform:translateX(-38%)}
+  100%{transform:translateX(38%)}
+}
+/* احترام تقليل الحركة — الحركات كلها بتقف والصورة تفضل ثابتة */
+@media (prefers-reduced-motion:reduce){
+  .mgate{transition:none}
+  .mg-bg .mgb-img,.mg-bg .mgb-glow,.mg-bg .mgb-sweep{animation:none}
+}
+.mg-in{position:relative;display:flex;flex-direction:column;gap:22px;align-items:center;padding:28px;max-height:100vh;overflow:auto}
+/* هوية الشركة فوق — لوجو مأرب + الاسم بحرف كبير */
+.mg-brand{display:flex;align-items:center;gap:14px;filter:drop-shadow(0 6px 18px rgba(4,8,14,.55))}
+.mg-brand-logo{width:52px;height:52px;object-fit:contain}
+.mg-brand-t{display:flex;flex-direction:column;gap:2px}
+.mg-brand-t b{font-size:16.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#F2EBDD}
+.mg-brand-t small{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:rgba(217,168,107,.85)}
+/* الترحيب — «أهلًا، فلان» (بيتملى من app_auth باسم الداخل) */
+.mg-hello{
+  margin:0;font-size:15px;font-weight:700;color:#EAD9B8;letter-spacing:.02em;
+  text-shadow:0 2px 12px rgba(4,8,14,.65);
+}
 .mg-in h2{
-  margin:0;font-size:21px;font-weight:800;color:#F2EBDD;letter-spacing:.02em;
+  margin:0;font-size:24px;font-weight:800;color:#F7F1E3;letter-spacing:.02em;
   padding-bottom:10px;border-bottom:2px dashed rgba(217,168,107,.35);
+  text-shadow:0 3px 16px rgba(4,8,14,.75);
 }
 .mg-cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
 .mg-card{
   display:flex;flex-direction:column;align-items:flex-start;gap:8px;
   width:280px;padding:26px 24px;border-radius:20px;text-align:start;
-  background:linear-gradient(162deg,#22334A 0%,#182635 58%,#14202E 100%);
-  border:1px solid rgba(217,168,107,.22);
-  box-shadow:0 18px 46px rgba(0,0,0,.5);
+  /* R64: زجاج ضبابي — الكروت بتقعد على الصورة المصورة كأنها جزء
+     منها (frosted glass) مش كتل صلبة فوقها */
+  background:linear-gradient(162deg,rgba(30,44,66,.86) 0%,rgba(22,34,50,.82) 58%,rgba(17,27,40,.86) 100%);
+  backdrop-filter:blur(10px) saturate(1.15);
+  -webkit-backdrop-filter:blur(10px) saturate(1.15);
+  border:1px solid rgba(217,168,107,.26);
+  box-shadow:0 18px 46px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
   color:var(--txt);position:relative;overflow:hidden;
   transition:transform .28s ease,border-color .28s,box-shadow .28s;
   animation:mgCard .5s cubic-bezier(.2,.9,.3,1.2) backwards;
@@ -2771,11 +2834,17 @@ html[data-theme="light"] .lang-sw .sw-btn{color:#C9B583}
 html[data-theme="light"] .lang-sw .sw-btn:hover{color:#EAD9B8}
 html[data-theme="light"] .user-chip b{color:#F5F1E8}
 html[data-theme="light"] .uc-role.user{color:#C9D4E4;background:rgba(255,255,255,.06);border-color:rgba(217,168,107,.25)}
-/* بوابة ما بعد الدخول: كروت فاتحة وكلام غامق (قبل كده الكلام الغامق
-   بيقعد على كروت غامقة فمبيبانش) */
-html[data-theme="light"] .mgate{background:rgba(226,232,242,.84)}
-html[data-theme="light"] .mg-in h2{color:#1F2937;border-bottom-color:rgba(176,126,63,.5)}
-html[data-theme="light"] .mg-card{background:linear-gradient(162deg,#FFFFFF 0%,#F5F8FC 100%);border-color:rgba(20,33,61,.16);box-shadow:0 14px 40px rgba(15,23,42,.14)}
+/* بوابة ما بعد الدخول (الرئيسية — R64): الصورة المصورة هي الأرضية
+   في الثيمين، بس الثيم الفاتح بيلبّسها حجاب فاتح عشان الكروت
+   البيضاء والنصوص الغامقة تبان. */
+html[data-theme="light"] .mgate{background:rgba(232,237,244,.30)}
+html[data-theme="light"] .mg-bg .mgb-veil{background:radial-gradient(ellipse 64% 58% at 50% 46%,rgba(240,244,249,.40) 0%,rgba(240,244,249,.56) 55%,rgba(226,232,242,.75) 100%)}
+html[data-theme="light"] .mg-bg .mgb-vign{background:radial-gradient(ellipse 120% 100% at 50% 50%,transparent 58%,rgba(226,232,242,.55) 100%)}
+html[data-theme="light"] .mg-brand-t b{color:#1F2937;text-shadow:none}
+html[data-theme="light"] .mg-brand-t small{color:#8A6A3B}
+html[data-theme="light"] .mg-hello{color:#5B4E2E;text-shadow:none}
+html[data-theme="light"] .mg-in h2{color:#1F2937;border-bottom-color:rgba(176,126,63,.5);text-shadow:none}
+html[data-theme="light"] .mg-card{background:linear-gradient(162deg,rgba(255,255,255,.88) 0%,rgba(245,248,252,.86) 100%);border-color:rgba(20,33,61,.16);box-shadow:0 14px 40px rgba(15,23,42,.14)}
 html[data-theme="light"] .mg-card b{color:#1F2937}
 html[data-theme="light"] .mg-card small{color:#5B6472}
 html[data-theme="light"] .mg-card .mg-ico{background:rgba(29,58,95,.08);color:#1D3A5F;border-color:rgba(29,58,95,.18)}
@@ -3623,6 +3692,14 @@ html[data-theme="light"] .mpm-ar input{background:rgba(217,168,107,.07)}
   background:rgba(217,168,107,.14);color:#F5E4BB;
 }
 .ent-count{font-size:11.5px;color:#9FB0C3;margin-inline-start:auto}
+/* R64: شارة «عرض فقط» — للي فاتح صفحة الإدخال بـ entry.view من غير
+   entry.edit: الجداول بتتقرا من غير أي زراير كتابة (والسيرفر بيصد برضه) */
+.ent-ro{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:700;color:#D9C79F;
+  background:rgba(217,168,107,.10);border:1px dashed rgba(217,168,107,.45);
+  border-radius:999px;padding:4px 11px;
+}
 .ent-count b{color:#D9A86B;font-weight:700}
 .ent-tbl{
   width:100%;border-collapse:collapse;font-size:11.5px;
@@ -3734,6 +3811,7 @@ html[data-theme="light"] .ent-tbl tbody tr:hover{background:rgba(176,126,63,.08)
 html[data-theme="light"] .ent-tbl tbody tr.unmatched{background:rgba(192,50,31,.06)}
 html[data-theme="light"] .ent-tbl tbody tr.unmatched:hover{background:rgba(192,50,31,.12)}
 html[data-theme="light"] .ent-count{color:#5B6472}
+html[data-theme="light"] .ent-ro{color:#8A6A3B;background:rgba(176,126,63,.10);border-color:rgba(176,126,63,.45)}
 html[data-theme="light"] .ent-count b{color:#A66B24}
 html[data-theme="light"] .ent-del{
   background:rgba(192,50,31,.10);border-color:rgba(192,50,31,.4);color:#C0321F;

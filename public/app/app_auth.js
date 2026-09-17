@@ -85,13 +85,22 @@ var MaribAuth = (function () {
     var lvl = myPerms && myPerms[feature];
     if (lvl) return lvl;
     /* fallback مطابق لـ defaultForRole على السيرفر — لو فشل الفيتش
-       ما نفتحش أبواب بالغلط (fail-safe مش fail-open) */
+       ما نفتحش أبواب بالغلط (fail-safe مش fail-open).
+       R64: مفاتيح صفحة الإدخال مخفية افتراضيًا زي السيرفر بالظبط */
     if (me.role === "dev" || me.role === "admin") return "edit";
-    if (feature === "users.manage" || feature === "audit.view" || feature === "storage.view") return "hidden";
+    if (feature === "users.manage" || feature === "audit.view" || feature === "storage.view"
+      || feature === "entry.view" || feature === "entry.edit" || feature === "entry.po") return "hidden";
     return "view";
   }
   function can(feature, min) {
     return PERM_ORDER[permLevel(feature)] >= PERM_ORDER[min || "view"];
+  }
+  /* R64: «يقدر يفتح صفحة الإدخال؟» — نفس دلالة requireEntryRead
+     السيرفري بالظبط: entry.view (رؤية) أو entry.edit / entry.po
+     (تعديل — المعدّل لازم يشوف اللي بيشتغل عليه). المرجع الوحيد
+     للبوابة والنافذة ومراجعة الصلاحيات الحية. */
+  function canEntry() {
+    return can("entry.view", "view") || can("entry.edit", "edit") || can("entry.po", "edit");
   }
   function loadPerms(next) {
     if (!me) { myPerms = null; if (next) next(); return; }
@@ -405,6 +414,11 @@ var MaribAuth = (function () {
     loadPerms(function () {
       refreshChrome();
       if (fresh && me) toast(T("us_hello") + me.username, "ok");
+      /* R64 (طلب المالك): تسجيل دخول جديد → الصفحة الرئيسية دايمًا —
+         أول ما اليوزر يدخل بيستقبلته الخلفية بأزرارها الكبيرة في
+         النص. الريفرش العادي (جلسة شغالة) بيفضل بياخد آخر وضع
+         محفوظ زي ما هو — ما بنزعجش حد بقي شغال. */
+      if (fresh) { showModeGate(); return; }
       /* R37: after login the user picks the surface — تحليل الأداء (the
          existing dashboard) or الاتزان (the manpower hierarchy). The
          gate re-opens any time from the topbar ⇄ button.
@@ -451,7 +465,7 @@ var MaribAuth = (function () {
     var s = document.body.getAttribute("data-surface") || "";
     var ok =
       s === "balance" ? can("manpower.view", "view") :
-      s === "entry" ? can("data.upload", "edit") :
+      s === "entry" ? canEntry() :
       s === "dashboard" ? can("data.view", "view") : true;
     if (!ok) {
       toast(T("perm_changed"), "err");
@@ -478,6 +492,11 @@ var MaribAuth = (function () {
 
   /* ============================================================
      R37 — mode gate (تحليل الأداء / الاتزان)
+     R64 — البوابة اترقت لـ «الصفحة الرئيسية»: خلفية الدنيم
+     المصورة (اللي المالك رفع مرجعها وولّيناها) بأطباق
+     بارالاكس ناعمة + ترحيب باسم اليوزر + الأزرار الكبيرة في
+     النص (المركز فاضي في التصميم عمدًا). نفس الـ IDs القديمة
+     فكل الربط العريق شغال زي ما هو.
      ============================================================ */
   var mgEl = null;
   function showModeGate() {
@@ -487,19 +506,31 @@ var MaribAuth = (function () {
       if (window.App && App.enterDash) App.enterDash();
       return;
     }
-    /* R55: زرار السطح الممنوع مش هيظهر — البوابة نفسها بتسمع الصلاحيات */
-    var dash = can("data.view", "view"), mp = can("manpower.view", "view");
+    /* R55: زرار السطح الممنوع مش هيظهر — البوابة نفسها بتسمع
+       الصلاحيات. R64: كروت الإدخال بقى بيحكمها canEntry(). */
+    var dash = can("data.view", "view"), mp = can("manpower.view", "view"), ent = canEntry();
     var d = $("mgDash"), m = $("mgMp"), tt = $("mgTitle");
     if (d) d.style.display = dash ? "" : "none";
     if (m) m.style.display = mp ? "" : "none";
+    var e = $("mgEntry");
+    if (e) e.style.display = ent ? "" : "none";
+    /* R64: ترحيب باسم اليوزر فوق العنوان — والرسالة اللي كانت
+       بتظهر لما مفيش أي سطح مسموح بقت بتشمل الإدخال كمان. */
+    var hello = $("mgHello");
+    if (hello) {
+      hello.hidden = !me;
+      if (me) hello.textContent = T("mg_hello") + me.username;
+    }
     if (tt) {
       /* مفيش سطح مسموح → العنوان نفسه بيقول الحكاية ويفضل زرار الخروج بس */
-      tt.textContent = (!dash && !mp) ? T("perm_none") : T("th_gate_title");
+      tt.textContent = (!dash && !mp && !ent) ? T("perm_none") : T("mg_title");
     }
     mgEl.hidden = false;
-    document.title = I18N.t("th_gate_title") + " — " + I18N.t("brand_name");   /* R42 */
+    document.title = I18N.t("nav_home") + " — " + I18N.t("brand_name");
     /* entrance animation on the next frame so display→opacity transitions run */
     requestAnimationFrame(function () { mgEl.classList.add("on"); });
+    /* R64: الطبقات الحية — بارالاكس الماوس + لمس النسمة */
+    bindHomeMotion();
   }
   function hideModeGate() {
     if (!mgEl) mgEl = $("modeGate");
@@ -521,6 +552,47 @@ var MaribAuth = (function () {
       try { localStorage.setItem("marib_last_mode", "balance"); } catch (e) { }
       hideModeGate();
       if (window.MaribManpower && MaribManpower.show) MaribManpower.show();
+    });
+  }
+
+  /* ============================================================
+     R64 — الصفحة الرئيسية الحية: بارالاكس ناعم جدًا
+     الماوس بينقل الخلفية شوية صغيرة في الاتجاه المعاكس — إحساس
+     بالعمق من غير ما يشوش على الأزرار في النص. الحركة كلها عبر
+     CSS vars (--mgbx/--mgby) بـ rAF lerp — سلسة، والربط مرة واحدة
+     فمش بيتكرر مع كل فتح للبوابة.
+     prefers-reduced-motion: ولا حركة — الاحترام واجب.
+     ============================================================ */
+  var mgbRaf = 0, mgbTX = 0, mgbTY = 0, mgbCX = 0, mgbCY = 0;
+  function mgbLoop() {
+    mgbCX += (mgbTX - mgbCX) * 0.055;   /* lerp ناعم — تقارب تدريجي لكل إطار */
+    mgbCY += (mgbTY - mgbCY) * 0.055;
+    var gate = mgEl || $("modeGate");
+    if (gate) {
+      gate.style.setProperty("--mgbx", mgbCX.toFixed(4));
+      gate.style.setProperty("--mgby", mgbCY.toFixed(4));
+    }
+    if (Math.abs(mgbTX - mgbCX) < 0.0015 && Math.abs(mgbTY - mgbCY) < 0.0015) {
+      mgbRaf = 0;
+      return;
+    }
+    mgbRaf = requestAnimationFrame(mgbLoop);
+  }
+  function bindHomeMotion() {
+    var gate = mgEl || $("modeGate");
+    if (!gate || gate.__mgbBound) return;
+    gate.__mgbBound = true;
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    gate.addEventListener("mousemove", function (ev) {
+      var r = gate.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      mgbTX = ((ev.clientX - r.left) / r.width - 0.5) * 2;   /* -1..1 */
+      mgbTY = ((ev.clientY - r.top) / r.height - 0.5) * 2;
+      if (!mgbRaf) mgbRaf = requestAnimationFrame(mgbLoop);
+    });
+    gate.addEventListener("mouseleave", function () {
+      mgbTX = 0; mgbTY = 0;
+      if (!mgbRaf) mgbRaf = requestAnimationFrame(mgbLoop);
     });
   }
 
@@ -561,7 +633,6 @@ var MaribAuth = (function () {
     var sv = !!(me && can("settings.view", "view"));
     var um = !!(me && can("users.manage", "view"));
     var dv = !!(me && can("data.view", "view"));
-    var du = !!(me && can("data.upload", "edit"));
     ["btnSettings", "tbSetBtn", "mgSettings", "mpSetBtn"].forEach(function (id) {
       var el = $(id);
       if (el) el.style.display = sv ? "" : "none";
@@ -575,9 +646,10 @@ var MaribAuth = (function () {
       var el = $(id);
       if (el) el.style.display = dv ? "" : "none";
     });
-    /* R44: زرار الداتا إنتري في البوابة — data.upload edit */
+    /* R64: كارت الإدخال في الرئيسية — canEntry() (entry.view أو
+       entry.edit أو entry.po) — القسم بقى ليه مفاتيحه الخاصة. */
     var ent = $("mgEntry");
-    if (ent) ent.style.display = du ? "" : "none";
+    if (ent) ent.style.display = canEntry() ? "" : "none";
     /* زرار التبديل ⇄ مش لازمة لو سطح واحد بس مسموح */
     var sw = $("btnSwap");
     if (sw) sw.style.display = (me && dv && can("manpower.view", "view")) ? "" : "none";
@@ -1143,6 +1215,7 @@ var MaribAuth = (function () {
     isDev: function () { return isDev(me); },
     /* R55: الصلاحيات الفعلية — كل الواجهة بتسألهم */
     can: can,
+    canEntry: canEntry,   /* R64: فتح صفحة الإدخال — مرآة requireEntryRead */
     permLevel: permLevel,
     reloadPerms: function (next) { loadPerms(next); },
     veilOff: veilOff,

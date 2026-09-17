@@ -102,11 +102,17 @@
 | Column | Type | Notes |
 |--------|------|-------|
 | user_id | TEXT | FK→marib_user |
-| feature | TEXT | manpower.view \| manpower.edit \| … (11 ميزة) |
+| feature | TEXT | manpower.view \| … (14 ميزة — R64 ضافت entry.view/edit/po) |
 | level | TEXT | inherit \| hidden \| view \| edit |
 | updated_at | TIMESTAMPTZ | |
 | updated_by | TEXT | |
 | PK | (user_id, feature) | |
+
+> **R64 (BOOT_VER 59):** ترحيل واحد لمرة واحدة — أي override قديم
+> `data.upload=edit` (كان الطريقة الوحيدة لفتح صفحة الإدخال قبل القسم
+> الخاص) بياخد نفس الوصول تحت المفاتيح الجديدة:
+> `entry.view=view` + `entry.edit=edit` + `entry.po=edit`.
+> Idempotent (ON CONFLICT DO NOTHING) وبيحترم أي اختيار صريح موجود.
 
 ### marib_undo (R46: تراجع الاستيراد)
 | Column | Type | Notes |

@@ -137,15 +137,20 @@ export async function requirePermBody(
    محتاجة data.view (رؤية اللوحة) — فأي حد المالك مخبّي عنه اللوحة
    (data.view=hidden) ومفتحه الإدخال (data.upload=edit) كانت كل
    القراءات بترجع 403 في وشه: قوايم الشهر فاضية والكومبوبوكس ميت.
-   الدلالة الجديدة: القراءة مسموحة لصاحب data.view (رؤية) أو
-   صاحب data.upload (تعديل) — الكتابة زي ما هي data.upload edit بس. */
+   R64 — القسم بقى ليه مفاتيحه الخاصة (طلب المالك): القراءة مسموحة
+   لصاحب entry.view (رؤية) أو entry.edit / entry.po (تعديل — المعدِّل
+   لازم يقرأ). data.view ما بيدخلش في الحكاية خالص: رؤية اللوحة
+   ملهاش علاقة بصفحة الإدخال. التوافق الرجعي: أي data.upload=edit
+   قديم اترحّل لمفاتيح entry.* تلقائيًا (BOOT_VER 59). */
 export async function requireEntryRead(
   req: NextRequest
 ): Promise<{ user?: SessionUser; res?: NextResponse }> {
-  const a = await requirePerm(req, "data.view", "view");
+  const a = await requirePerm(req, "entry.view", "view");
   if (!a.res) return a;
-  const b = await requirePerm(req, "data.upload", "edit");
+  const b = await requirePerm(req, "entry.edit", "edit");
   if (!b.res) return b;
+  const c = await requirePerm(req, "entry.po", "edit");
+  if (!c.res) return c;
   return { res: fail("forbidden", 403) };
 }
 

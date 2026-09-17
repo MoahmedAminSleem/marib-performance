@@ -79,7 +79,8 @@ export async function POST(req: NextRequest) {
   try {
     const sp = new URL(req.url).searchParams;
     if (sp.get("action") === "import") return importTemplate(req);
-    const g = await requirePermBody(req, "data.upload", "edit");
+    /* R64: كتابة الإدخال بمفتاحه الخاص — entry.edit */
+    const g = await requirePermBody(req, "entry.edit", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 
@@ -190,7 +191,8 @@ async function downloadTemplate(req: NextRequest) {
    match each to an employee by code/name, insert into marib_absence. */
 async function importTemplate(req: NextRequest) {
   try {
-    const g = await requirePermBody(req, "data.upload", "edit");
+    /* R64: رفع التيمبلت = تعديل إدخال — entry.edit */
+    const g = await requirePermBody(req, "entry.edit", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 

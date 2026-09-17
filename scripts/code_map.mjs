@@ -275,7 +275,49 @@ for (const [p, fl] of [...permFiles.entries()].sort((a, b) => a[0] < b[0] ? -1 :
   L.push(`| \`${p}\` | ${[...fl].map((x) => "`" + x + "`").join("<br>")} |`);
 }
 L.push("");
-L.push("**حارس الإدخال (R63):** \`requireEntryRead\` — بيسمح بـ data.view **أو** data.upload.");
+L.push("**حارس الإدخال (R64):** \`requireEntryRead\` — بيسمح بـ entry.view (رؤية) **أو** entry.edit / entry.po (تعديل). القسم ليه مفاتيحه الخاصة من R64 — قبل كده كان مربوط بمفاتيح اللوحة (data.view/data.upload).");
+L.push("");
+
+/* --- القسم 7: الأصول الثابتة (R64) --- */
+/* الصور والـ css اللي الواجهة بتشيلها من public/app — مع أحجامها.
+   أصل زي خلفية الرئيسية بيتبحث عنه بالاسم لوحده من غير ما حد
+   يعرف هو فين عاش. */
+L.push("## 7) الأصول الثابتة (public/app)");
+L.push("");
+L.push("| الأصل | الحجم | الدور |");
+L.push("|---|---|---|");
+const ASSET_ROLES = [
+  ["home-denim.jpg", "خلفية الصفحة الرئيسية (R64)"],
+  ["logo.png", "لوجو مأرب (شريط العنوان + الرئيسية)"],
+  ["favicon.png", "أيقونة المتصفح"],
+  ["app.css", "ستايل الموقع كله"],
+  ["cursor_needle.png", "أنيميشن المكنة (شاشة الدخول)"],
+  ["cursor_needle_thread.png", "خيط المكنة (شاشة الدخول)"],
+  ["xlsx.full.min.js", "SheetJS — قراءة/كتابة الإكسل في المتصفح"],
+];
+function walkAssets(dir, out = []) {
+  let items;
+  try { items = readdirSync(dir); } catch { return out; }
+  for (const it of items) {
+    const p = join(dir, it);
+    let st;
+    try { st = statSync(p); } catch { continue; }
+    if (st.isDirectory()) {
+      if (["node_modules", ".next", "db", "logs", ".git", "e2e_common"].includes(it)) continue;
+      walkAssets(p, out);
+    } else if (/\.(png|jpe?g|svg|gif|webp|css)$/.test(it)) {
+      out.push({ rel: relative(ROOT, p).split("\\").join("/"), kb: Math.round(st.size / 102.4) / 10, name: it });
+    } else if (it === "xlsx.full.min.js") {
+      out.push({ rel: relative(ROOT, p).split("\\").join("/"), kb: Math.round(st.size / 102.4) / 10, name: it });
+    }
+  }
+  return out;
+}
+const assets = walkAssets(join(ROOT, "public", "app")).sort((a, b) => a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0);
+for (const a of assets) {
+  const role = (ASSET_ROLES.find(([n]) => a.name === n) || ["", "—"])[1];
+  L.push(`| \`${a.rel}\` | ${a.kb}KB | ${role} |`);
+}
 L.push("");
 
 const content = L.join("\n") + "\n";

@@ -373,6 +373,27 @@ const BOOT_SQL: string[] = [
   `ALTER TABLE marib_dept ADD COLUMN IF NOT EXISTS label_tr TEXT`,
   `ALTER TABLE marib_prod ADD COLUMN IF NOT EXISTS dept_name TEXT`,
   `ALTER TABLE marib_overtime ADD COLUMN IF NOT EXISTS dept_name TEXT`,
+  /* R64 — ترحيل صلاحيات صفحة الإدخال: data.upload=edit كانت الطريقة
+     الوحيدة لفتح صفحة الإدخال والكتابة فيها قبل ما القسم يبقى ليه
+     مفاتيحه الخاصة (entry.view / entry.edit / entry.po). أي يوزر
+     عنده الـ override ده بياخد نفس الوصول بالظبط تحت المفاتيح الجديدة
+     — مححدش بيفقد وصول. ON CONFLICT DO NOTHING بيحترم أي اختيار
+     صريح موجود، وIdempotent فمش هيكرر صف. */
+  `INSERT INTO marib_perm (user_id, feature, level, updated_at, updated_by)
+   SELECT p.user_id, 'entry.view', 'view', now(), 'R64-migration'
+   FROM marib_perm p
+   WHERE p.feature = 'data.upload' AND p.level = 'edit'
+   ON CONFLICT (user_id, feature) DO NOTHING`,
+  `INSERT INTO marib_perm (user_id, feature, level, updated_at, updated_by)
+   SELECT p.user_id, 'entry.edit', 'edit', now(), 'R64-migration'
+   FROM marib_perm p
+   WHERE p.feature = 'data.upload' AND p.level = 'edit'
+   ON CONFLICT (user_id, feature) DO NOTHING`,
+  `INSERT INTO marib_perm (user_id, feature, level, updated_at, updated_by)
+   SELECT p.user_id, 'entry.po', 'edit', now(), 'R64-migration'
+   FROM marib_perm p
+   WHERE p.feature = 'data.upload' AND p.level = 'edit'
+   ON CONFLICT (user_id, feature) DO NOTHING`,
 ];
 
 let booting: Promise<void> | null = null;
@@ -387,8 +408,10 @@ let booting: Promise<void> | null = null;
    — لو البذر فشل (non-fatal) البوابة مش بتتحط والسلوك القديم
    (إعادة المحاولة كل إقلاع) بيفضل زي ما هو بالظبط. */
 /* "58": فهرس marib_prod(po_number, date) + جدول marib_po (ريفرانس
-   كمية العقد لكل PO — طلب المالك في صفحة الإدخال). */
-const BOOT_VER = "58";
+   كمية العقد لكل PO — طلب المالك في صفحة الإدخال).
+   "59": ترحيل صلاحيات صفحة الإدخال — data.upload=edit ← entry.view=view
+   + entry.edit=edit + entry.po=edit (قسم الصلاحيات المخصوص للصفحة). */
+const BOOT_VER = "59";
 
 interface BootInfoShape {
   __maribBootInfo?: { ver: string; path: "fast" | "full" };

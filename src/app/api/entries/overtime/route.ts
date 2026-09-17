@@ -63,7 +63,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const g = await requirePermBody(req, "data.upload", "edit");
+    /* R64: كتابة الإدخال بمفتاحه الخاص — entry.edit */
+    const g = await requirePermBody(req, "entry.edit", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 

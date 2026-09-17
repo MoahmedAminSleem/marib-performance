@@ -107,7 +107,7 @@ export async function deleteEntry(
 ): Promise<NextResponse> {
   const lg = DELETE_LOGGERS[kind];
   try {
-    const g = await requirePermBody(req, "data.upload", "edit");
+    const g = await requirePermBody(req, "entry.edit", "edit");
     if (g.res) return g.res;
     const me = g.user!;
 

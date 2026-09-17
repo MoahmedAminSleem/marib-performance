@@ -46,13 +46,14 @@
 |------|------|------|
 | `app_main.js` | الواجهة الرئيسية (Dashboard, charts, settings, entries popup) | ~220KB |
 | `app_manpower.js` | الاتزان (tree, cards, AR toggle, ImpExp, undo) | ~160KB |
-| `app_auth.js` | الدخول + البوابة + mode gate + page persistence | ~44KB |
+| `app_auth.js` | الدخول + **الصفحة الرئيسية (R64: البوابة المرقاة — خلفية الدنيم + بارالاكس + ترحيب)** + canEntry | ~46KB |
 | `app_core.js` | أدوات مشتركة (utils, format, navigation) | ~25KB |
 | `app_charts.js` | Recharts wrapper | ~30KB |
 | `marib_cloud.js` | API client (fetch wrapper) | ~5KB |
 | `i18n_core.js` | محرك الترجمة (T/TT/norm) | ~12KB |
 | `i18n_dict.js` | قاموس الترجمة (AR/EN/TR × ~500 مفتاح) | ~100KB |
 | `app.css` | كل الستايل | ~620KB |
+| `bg/home-denim.jpg` | **R64: خلفية الصفحة الرئيسية المصورة (دنيم + 6 براندات)** | 93KB |
 | `xlsx.full.min.js` | SheetJS (client-side Excel parsing) | ~950KB |
 
 ## src/app/
@@ -60,8 +61,8 @@
 | File | Role |
 |------|------|
 | `skeleton.ts` | HTML الـ SPA كله (login + topbar + dashboard + modals) |
-| `page.tsx` | `<div dangerouslySetInnerHTML={{__html: SKELETON}} />` + قائمة السكريبتات (?v=r63) |
-| `layout.tsx` | root layout (meta + app.css?v=r63) |
+| `page.tsx` | `<div dangerouslySetInnerHTML={{__html: SKELETON}} />` + قائمة السكريبتات (?v=r64) |
+| `layout.tsx` | root layout (meta + app.css?v=r64) |
 | `globals.css` | Tailwind base |
 
 > R48 حذفت كمان: `skeleton-html.ts` (51KB) و`marib-app.css` (515KB) — صفر استيرادات.

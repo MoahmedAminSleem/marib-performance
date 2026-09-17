@@ -22,10 +22,24 @@ var AppEntries = (function (ctx) {
     var d = new Date();
     return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
   })();
+  /* R64: صلاحيات القسم — بتتقري حية مع كل فتح/رسم (السيرفر بيصد
+     على كل مسار برضه — دي احترام بصري مش خط دفاع). المفاتيح:
+     entry.edit = الحفظ والحذف والتيمبلتات · entry.po = إدارة العقود */
+  function entCanEdit() {
+    return !!(window.MaribAuth && MaribAuth.can && MaribAuth.can("entry.edit", "edit"));
+  }
+  function entCanPo() {
+    return !!(window.MaribAuth && MaribAuth.can && MaribAuth.can("entry.po", "edit"));
+  }
+  /* شارة «عرض فقط» — للي فاتح الصفحة بـ entry.view من غير تعديل */
+  function entRoChip() {
+    return entCanEdit() ? "" : '<span class="ent-ro">👁 ' + esc(T("ent_viewonly")) + "</span>";
+  }
   function openEntries() {
-    /* R63: فتح شاشة الإدخال محتاج صلاحية الرفع — البطاقة نفسها بتظهر
-       بنفس الشرط، والسيرفر بيصد كل مسار كتابة برضه (حماية مزدوجة). */
-    if (window.MaribAuth && MaribAuth.can && !MaribAuth.can("data.upload", "edit")) {
+    /* R64: فتح شاشة الإدخال بمفتاح القسم — canEntry() (entry.view أو
+       entry.edit أو entry.po) — مرآة requireEntryRead السيرفري.
+       قبل كده كانت محتاجة data.upload edit (مفتاح رفع اللوحة). */
+    if (window.MaribAuth && MaribAuth.canEntry && !MaribAuth.canEntry()) {
       if (ctx.toast) ctx.toast(T("perm_denied"), "err");
       return;
     }
@@ -91,12 +105,17 @@ var AppEntries = (function (ctx) {
       .catch(function () { body.innerHTML = '<p class="ent-err">' + esc(T("toast_sync_err")) + '</p>'; });
   }
   function entRenderProduction(body, entries) {
+    /* R64: الأزرار بتسمع الصلاحيات — من غير entry.edit قراءة بس،
+       ومن غير entry.po زراير العقود مش بتظهر أصلاً */
+    var canEdit = entCanEdit(), canPo = entCanPo();
     var html = '<div class="ent-actions">' +
-      '<button type="button" class="ent-add" id="entProdAdd">' + esc(T("ent_add")) + '</button>' +
-      /* R58: عقود الـ PO — تنزيل/رفع تيمبلت + إدارة الريفرانس */
-      '<button type="button" class="ent-add ghost" id="entPoTpl" title="' + esc(T("ent_po_tpl_hint")) + '">📥 ' + esc(T("ent_po_tpl")) + '</button>' +
-      '<button type="button" class="ent-add ghost" id="entPoUpload" title="' + esc(T("ent_po_upload_hint")) + '">📤 ' + esc(T("ent_po_upload")) + '</button>' +
-      '<button type="button" class="ent-add ghost" id="entPoManage">📋 ' + esc(T("ent_po_manage")) + '</button>' +
+      (canEdit ? '<button type="button" class="ent-add" id="entProdAdd">' + esc(T("ent_add")) + '</button>' : "") +
+      (canPo
+        ? '<button type="button" class="ent-add ghost" id="entPoTpl" title="' + esc(T("ent_po_tpl_hint")) + '">📥 ' + esc(T("ent_po_tpl")) + '</button>' +
+          '<button type="button" class="ent-add ghost" id="entPoUpload" title="' + esc(T("ent_po_upload_hint")) + '">📤 ' + esc(T("ent_po_upload")) + '</button>' +
+          '<button type="button" class="ent-add ghost" id="entPoManage">📋 ' + esc(T("ent_po_manage")) + '</button>'
+        : "") +
+      entRoChip() +
       '<span class="ent-count"><b>' + entries.length + '</b> ' + esc(T("mp_rows")) + '</span>' +
     '</div>';
     if (!entries.length) {
@@ -109,7 +128,7 @@ var AppEntries = (function (ctx) {
         '<th>' + esc(T("ent_po")) + '</th>' +
         '<th>' + esc(T("ent_qty")) + '</th>' +
         '<th>' + esc(T("ent_note")) + '</th>' +
-        '<th>' + esc(T("ent_actions")) + '</th>' +
+        (canEdit ? '<th>' + esc(T("ent_actions")) + '</th>' : "") +
         '</tr></thead><tbody>';
       entries.forEach(function (e) {
         html += '<tr>' +
@@ -119,7 +138,7 @@ var AppEntries = (function (ctx) {
           '<td>' + esc(e.po_number || "—") + '</td>' +
           '<td class="num">' + esc(e.qty) + '</td>' +
           '<td>' + esc(e.note || "") + '</td>' +
-          '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="production">' + esc(T("ent_deleted")) + '</button></td>' +
+          (canEdit ? '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="production">' + esc(T("ent_deleted")) + '</button></td>' : "") +
         '</tr>';
       });
       html += '</tbody></table>';
@@ -127,7 +146,7 @@ var AppEntries = (function (ctx) {
     body.innerHTML = html;
     var add = body.querySelector("#entProdAdd");
     if (add) add.addEventListener("click", function () { entOpenProdForm(); });
-    /* R58: أزرار عقود الـ PO */
+    /* R58: أزرار عقود الـ PO — موجودة بس لصاحب entry.po (R64) */
     var poTpl = body.querySelector("#entPoTpl");
     if (poTpl) poTpl.addEventListener("click", function () { entDownloadPoTemplate(); });
     var poUpl = body.querySelector("#entPoUpload");
@@ -352,10 +371,13 @@ var AppEntries = (function (ctx) {
       .catch(function () { body.innerHTML = '<p class="ent-err">' + esc(T("toast_sync_err")) + '</p>'; });
   }
   function entRenderAbsence(body, entries) {
+    /* R64: الإضافة/التيمبلتات/الحذف لصاحب entry.edit بس */
+    var canEdit = entCanEdit();
     var html = '<div class="ent-actions">' +
-      '<button type="button" class="ent-add" id="entAbsAdd">' + esc(T("ent_add")) + '</button>' +
-      '<button type="button" class="ent-add ghost" id="entAbsTpl">' + esc(T("ent_download_tpl")) + '</button>' +
-      '<button type="button" class="ent-add ghost" id="entAbsUpload">' + esc(T("ent_upload_tpl")) + '</button>' +
+      (canEdit ? '<button type="button" class="ent-add" id="entAbsAdd">' + esc(T("ent_add")) + '</button>' : "") +
+      (canEdit ? '<button type="button" class="ent-add ghost" id="entAbsTpl">' + esc(T("ent_download_tpl")) + '</button>' +
+        '<button type="button" class="ent-add ghost" id="entAbsUpload">' + esc(T("ent_upload_tpl")) + '</button>' : "") +
+      entRoChip() +
       '<span class="ent-count"><b>' + entries.length + '</b> ' + esc(T("mp_rows")) + '</span>' +
     '</div>';
     if (!entries.length) {
@@ -368,7 +390,7 @@ var AppEntries = (function (ctx) {
         '<th>' + esc(T("mp_dept")) + '</th>' +
         '<th>' + esc(T("ent_reason")) + '</th>' +
         '<th>' + esc(T("ent_matched")) + '</th>' +
-        '<th>' + esc(T("ent_actions")) + '</th>' +
+        (canEdit ? '<th>' + esc(T("ent_actions")) + '</th>' : "") +
         '</tr></thead><tbody>';
       entries.forEach(function (e) {
         html += '<tr class="' + (e.matched ? "" : "unmatched") + '">' +
@@ -378,7 +400,7 @@ var AppEntries = (function (ctx) {
           '<td>' + esc(e.dept_name || "—") + '</td>' +
           '<td>' + esc(e.reason || "") + '</td>' +
           '<td>' + (e.matched ? esc(T("ent_matched")) : '<b class="bad">' + esc(T("ent_unmatched")) + '</b>') + '</td>' +
-          '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="absence">' + esc(T("ent_deleted")) + '</button></td>' +
+          (canEdit ? '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="absence">' + esc(T("ent_deleted")) + '</button></td>' : "") +
         '</tr>';
       });
       html += '</tbody></table>';
@@ -491,8 +513,11 @@ var AppEntries = (function (ctx) {
       .catch(function () { body.innerHTML = '<p class="ent-err">' + esc(T("toast_sync_err")) + '</p>'; });
   }
   function entRenderOvertime(body, entries) {
+    /* R64: الإضافة/الحذف لصاحب entry.edit بس */
+    var canEdit = entCanEdit();
     var html = '<div class="ent-actions">' +
-      '<button type="button" class="ent-add" id="entOtAdd">' + esc(T("ent_add")) + '</button>' +
+      (canEdit ? '<button type="button" class="ent-add" id="entOtAdd">' + esc(T("ent_add")) + '</button>' : "") +
+      entRoChip() +
       '<span class="ent-count"><b>' + entries.length + '</b> ' + esc(T("mp_rows")) + '</span>' +
     '</div>';
     if (!entries.length) {
@@ -506,7 +531,7 @@ var AppEntries = (function (ctx) {
         '<th>' + esc(T("ent_hours")) + '</th>' +
         '<th>' + esc(T("ent_note")) + '</th>' +
         '<th>' + esc(T("ent_matched")) + '</th>' +
-        '<th>' + esc(T("ent_actions")) + '</th>' +
+        (canEdit ? '<th>' + esc(T("ent_actions")) + '</th>' : "") +
         '</tr></thead><tbody>';
       entries.forEach(function (e) {
         html += '<tr class="' + (e.matched ? "" : "unmatched") + '">' +
@@ -517,7 +542,7 @@ var AppEntries = (function (ctx) {
           '<td class="num">' + esc(e.hours) + '</td>' +
           '<td>' + esc(e.note || "") + '</td>' +
           '<td>' + (e.matched ? esc(T("ent_matched")) : '<b class="bad">' + esc(T("ent_unmatched")) + '</b>') + '</td>' +
-          '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="overtime">' + esc(T("ent_deleted")) + '</button></td>' +
+          (canEdit ? '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="overtime">' + esc(T("ent_deleted")) + '</button></td>' : "") +
         '</tr>';
       });
       html += '</tbody></table>';
@@ -740,9 +765,14 @@ var AppEntries = (function (ctx) {
     pick.click();
   }
   /* إدارة عقود الـ PO — القايمة الكاملة: عرض/تعديل/إضافة/حذف
-     (المرونة اللي طلبها المالك: رفع ريفرانس أو كتابة مباشرة) */
+     (المرونة اللي طلبها المالك: رفع ريفرانس أو كتابة مباشرة).
+     R64: الكتابة داخلها لصاحب entry.po — المشاهد بيشوف أرقام بس. */
   var poManageModal = null;
   function entOpenPoManage() {
+    if (!entCanPo()) {
+      toast(T("perm_denied"), "err");
+      return;
+    }
     if (poManageModal) { poManageModal.remove(); poManageModal = null; }
     var m = document.createElement("div");
     m.className = "ent-form-modal po-manage";
@@ -779,6 +809,9 @@ var AppEntries = (function (ctx) {
       .catch(function () { body.innerHTML = '<p class="ent-err">' + esc(T("toast_sync_err")) + '</p>'; });
   }
   function poManageDraw(body, pos) {
+    /* R64: العمود المحرر (الكمية/الحذف/الإضافة) لصاحب entry.po —
+       المشاهد بياخد نفس الجدول عرضًا بدون خانات كتابة */
+    var canPo = entCanPo();
     if (!pos.length) {
       body.innerHTML = '<p class="ent-empty">' + esc(T("ent_po_none")) + '</p>';
       return;
@@ -789,17 +822,19 @@ var AppEntries = (function (ctx) {
       '<th>' + esc(T("ent_done")) + '</th>' +
       '<th>' + esc(T("ent_left")) + '</th>' +
       '<th>%</th>' +
-      '<th>' + esc(T("ent_actions")) + '</th>' +
+      (canPo ? '<th>' + esc(T("ent_actions")) + '</th>' : "") +
       '</tr></thead><tbody>';
     pos.forEach(function (p) {
       var pct = p.contract_qty > 0 ? Math.min(100, Math.round(p.made * 100 / p.contract_qty)) : 0;
       html += '<tr data-po="' + esc(p.po) + '">' +
         '<td class="po-name">' + esc(p.po) + '</td>' +
-        '<td class="num po-c"><input type="number" min="1" value="' + esc(p.contract_qty) + '" data-old="' + esc(p.contract_qty) + '"></td>' +
+        (canPo
+          ? '<td class="num po-c"><input type="number" min="1" value="' + esc(p.contract_qty) + '" data-old="' + esc(p.contract_qty) + '"></td>'
+          : '<td class="num">' + esc(p.contract_qty.toLocaleString()) + '</td>') +
         '<td class="num">' + esc(p.made.toLocaleString()) + '</td>' +
         '<td class="num">' + esc(p.left.toLocaleString()) + '</td>' +
         '<td class="num"><span class="pi-pct' + (pct >= 100 ? " full" : "") + '">' + pct + '%</span></td>' +
-        '<td><button type="button" class="ent-del" data-po="' + esc(p.po) + '" title="' + esc(T("ent_deleted")) + '">✕</button></td>' +
+        (canPo ? '<td><button type="button" class="ent-del" data-po="' + esc(p.po) + '" title="' + esc(T("ent_deleted")) + '">✕</button></td>' : "") +
       '</tr>';
     });
     body.innerHTML = html + '</tbody></table>';
