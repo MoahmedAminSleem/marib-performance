@@ -135,7 +135,8 @@ export async function importManpower(
       const exact = byId.get(parent + "|" + nm);
       if (exact) return walk(i + 1, exact);
       const cands = (byNorm.get(nm) || []).filter((x) => x !== parent);
-      if (cands.length === 1) return walk(i + 1, cands[0]);
+      const only = cands[0]; /* R60: الطول 1 يعني العنصر موجود — الحارس للـ checker */
+      if (cands.length === 1 && only !== undefined) return walk(i + 1, only);
       return walk(i + 1, parent);   /* تخطي الجزء اللي ملقاش له مقابل */
     }
     const out = walk(0, "");

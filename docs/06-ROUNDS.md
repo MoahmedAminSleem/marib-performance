@@ -2,6 +2,36 @@
 
 > ملخص كل جولة. التفاصيل الكاملة في `سير-العمل.html` + ملف لكل جولة حديثة في `docs/`.
 
+## R60 (17 سبتمبر 2026) — TypeScript strict: noUncheckedIndexedAccess
+
+**طلب المالك:** «TypeScript strict» — البند الثالث في الأجندة
+> الهندسية (المعلّق بوعي بتقدير «~30+ خطأ» — القياس الفعلي: **76**
+> في 8 ملفات).
+
+- **العلم الأساسي:** `noUncheckedIndexedAccess` في tsconfig — أي
+  `arr[i]` بقت `T | undefined` والكود اتصحح بحراس حقيقية (76 خطأ → 0):
+  النمط `if (!cur.length)` + `cur[0]` بقى `const old = cur[0];
+  if (!old) …` في 9 مواضع بالـ manpower وحدها + po (po0/t0 + `?.`)
+  + entries/session (e0/r0) + data (row) + audit (flatMap + حارس)
+  + manpower_io (only) + xlsx-writer (for…of + `!` واحدة موثقة
+  لفهرس CRC المقنّع بـ & 0xff).
+- **علمان مجانيان:** `noFallthroughCasesInSwitch` + `noImplicitOverride`
+  (0 خطأ لكل منهما) — ورفض موثق لـ
+  `noPropertyAccessFromIndexSignature` (**461 خطأ** — بتحارب نمط
+  `body.field` الديناميكي الأساسي للمشروع).
+- **الإثبات (E2E 42/42):** tsc 0 أخطاء + الأعلام في tsconfig + نفس
+  12 رد JSON و5 ملفات XLSX متطابقة **بالبايت** مع baselines R59
+  (صفر تغيير سلوك) + كل فحوصات R59 الوظيفية (deleteEntry/MaribKit/
+  باج الرفع) + UI smoke كامل. الواجهة ما اتلمستش فـ v=r59 فضلت
+  زي ما هي (كاش الزائر المتكرر محفوظ).
+- **الفايدة:** باجات الفهرس الناقص (`rows[0].field` من غير حارس)
+> بتموت في البناء مش في الإنتاج — والنوع بقى بيقول الحقيقة.
+- **دروس:** فحص `.length` مش بينرّف `[0]` — الحارس على العنصر هو
+  الـ idiom · اقيس قبل ما تخطط (30 المتوقعة كانت 76) · الأعلام
+  المجانية هدية والرفض المكلف يتوثق بسببه.
+
+**التفاصيل:** `docs/سير-العمل-R60.md`
+
 ## R59 (17 سبتمبر 2026) — Refactoring III: kit.js + deleteEntry
 
 **طلب المالك:** «اعمل Refactoring» — الجولة الثالثة في سلسلة إعادة

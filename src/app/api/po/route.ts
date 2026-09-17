@@ -99,18 +99,22 @@ export async function GET(req: NextRequest) {
         "SELECT COALESCE(SUM(qty), 0)::int AS made FROM marib_prod WHERE po_number = $1",
         [po]
       );
-      const contract = rec.length ? (rec[0].contract_qty as number) : 0;
-      const madeAll = grand[0].made as number;
+      /* R60: حراس narrow بدل القراءة المباشرة — استعلام LIMIT 1 يعني
+         العنصر موجود أو مش موجود، والـ aggregate بيرجع صف واحد دايمًا */
+      const po0 = rec[0];
+      const t0 = totals[0];
+      const contract = po0 ? (po0.contract_qty as number) : 0;
+      const madeAll = (grand[0]?.made ?? 0) as number;
       return NextResponse.json({
         po,
-        known: rec.length > 0,
+        known: !!po0,
         contract_qty: contract,
         made_total: madeAll,
-        made_scope: totals[0].made as number,
-        scope_days: totals[0].n as number,
-        scope_first: totals[0].first_day || null,
-        scope_last: totals[0].last_day || null,
-        left: rec.length ? Math.max(0, contract - madeAll) : null,
+        made_scope: (t0?.made ?? 0) as number,
+        scope_days: (t0?.n ?? 0) as number,
+        scope_first: t0?.first_day || null,
+        scope_last: t0?.last_day || null,
+        left: po0 ? Math.max(0, contract - madeAll) : null,
         days: rows.map((r) => ({ date: r.d, made: r.made })),
       });
     }

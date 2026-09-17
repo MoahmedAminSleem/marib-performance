@@ -141,9 +141,11 @@ export async function POST(req: NextRequest) {
         const s = (pack as Record<string, Packed>)[sheet];
         if (!s || !s.r.length) continue;
         for (let i = 0; i < s.r.length; i++) {
+          const row = s.r[i]; /* R60: حارس العنصر داخل الحدود */
+          if (!row) continue;
           const obj: Record<string, string | number | null> = {};
           s.c.forEach((c, j) => {
-            const v = s.r[i][j];
+            const v = row[j];
             obj[c] = v === undefined ? null : v;
           });
           statements.push([month, sheet, i, JSON.stringify(obj)]);

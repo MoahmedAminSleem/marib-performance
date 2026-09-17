@@ -128,8 +128,11 @@ const CRC_TABLE = (() => {
 
 function crc32(b: Uint8Array): number {
   let c = 0xffffffff;
-  for (let i = 0; i < b.length; i++) {
-    c = CRC_TABLE[(c ^ b[i]) & 0xff] ^ (c >>> 8);
+  /* R60: التكرار بالقيمة (مش بالفهرس) يشيل احتمال undefined من b[i]،
+     وفهرس الجدول مقنّع بـ & 0xff (0..255) في جدول طوله 256 —
+     الـ ! هنا مبررة رياضيًا (فهرس مقنّع) مش عمياء */
+  for (const byte of b) {
+    c = CRC_TABLE[(c ^ byte) & 0xff]! ^ (c >>> 8);
   }
   return (c ^ 0xffffffff) >>> 0;
 }

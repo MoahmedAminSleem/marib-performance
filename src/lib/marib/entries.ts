@@ -28,16 +28,18 @@ export async function matchEmployee(
   let deptId: string | null = fallbackDeptId;
   if (code) {
     const er = await q("SELECT id, dept_id FROM marib_emp WHERE code = $1 LIMIT 1", [code]);
-    if (er.length) {
-      empId = er[0].id as string;
-      deptId = (er[0].dept_id as string) || deptId;
+    const e0 = er[0]; /* R60: حارس العنصر بدل فحص الطول */
+    if (e0) {
+      empId = e0.id as string;
+      deptId = (e0.dept_id as string) || deptId;
     }
   }
   if (!empId && name) {
     const er = await q("SELECT id, dept_id FROM marib_emp WHERE name = $1 LIMIT 1", [name]);
-    if (er.length) {
-      empId = er[0].id as string;
-      deptId = (er[0].dept_id as string) || deptId;
+    const e0 = er[0]; /* R60: حارس العنصر بدل فحص الطول */
+    if (e0) {
+      empId = e0.id as string;
+      deptId = (e0.dept_id as string) || deptId;
     }
   }
   return { empId, deptId };

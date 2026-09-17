@@ -1,6 +1,25 @@
 # 05 — CURRENT STATE
 
-> **الحالة في 17 سبتمبر 2026 (R59).** ما تم، ما معلّق، المشاكل المعروفة.
+> **الحالة في 17 سبتمبر 2026 (R60).** ما تم، ما معلّق، المشاكل المعروفة.
+
+## ✅ مكتمل (R60 — TypeScript strict: noUncheckedIndexedAccess)
+
+| # | البند | الحالة |
+|---|--------|--------|
+| R60-1 | `noUncheckedIndexedAccess` مفعّل — 76 خطأ اتصلحوا بحراس حقيقية (`const old = cur[0]; if (!old) …` بدل فحص الطول) في 8 ملفات: manpower ×9 مواضع + po + entries + session + data + audit (flatMap) + manpower_io + xlsx-writer (for…of + `!` موثقة لفهرس CRC المقنّع) | ✅ tsc 0 أخطاء |
+| R60-2 | علمان مجانيان: `noFallthroughCasesInSwitch` + `noImplicitOverride` (0 خطأ لكل منهما) + رفض موثق لـ `noPropertyAccessFromIndexSignature` (461 خطأ — بتحارب نمط body.field الديناميكي) | ✅ |
+| R60-3 | الإثبات: E2E 42/42 — نفس 12 رد JSON + 5 ملفات XLSX متطابقة بالبايت مع baselines R59 + كل فحوصات R59 الوظيفية + UI smoke — الواجهة ما اتلمستش (v=r59 محفوظة) | ✅ صفر تغيير سلوك |
+
+> الأجندة الهندسية الدايمة: 1) Refactoring تمت (R52+R56+R59) ·
+> 2) Optimize Performance تمت (R57) · 3) **TS strict تمت (R60)** ·
+> 4) E2E سكريبتات كل جولة + baseline/compare من R56 (تالية: توحيد
+> الفحوصات المشتركة في ملف واحد بدل نسخ السكريبت) · 5) Logging
+> الأساس جاهز من R25/R54.
+
+> دروس الجولة: (1) فحص `.length` مش بينرّف `arr[0]` — الحارس على
+> العنصر هو الـ idiom الصحيح. (2) اقيس قبل ما تخطط: التقدير القديم
+> «~30+» طلع 76. (3) جرب أي علم جديد قبل الالتزام: المجاني خده
+> والمكلف يوثق سبب رفضه.
 
 ## ✅ مكتمل (R59 — Refactoring: kit.js للواجهة + deleteEntry للـ API)
 

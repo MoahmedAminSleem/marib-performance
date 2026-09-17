@@ -121,8 +121,10 @@ export async function POST(req: NextRequest) {
       let moved = 0;
       for (const id of ids) {
         const cur = await q("SELECT id, code, name, job, dept_id FROM marib_emp WHERE id = $1 LIMIT 1", [id]);
-        if (!cur.length) continue;
+        /* R60 (noUncheckedIndexedAccess): الحارس على العنصر نفسه بدل
+           فحص الطول — نفس السلوك بالظبط بس الـ narrow حقيقي */
         const old = cur[0];
+        if (!old) continue;
         const newJob = job !== null ? job : (old.job as string) || "";
         const oldPath = await deptPath(old.dept_id as string);
         await q(
@@ -145,8 +147,9 @@ export async function POST(req: NextRequest) {
       let gone = 0;
       for (const id of ids) {
         const cur = await q("SELECT id, code, name, job, dept_id, vac FROM marib_emp WHERE id = $1 LIMIT 1", [id]);
-        if (!cur.length || cur[0].vac) continue;
+        /* R60: حارس العنصر بدل فحص الطول */
         const old = cur[0];
+        if (!old || old.vac) continue;
         const p = await deptPath(old.dept_id as string);
         await q("DELETE FROM marib_emp WHERE id = $1 AND vac = false", [id]);
         await logTransfer(actor, (old.code as string) || "جديد", old.name as string, p, old.job as string, "—", "—", "out", "خروج من الموقع");
@@ -208,8 +211,8 @@ export async function POST(req: NextRequest) {
         "SELECT id, code, name, job, dept_id, hire, name_ar, job_ar FROM marib_emp WHERE id = $1 OR code = $1 LIMIT 1",
         [id || code]
       );
-      if (!cur.length) return fail("none", 404);
-      const old = cur[0];
+      const old = cur[0]; /* R60: حارس العنصر بدل فحص الطول */
+      if (!old) return fail("none", 404);
       const name = body.name !== undefined ? cleanStr(body.name, 90) : (old.name as string);
       const job = body.job !== undefined ? cleanStr(body.job, 90) : (old.job as string);
       const deptId = body.deptId !== undefined ? cleanStr(body.deptId, 40) : (old.dept_id as string);
@@ -265,8 +268,8 @@ export async function POST(req: NextRequest) {
       const id = cleanStr(body.id, 40);
       if (!id) return fail("id", 400);
       const cur = await q("SELECT id, code, name, job, dept_id, vac FROM marib_emp WHERE id = $1 LIMIT 1", [id]);
-      if (!cur.length) return fail("none", 404);
-      const old = cur[0];
+      const old = cur[0]; /* R60: حارس العنصر بدل فحص الطول */
+      if (!old) return fail("none", 404);
       if (old.vac) return fail("vac", 400); /* vacancies have their own vacDel */
       const p = await deptPath(old.dept_id as string);
       await q("DELETE FROM marib_emp WHERE id = $1 AND vac = false", [id]);
@@ -290,8 +293,8 @@ export async function POST(req: NextRequest) {
       if (!id || !name) return fail("fields", 400);
       if (hire && !isDayStr(hire)) return fail("hire", 400);
       const cur = await q("SELECT id, code, name, job, dept_id FROM marib_emp WHERE id = $1 AND vac = true LIMIT 1", [id]);
-      if (!cur.length) return fail("none", 404);
-      const old = cur[0];
+      const old = cur[0]; /* R60: حارس العنصر بدل فحص الطول */
+      if (!old) return fail("none", 404);
       if (code && code !== "جديد") {
         const dup = await q("SELECT 1 FROM marib_emp WHERE code = $1 LIMIT 1", [code]);
         if (dup.length) return fail("dup", 409);
@@ -326,10 +329,11 @@ export async function POST(req: NextRequest) {
       const id = cleanStr(body.id, 40);
       if (!id) return fail("id", 400);
       const cur = await q("SELECT id, job, dept_id FROM marib_emp WHERE id = $1 AND vac = true LIMIT 1", [id]);
-      if (!cur.length) return fail("none", 404);
-      const p = await deptPath(cur[0].dept_id as string);
+      const old = cur[0]; /* R60: حارس العنصر بدل فحص الطول */
+      if (!old) return fail("none", 404);
+      const p = await deptPath(old.dept_id as string);
       await q("DELETE FROM marib_emp WHERE id = $1 AND vac = true", [id]);
-      await audit(actor, "delete", "manpower-vac", cur[0].job as string, { dept: p });
+      await audit(actor, "delete", "manpower-vac", old.job as string, { dept: p });
       return NextResponse.json({ ok: true });
     }
 
@@ -362,13 +366,14 @@ export async function POST(req: NextRequest) {
       const name = cleanStr(body.name, 90);
       if (!id || !name) return fail("fields", 400);
       const cur = await q("SELECT id, name, parent_id FROM marib_dept WHERE id = $1 LIMIT 1", [id]);
-      if (!cur.length) return fail("none", 404);
+      const old = cur[0]; /* R60: حارس العنصر بدل فحص الطول */
+      if (!old) return fail("none", 404);
       const oldPath = await deptPath(id);
       await q("UPDATE marib_dept SET name = $2 WHERE id = $1", [id, name]);
       const newPath = await deptPath(id);
       /* R56: استعلام COUNT كان بيتنفذ وبعدين بيترمي (void n) — حذفناه.
          أرشيف إعادة التسمية مش بيستخدم عدد الموظفين أصلًا. */
-      await logTransfer(actor, "—", cur[0].name as string, oldPath, null, newPath, null, "dept-rename");
+      await logTransfer(actor, "—", old.name as string, oldPath, null, newPath, null, "dept-rename");
       await audit(actor, "edit", "manpower-dept", name, { from: oldPath, to: newPath });
       return NextResponse.json({ ok: true });
     }
@@ -380,7 +385,8 @@ export async function POST(req: NextRequest) {
       if (!id) return fail("id", 400);
       if (id === parentId) return fail("parent", 400);
       const cur = await q("SELECT id, name, parent_id FROM marib_dept WHERE id = $1 LIMIT 1", [id]);
-      if (!cur.length) return fail("none", 404);
+      const old = cur[0]; /* R60: حارس العنصر بدل فحص الطول */
+      if (!old) return fail("none", 404);
       if (parentId) {
         const p = await q("SELECT 1 FROM marib_dept WHERE id = $1 LIMIT 1", [parentId]);
         if (!p.length) return fail("parent", 404);
@@ -397,8 +403,8 @@ export async function POST(req: NextRequest) {
       await q("UPDATE marib_dept SET parent_id = NULLIF($2,'') WHERE id = $1", [id, parentId]);
       const newPath = await deptPath(id);
       const n = await q("SELECT COUNT(*)::int AS n FROM marib_emp WHERE dept_id = $1", [id]);
-      await logTransfer(actor, "—", cur[0].name as string, oldPath, null, newPath, null, "dept-move", (n[0]?.n ?? 0) + " موظف");
-      await audit(actor, "edit", "manpower-dept", cur[0].name as string, { from: oldPath, to: newPath, employees: n[0]?.n ?? 0 });
+      await logTransfer(actor, "—", old.name as string, oldPath, null, newPath, null, "dept-move", (n[0]?.n ?? 0) + " موظف");
+      await audit(actor, "edit", "manpower-dept", old.name as string, { from: oldPath, to: newPath, employees: n[0]?.n ?? 0 });
       return NextResponse.json({ ok: true });
     }
 
@@ -412,16 +418,17 @@ export async function POST(req: NextRequest) {
       const id = cleanStr(body.id, 40);
       if (!id) return fail("id", 400);
       const cur = await q("SELECT id, name, parent_id FROM marib_dept WHERE id = $1 LIMIT 1", [id]);
-      if (!cur.length) return fail("none", 404);
+      const old = cur[0]; /* R60: حارس العنصر بدل فحص الطول */
+      if (!old) return fail("none", 404);
       const kids = await q("SELECT COUNT(*)::int AS n FROM marib_dept WHERE parent_id = $1", [id]);
       const rows = await q("SELECT COUNT(*)::int AS n FROM marib_emp WHERE dept_id = $1", [id]);
       if (Number(kids[0]?.n ?? 0) > 0 || Number(rows[0]?.n ?? 0) > 0) return fail("notEmpty", 409);
       const p = await deptPath(id);
       await q("DELETE FROM marib_dept WHERE id = $1", [id]);
       await q("DELETE FROM marib_req WHERE node_key = $1", ["d:" + id]); /* orphan override cleanup */
-      await logTransfer(actor, "—", cur[0].name as string, p, "—", "—", "—", "dept-del");
-      await audit(actor, "delete", "manpower-dept", cur[0].name as string, { path: p });
-      lg.info("dept removed", { actor, name: cur[0].name, path: p });
+      await logTransfer(actor, "—", old.name as string, p, "—", "—", "—", "dept-del");
+      await audit(actor, "delete", "manpower-dept", old.name as string, { path: p });
+      lg.info("dept removed", { actor, name: old.name, path: p });
       return NextResponse.json({ ok: true });
     }
 

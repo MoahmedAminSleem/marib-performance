@@ -70,9 +70,10 @@ export async function currentUser(req: NextRequest): Promise<SessionUser | null>
   try {
     const { q } = await import("./db");
     const rows = await q("SELECT role FROM marib_user WHERE id = $1 LIMIT 1", [u.uid]);
-    if (!rows.length) return null;
-    setCachedRole(u.uid, rows[0].role as string);
-    return { uid: u.uid, username: u.username, role: rows[0].role as SessionUser["role"] };
+    const r0 = rows[0]; /* R60: حارس العنصر بدل فحص الطول */
+    if (!r0) return null;
+    setCachedRole(u.uid, r0.role as string);
+    return { uid: u.uid, username: u.username, role: r0.role as SessionUser["role"] };
   } catch {
     return u; /* DB hiccup — the signed token is still our best evidence */
   }

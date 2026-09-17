@@ -55,18 +55,22 @@ export async function GET(req: NextRequest) {
       if (!g2.label && e.label) g2.label = e.label as string;
       g2.events.push({ at: e.at as string, actor: e.actor as string, action: e.action as string });
     }
-    const entities = Array.from(byEntity.values()).map((g2) => {
+    /* R60 (noUncheckedIndexedAccess): المجموعة بتتعمل عند أول حدث ليها
+       فأول عنصر مضمون — الحارس من أجل الـ type-checker، و flatMap
+       بيرجع نفس الشكل بالظبط (ما فيش مجموعة فاضية أصلًا) */
+    const entities = Array.from(byEntity.values()).flatMap((g2) => {
       const evs = g2.events;
       const creator = evs[0];
+      if (!creator) return [];
       // edits = everything after the creation event; keep the LATEST three
       const edits = evs.slice(1).slice(-3).reverse();
-      return {
+      return [{
         entity: g2.entity,
         label: g2.label,
         creator: { actor: creator.actor, at: creator.at, action: creator.action },
         edits: edits.map((x) => ({ actor: x.actor, at: x.at, action: x.action })),
         totalEdits: Math.max(0, evs.length - 1),
-      };
+      }];
     });
     entities.sort((a, b) => (a.creator.at < b.creator.at ? 1 : -1));
 
