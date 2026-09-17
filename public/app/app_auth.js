@@ -522,8 +522,13 @@ var MaribAuth = (function () {
       if (me) hello.textContent = T("mg_hello") + me.username;
     }
     if (tt) {
-      /* مفيش سطح مسموح → العنوان نفسه بيقول الحكاية ويفضل زرار الخروج بس */
-      tt.textContent = (!dash && !mp && !ent) ? T("perm_none") : T("mg_title");
+      /* R66: عنوان «إيه اللي هتشغّله النهارده؟» اتشال بطلب المالك —
+         العنوان دلوقتي مخفي افتراضيًا وبيظهر بس لما مفيش أي سطح
+         مسموح، وساعتها بيقول perm_none من غير أي خط تحتي
+         (الخط الأصفر المتقطع اتشال من الـ CSS كمان). */
+      var none = !dash && !mp && !ent;
+      tt.hidden = !none;
+      if (none) tt.textContent = T("perm_none");
     }
     mgEl.hidden = false;
     document.title = I18N.t("nav_home") + " — " + I18N.t("brand_name");

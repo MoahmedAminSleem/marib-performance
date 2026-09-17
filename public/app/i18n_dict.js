@@ -633,7 +633,6 @@ pg_data: { ar: ["البيانات", "DATA SYNC"], en: ["Data", "DATA SYNC"], tr:
 /* ============================================================
    R37 — الاتزان (manpower balance) + mode gate after login
    ============================================================ */
-mg_title:    { ar: "إيه اللي هتشغّله النهارده؟", en: "What are we working on today?", tr: "Bugün neyle başlıyoruz?" },  /* R65: humanize — سؤال حي بدل عنوان جامد */
 mg_hello:    { ar: "أهلًا بيك يا ", en: "Good to see you, ", tr: "Hoş geldin, " },   /* R65: ترحيب بشري دافي — الاسم بيتملى من app_auth */
 nav_home:    { ar: "الرئيسية", en: "Home", tr: "Ana Sayfa" },           /* R64: عنوان التاب على الرئيسية */
 mg_dash:     { ar: "تحليل الأداء", en: "Dashboard", tr: "Panel" },
