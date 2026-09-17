@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requirePermBody, requirePerm } from "@/lib/marib/http";
-import { loadDeptMap, monthParam, isDayStr } from "@/lib/marib/entries";
+import { loadDeptMap, monthParam, isDayStr, deleteEntry } from "@/lib/marib/entries";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -110,22 +110,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/* R59: جسم الـ DELETE المشترك (التحقق + الحذف + الأوديت) اتنقل
+   لـ deleteEntry في lib/marib/entries.ts — نفس السلوك بالظبط. */
 export async function DELETE(req: NextRequest) {
-  try {
-    const g = await requirePermBody(req, "data.upload", "edit");
-    if (g.res) return g.res;
-    const me = g.user!;
-
-    const id = req.nextUrl.searchParams.get("id") || "";
-    if (!id) return fail("id", 400);
-
-    const rows = await q("SELECT id FROM marib_prod WHERE id = $1", [id]);
-    if (!rows.length) return fail("notfound", 404);
-    await q("DELETE FROM marib_prod WHERE id = $1", [id]);
-    await audit(me.username, "delete", "entries:production", id, null);
-    lg.info("prod entry deleted", { by: me.username, id });
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    return serverFail("entries:production", "DELETE", e);
-  }
+  return deleteEntry(req, "production");
 }

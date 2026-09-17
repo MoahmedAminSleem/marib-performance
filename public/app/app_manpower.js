@@ -2020,18 +2020,10 @@ var MaribManpower = (function () {
          (+ القسم الداخلي + الوظيفة …) → rows carry the 3-level chain
          and vacancy rows (empty name = required-but-unfilled)
        · OLD Employees-DB format — الكود + الموظف + الإدارة (" - " path) */
-  function ensureXLSX() {
-    if (window.XLSX) return Promise.resolve(window.XLSX);
-    return new Promise(function (res, rej) {
-      var s = document.createElement("script");
-      /* R57: ?v=r58 — ترويسة immutable خلت الرابط يتخزن للأبد؛
-         تحديث المكتبة مستقبلًا = بارامتر جديد (نفس فكرة app.css) */
-      s.src = "/app/xlsx.full.min.js?v=r58";
-      s.onload = function () { window.XLSX ? res(window.XLSX) : rej(new Error("XLSX missing")); };
-      s.onerror = function () { rej(new Error("XLSX load failed")); };
-      document.head.appendChild(s);
-    });
-  }
+  /* R59: المصدر الوحيد لتحميل مكتبة الإكسل بقى MaribKit (kit.js) —
+     النسخة دي كانت تانية منسوخة من app_main (بدون تخزين الوعد).
+     الغلاف ده مخلوق عشان النداءات الداخلية تفضل زي ما هي. */
+  function ensureXLSX() { return MaribKit.ensureXLSX(); }
   function xlsxDate(v) {
     if (v == null) return "";
     if (v instanceof Date) {
@@ -2487,19 +2479,9 @@ var MaribManpower = (function () {
     if (tplB) tplB.addEventListener("click", function () {
       tplB.disabled = true;
       toast(T("mp_tmpl_going"), "");
-      fetch("/api/manpower/export?template=1", { credentials: "same-origin" })
-        .then(function (r) { if (!r.ok) throw new Error("t" + r.status); return r.blob(); })
-        .then(function (b) {
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(b);
-          var d = new Date();
-          function p2(n) { return (n < 10 ? "0" : "") + n; }
-          a.download = "Manpower-Template-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + ".xlsx";
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
-          toast(T("mp_tmpl_done"), "ok");
-        })
+      /* R59: التنزيل على MaribKit.dlBlob */
+      MaribKit.dlBlob("/api/manpower/export?template=1", "Manpower-Template-" + MaribKit.dstamp() + ".xlsx")
+        .then(function () { toast(T("mp_tmpl_done"), "ok"); })
         .catch(function () { toast(T("toast_sync_err"), "err"); })
         .then(function () { tplB.disabled = false; });
     });
@@ -2628,23 +2610,9 @@ var MaribManpower = (function () {
     if (exp) exp.addEventListener("click", function () {
       exp.disabled = true;
       toast(T("mp_export_going"), "");
-      var d = new Date();
-      function p2(n) { return (n < 10 ? "0" : "") + n; }
-      var stamp = d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate());
-      fetch("/api/manpower/export", { credentials: "same-origin" })
-        .then(function (r) {
-          if (!r.ok) throw new Error("export " + r.status);
-          return r.blob();
-        })
-        .then(function (b) {
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(b);
-          a.download = "Manpower-Marib3-" + stamp + ".xlsx";
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
-          toast(T("mp_export_done"), "ok");
-        })
+      /* R59: التنزيل على MaribKit.dlBlob (المصدر المشترك) */
+      MaribKit.dlBlob("/api/manpower/export", "Manpower-Marib3-" + MaribKit.dstamp() + ".xlsx")
+        .then(function () { toast(T("mp_export_done"), "ok"); })
         .catch(function () { toast(T("toast_sync_err"), "err"); })
         .then(function () { exp.disabled = false; });
     });
@@ -2726,26 +2694,16 @@ var MaribManpower = (function () {
         m.querySelector(".mpm-x").addEventListener("click", function () { m.remove(); resolve(null); });
       });
     }
-    /* R46-10: doExport + doTemplate — wrappers that pass ?lang= to the API */
+    /* R46-10: doExport + doTemplate — wrappers that pass ?lang= to the API
+       R59: جسم التنزيل بقى سطر واحد على MaribKit.dlBlob */
+    function langSuffix(lang) { return lang === "ar" ? "-AR" : lang === "tr" ? "-TR" : ""; }
     function doExport(lang) {
       var ex = $("mpExportBtn");
       if (ex) ex.disabled = true;
       toast(T("mp_export_going"), "");
-      var d = new Date();
-      function p2(n) { return (n < 10 ? "0" : "") + n; }
-      var stamp = d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate());
-      fetch("/api/manpower/export?lang=" + encodeURIComponent(lang), { credentials: "same-origin" })
-        .then(function (r) { if (!r.ok) throw new Error("export " + r.status); return r.blob(); })
-        .then(function (b) {
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(b);
-          var langSuffix = lang === "ar" ? "-AR" : lang === "tr" ? "-TR" : "";
-          a.download = "Manpower-Marib3-" + stamp + langSuffix + ".xlsx";
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
-          toast(T("mp_export_done"), "ok");
-        })
+      MaribKit.dlBlob("/api/manpower/export?lang=" + encodeURIComponent(lang),
+                      "Manpower-Marib3-" + MaribKit.dstamp() + langSuffix(lang) + ".xlsx")
+        .then(function () { toast(T("mp_export_done"), "ok"); })
         .catch(function () { toast(T("toast_sync_err"), "err"); })
         .then(function () { if (ex) ex.disabled = false; });
     }
@@ -2753,20 +2711,9 @@ var MaribManpower = (function () {
       var tp = $("mpTmplBtn");
       if (tp) tp.disabled = true;
       toast(T("mp_tmpl_going"), "");
-      fetch("/api/manpower/export?template=1&lang=" + encodeURIComponent(lang), { credentials: "same-origin" })
-        .then(function (r) { if (!r.ok) throw new Error("t" + r.status); return r.blob(); })
-        .then(function (b) {
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(b);
-          var d = new Date();
-          function p2(n) { return (n < 10 ? "0" : "") + n; }
-          var langSuffix = lang === "ar" ? "-AR" : lang === "tr" ? "-TR" : "";
-          a.download = "Manpower-Template-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + langSuffix + ".xlsx";
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
-          toast(T("mp_tmpl_done"), "ok");
-        })
+      MaribKit.dlBlob("/api/manpower/export?template=1&lang=" + encodeURIComponent(lang),
+                      "Manpower-Template-" + MaribKit.dstamp() + langSuffix(lang) + ".xlsx")
+        .then(function () { toast(T("mp_tmpl_done"), "ok"); })
         .catch(function () { toast(T("toast_sync_err"), "err"); })
         .then(function () { if (tp) tp.disabled = false; });
     }

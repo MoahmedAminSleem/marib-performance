@@ -4,7 +4,9 @@
    النسخ المتكررة بنفس السلوك بالظبط — نفس الاستعلامات وبنفس
    الترتيب — عشان يبقى فيه مصدر واحد للحقيقة. */
 
-import { q } from "./db";
+import { NextRequest, NextResponse } from "next/server";
+import { q, audit } from "./db";
+import { fail, serverFail, logger, requirePermBody } from "./http";
 
 export interface EmpBrief {
   code: string;
@@ -78,4 +80,45 @@ export function monthParam(sp: URLSearchParams): string | null {
  *  الاتزان (كانت الـ regex مكررة 6+ مرات في 4 ملفات). */
 export function isDayStr(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
+/* ── R59 (refactoring): حذف سجل إدخال بالمعرّف ──
+   الـ DELETE في مسارات الإدخال الثلاثة (إنتاج/غياب/أوفر تايم) كان
+   متطابق حرفيًا: حارس الصلاحية → قراءة ?id= → التأكد إن السجل موجود
+   (404 لو مش موجود) → الحذف → الأوديت → الرد. الفروق الوحيدة:
+   اسم الجدول + اسم الكيان في الأوديت. الدالة دي هي المصدر الوحيد
+   دلوقتي — أي تعديل مستقبلي (صلاحيات/أوديت) بيتطبق في مكان واحد. */
+const DELETE_TABLES = {
+  production: "marib_prod",
+  absence: "marib_absence",
+  overtime: "marib_overtime",
+} as const;
+const DELETE_LOGGERS: Record<keyof typeof DELETE_TABLES, ReturnType<typeof logger>> = {
+  production: logger("entries:production"),
+  absence: logger("entries:absence"),
+  overtime: logger("entries:overtime"),
+};
+
+export async function deleteEntry(
+  req: NextRequest,
+  kind: keyof typeof DELETE_TABLES
+): Promise<NextResponse> {
+  const lg = DELETE_LOGGERS[kind];
+  try {
+    const g = await requirePermBody(req, "data.upload", "edit");
+    if (g.res) return g.res;
+    const me = g.user!;
+
+    const id = req.nextUrl.searchParams.get("id") || "";
+    if (!id) return fail("id", 400);
+
+    const rows = await q(`SELECT id FROM ${DELETE_TABLES[kind]} WHERE id = $1`, [id]);
+    if (!rows.length) return fail("notfound", 404);
+    await q(`DELETE FROM ${DELETE_TABLES[kind]} WHERE id = $1`, [id]);
+    await audit(me.username, "delete", `entries:${kind}`, id, null);
+    lg.info("entry deleted", { by: me.username, id });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return serverFail(`entries:${kind}`, "DELETE", e);
+  }
 }

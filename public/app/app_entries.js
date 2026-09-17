@@ -411,60 +411,41 @@ var AppEntries = (function (ctx) {
       return true;
     });
   }
+  /* R59: التنزيل والقراءة بقوا على MaribKit (المصدر المشترك)
+     — نفس السلوك بالظبط بس مرة واحدة في kit.js. */
   function entDownloadAbsTemplate() {
-    fetch("/api/entries/absence?template=1", { credentials: "include" })
-      .then(function (r) { if (!r.ok) throw new Error("t" + r.status); return r.blob(); })
-      .then(function (b) {
-        var a = document.createElement("a");
-        a.href = URL.createObjectURL(b);
-        var d = new Date();
-        function p2(n) { return (n < 10 ? "0" : "") + n; }
-        a.download = "Absence-Template-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + ".xlsx";
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
-        toast(T("mp_tmpl_done"), "ok");
-      })
+    MaribKit.dlBlob("/api/entries/absence?template=1", "Absence-Template-" + MaribKit.dstamp() + ".xlsx")
+      .then(function () { toast(T("mp_tmpl_done"), "ok"); })
       .catch(function () { toast(T("toast_sync_err"), "err"); });
   }
   function entUploadAbsTemplate() {
     var pick = document.createElement("input");
     pick.type = "file";
     pick.accept = ".xlsx,.xls";
+    pick.className = "ent-file-pick"; /* R59: إرفاق بالـ DOM (بعض المتصفحات
+       بترفض click على input مش مرفق) + كلاس ثابت للاختبارات */
+    pick.style.display = "none";
     pick.addEventListener("change", function () {
       var f = pick.files && pick.files[0];
+      pick.remove();
       if (!f) return;
-      /* read with the existing XLSX lib if available, otherwise use a simple
-         text approach. For now we delegate to a JSON upload of rows. */
-      if (window.MaribCloud && MaribCloud.ensureXLSX) {
-        MaribCloud.ensureXLSX().then(function (XLSX) {
-          var fr = new FileReader();
-          fr.onload = function (ev) {
-            try {
-              var wb = XLSX.read(ev.target.result, { type: "array" });
-              var ws = wb.Sheets[wb.SheetNames[0]];
-              var grid = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
-              /* find header row — same logic as manpower import */
-              var hRow = 0;
-              for (var i = 0; i < grid.length; i++) {
-                var r = grid[i] || [];
-                if (String(r[1] || "").indexOf("الكود") >= 0) { hRow = i; break; }
-              }
-              var rows = [];
-              for (var j = hRow + 1; j < grid.length; j++) {
-                var g = grid[j] || [];
-                if (!String(g[1] || "").trim() && !String(g[2] || "").trim()) continue;
-                rows.push(["p", String(g[1] || "").trim(), String(g[2] || "").trim(), String(g[3] || "").trim()]);
-              }
-              entSubmitAbsImport(rows);
-            } catch (e) { toast(T("toast_sync_err"), "err"); }
-          };
-          fr.readAsArrayBuffer(f);
-        }).catch(function () { toast(T("toast_sync_err"), "err"); });
-      } else {
-        toast(T("toast_sync_err"), "err");
-      }
+      /* R59 (إصلاح باج قديم): الكود القديم كان بيفحص MaribCloud.ensureXLSX
+         — وMaribCloud عمره ما صدّرها، فرفع تيمبلت الغياب كان سايح
+         دايمًا (توست خطأ) من يوم ما اتكتب. MaribKit.readGrid هو المسار
+         الحقيقي دلوقتي. */
+      MaribKit.readGrid(f, "الكود")
+        .then(function (out) {
+          var rows = [];
+          for (var j = out.hRow + 1; j < out.grid.length; j++) {
+            var g = out.grid[j] || [];
+            if (!String(g[1] || "").trim() && !String(g[2] || "").trim()) continue;
+            rows.push(["p", String(g[1] || "").trim(), String(g[2] || "").trim(), String(g[3] || "").trim()]);
+          }
+          entSubmitAbsImport(rows);
+        })
+        .catch(function () { toast(T("toast_sync_err"), "err"); });
     });
+    document.body.appendChild(pick);
     pick.click();
   }
   function entSubmitAbsImport(rows) {
@@ -726,64 +707,44 @@ var AppEntries = (function (ctx) {
      R58 — عقود الـ PO: تيمبلت (تنزيل/رفع) + إدارة الريفرانس
      ============================================================ */
   function entDownloadPoTemplate() {
-    fetch("/api/po?template=1", { credentials: "include" })
-      .then(function (r) { if (!r.ok) throw new Error("t" + r.status); return r.blob(); })
-      .then(function (b) {
-        var a = document.createElement("a");
-        a.href = URL.createObjectURL(b);
-        var d = new Date();
-        function p2(n) { return (n < 10 ? "0" : "") + n; }
-        a.download = "PO-Template-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + ".xlsx";
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 900);
-        toast(T("mp_tmpl_done"), "ok");
-      })
+    MaribKit.dlBlob("/api/po?template=1", "PO-Template-" + MaribKit.dstamp() + ".xlsx")
+      .then(function () { toast(T("mp_tmpl_done"), "ok"); })
       .catch(function () { toast(T("toast_sync_err"), "err"); });
   }
   function entUploadPoTemplate() {
     var pick = document.createElement("input");
     pick.type = "file";
     pick.accept = ".xlsx,.xls";
+    pick.className = "ent-file-pick"; /* R59: إرفاق + كلاس ثابت — نفس الغياب */
+    pick.style.display = "none";
     pick.addEventListener("change", function () {
       var f = pick.files && pick.files[0];
+      pick.remove();
       if (!f) return;
-      ensureXLSX().then(function (XLSX) {
-        var fr = new FileReader();
-        fr.onload = function (ev) {
-          try {
-            var wb = XLSX.read(ev.target.result, { type: "array" });
-            var ws = wb.Sheets[wb.SheetNames[0]];
-            var grid = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
-            /* سطر الرأس: «رقم PO» — بعده الصفوف مباشرة (نفس منطق الغياب) */
-            var hRow = 0;
-            for (var i = 0; i < grid.length; i++) {
-              var r = grid[i] || [];
-              if (String(r[1] || "").indexOf("PO") >= 0) { hRow = i; break; }
-            }
-            var rows = [];
-            for (var j = hRow + 1; j < grid.length; j++) {
-              var g = grid[j] || [];
-              if (!String(g[1] || "").trim()) continue;
-              rows.push(["p", String(g[1] || "").trim(), String(g[2] ?? "").trim(), String(g[3] || "").trim()]);
-            }
-            if (!rows.length) { toast(T("ent_po_no_rows"), "err"); return; }
-            fetch("/api/po?action=import", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({ rows: rows }),
+      /* R59: قراءة الشيت على MaribKit — نفس منطق الغياب بالظبط */
+      MaribKit.readGrid(f, "PO")
+        .then(function (out) {
+          var rows = [];
+          for (var j = out.hRow + 1; j < out.grid.length; j++) {
+            var g = out.grid[j] || [];
+            if (!String(g[1] || "").trim()) continue;
+            rows.push(["p", String(g[1] || "").trim(), String(g[2] ?? "").trim(), String(g[3] || "").trim()]);
+          }
+          if (!rows.length) { toast(T("ent_po_no_rows"), "err"); return; }
+          fetch("/api/po?action=import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ rows: rows }),
+          })
+            .then(function (r) { if (!r.ok) throw new Error("i" + r.status); return r.json(); })
+            .then(function (d) {
+              toast(T("ent_po_imported").replace("{i}", d.inserted).replace("{u}", d.updated), "ok");
+              entRender();
             })
-              .then(function (r) { if (!r.ok) throw new Error("i" + r.status); return r.json(); })
-              .then(function (d) {
-                toast(T("ent_po_imported").replace("{i}", d.inserted).replace("{u}", d.updated), "ok");
-                entRender();
-              })
-              .catch(function () { toast(T("toast_sync_err"), "err"); });
-          } catch (e) { toast(T("toast_sync_err"), "err"); }
-        };
-        fr.readAsArrayBuffer(f);
-      }).catch(function () { toast(T("toast_sync_err"), "err"); });
+            .catch(function () { toast(T("toast_sync_err"), "err"); });
+        })
+        .catch(function () { toast(T("toast_sync_err"), "err"); });
     });
     pick.click();
   }

@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requirePermBody, requirePerm } from "@/lib/marib/http";
-import { matchEmployee, loadEmpMap, loadDeptMap, monthParam, isDayStr } from "@/lib/marib/entries";
+import { matchEmployee, loadEmpMap, loadDeptMap, monthParam, isDayStr, deleteEntry } from "@/lib/marib/entries";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -102,22 +102,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/* R59: جسم الـ DELETE المشترك اتنقل لـ deleteEntry (lib) — نفس السلوك */
 export async function DELETE(req: NextRequest) {
-  try {
-    const g = await requirePermBody(req, "data.upload", "edit");
-    if (g.res) return g.res;
-    const me = g.user!;
-
-    const id = req.nextUrl.searchParams.get("id") || "";
-    if (!id) return fail("id", 400);
-
-    const rows = await q("SELECT id FROM marib_overtime WHERE id = $1", [id]);
-    if (!rows.length) return fail("notfound", 404);
-    await q("DELETE FROM marib_overtime WHERE id = $1", [id]);
-    await audit(me.username, "delete", "entries:overtime", id, null);
-    lg.info("overtime entry deleted", { by: me.username, id });
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    return serverFail("entries:overtime", "DELETE", e);
-  }
+  return deleteEntry(req, "overtime");
 }

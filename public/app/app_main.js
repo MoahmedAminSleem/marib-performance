@@ -68,23 +68,11 @@ var App = (function () {
      xlsx.full.min.js is ~950KB and is ONLY needed when an Excel file
      is parsed (upload) or exported (activity log). Loading it upfront
      made the first paint heavy; it now loads on first use and is
-     cached by the browser afterwards. */
-  var _xlsxP = null;
-  function ensureXLSX() {
-    if (window.XLSX) return Promise.resolve(window.XLSX);
-    if (!_xlsxP) {
-      _xlsxP = new Promise(function (res, rej) {
-        var s = document.createElement("script");
-        /* R57: ?v=r58 — ترويسة immutable الجديدة خلت الرابط ده يتخزن
-           للأبد في المتصفح؛ أي تحديث للمكتبة مستقبلًا = بارامتر جديد */
-        s.src = "/app/xlsx.full.min.js?v=r58";
-        s.onload = function () { window.XLSX ? res(window.XLSX) : rej(new Error("XLSX missing")); };
-        s.onerror = function () { _xlsxP = null; rej(new Error("XLSX load failed")); };
-        document.head.appendChild(s);
-      });
-    }
-    return _xlsxP;
-  }
+     cached by the browser afterwards.
+     R59: المصدر الوحيد بقى MaribKit.ensureXLSX (kit.js) — نفس السلوك
+     بالظبط (الوعد المخزن + إعادة المحاولة عند الفشل) بس مرة واحدة
+     للموقع كله بدل نسخة هنا ونسخة في الاتزان. */
+  function ensureXLSX() { return MaribKit.ensureXLSX(); }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
   function stOf(v, t, inv) { return inv ? U.statusInv(v, t) : U.statusOf(v, t); }
   function stColor(st) { return st === "good" ? C_GOOD : st === "warn" ? C_WARN : C_BAD; }
