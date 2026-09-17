@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { hashPassword, isDev } from "@/lib/marib/session";
+import { invalidateUser } from "@/lib/marib/authcache"; /* R57: إبطال كاش الدور فورًا */
 import { fail, serverFail, readJson, logger, requirePermBody, type SessionUser } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
@@ -123,6 +124,9 @@ export async function PUT(req: NextRequest) {
     if (typeof body.role === "string" && ["admin", "user"].includes(body.role)) {
       if (rec.role === "dev") return fail("dev-fixed");
       await q("UPDATE marib_user SET role = $1 WHERE id = $2", [body.role, id]);
+      /* R57: الدور اتغير — كاش الدور/الصلاحيات لازم يموت دلوقتي عشان
+         التنزيل يشتغل فورًا على نفس السيرفر (زي ما كان قبل الكاش) */
+      invalidateUser(id);
       await audit(me.username, "edit", "users:" + rec.username, rec.username, { change: "role", to: body.role });
       lg.info("role changed", { by: me.username, user: rec.username, to: body.role });
     }
@@ -147,6 +151,9 @@ export async function DELETE(req: NextRequest) {
     if (rec.id === me.uid) return fail("self");
 
     await q("DELETE FROM marib_user WHERE id = $1", [id]);
+    /* R57: اليوزر اتمسح — كاش دوره كان هيخليه «حي» لحد الـ TTL؛
+       الإبطال الفوري بيقطع صلاحيته في نفس اللحظة */
+    invalidateUser(id);
     await audit(me.username, "delete", "users:" + rec.username, rec.username, null);
     lg.warn("user deleted", { by: me.username, user: rec.username });
     return NextResponse.json({ ok: true });

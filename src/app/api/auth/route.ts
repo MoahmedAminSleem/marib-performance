@@ -4,7 +4,7 @@
    the Vercel runtime logs and logs/marib.log locally). */
 
 import { NextRequest, NextResponse } from "next/server";
-import { q, audit } from "@/lib/marib/db";
+import { q, audit, ensureBoot } from "@/lib/marib/db";
 import { issueToken, verifyPassword, COOKIE_NAME, type SessionUser } from "@/lib/marib/session";
 import { fail, serverFail, readJson, logger, requireUser } from "@/lib/marib/http";
 
@@ -62,6 +62,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    /* R57: مسار الدخول هو الطلب الوحيد اللي مش بيمرّ بحارس من
+       http.ts — يعني على قاعدة فاضية خالص (أول نشر على Neon
+       جديدة مثلًا) لو الدخول هو أول طلب، استعلام marib_user كان
+       بيجي قبل ما الجداول تتخلق أصلًا (relation does not exist).
+       البوت هنا بيتم مرة واحدة لكل عملية ثم البوابة (boot_ver)
+       بتخليه استعلام واحد فاضي بعدها. */
+    await ensureBoot();
     const body = await readJson(req);
     if (!body) return fail("body", 413);
     const username = String(body.username || "").trim();

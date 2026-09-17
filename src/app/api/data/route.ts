@@ -44,21 +44,6 @@ export async function GET(req: NextRequest) {
     const rows = await q(
       "SELECT month, sheet, rown, data FROM marib_data ORDER BY month ASC, sheet ASC, rown ASC"
     );
-    /* last upload per month — shown on the data tab (from the audit log) */
-    const lastSync: Record<string, { at: string; actor: string }> = {};
-    try {
-      const ups = await q(
-        "SELECT entity, actor, at FROM marib_audit WHERE action = 'upload' ORDER BY at ASC"
-      );
-      for (const r of ups) {
-        const ent = r.entity as string;
-        if (ent.startsWith("data:")) {
-          lastSync[ent.slice(5)] = { at: r.at as string, actor: r.actor as string };
-        }
-      }
-    } catch {
-      /* audit table may lag — the months list still loads */
-    }
     const months: string[] = [];
     const pack: Record<string, Record<string, { c: string[]; r: unknown[][] }>> = {};
     for (const r of rows) {
@@ -73,6 +58,32 @@ export async function GET(req: NextRequest) {
       const cols = pack[month][sheet].c;
       if (!cols.length) Object.keys(row).forEach((k) => cols.push(k));
       pack[month][sheet].r.push(cols.map((c) => (c in row ? row[c] : null)));
+    }
+    /* last upload per month — shown on the data tab (from the audit log).
+       R57 (perf): بنسأل على شهور الموقع بس (entity = ANY) بدل مسح كل
+       سجلات الرفع في الأوديت — الجدول بيكبر للأبد والاستعلام ده كان
+       بيمشي معاه. النتيجة متطابقة: مفيش شهر بيتمسح من marib_data أبدًا
+       (الاستبدال = DELETE + INSERT في نفس المعاملة)، فكل كيان data:*
+       في الأوديت ليه شهر حي في months. الفهرس المركب (action, at)
+       اللي اتضاف في BOOT_SQL بيخدم الفلتر والترتيب. */
+    const lastSync: Record<string, { at: string; actor: string }> = {};
+    if (months.length) {
+      try {
+        const ups = await q(
+          `SELECT entity, actor, at FROM marib_audit
+           WHERE action = 'upload' AND entity = ANY($1::text[])
+           ORDER BY at ASC`,
+          [months.map((m) => "data:" + m)]
+        );
+        for (const r of ups) {
+          const ent = r.entity as string;
+          if (ent.startsWith("data:")) {
+            lastSync[ent.slice(5)] = { at: r.at as string, actor: r.actor as string };
+          }
+        }
+      } catch {
+        /* audit table may lag — the months list still loads */
+      }
     }
     return NextResponse.json({ months, pack, lastSync });
   } catch (e) {

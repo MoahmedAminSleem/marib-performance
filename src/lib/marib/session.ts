@@ -57,14 +57,21 @@ export function sessionUser(req: NextRequest): SessionUser | null {
 }
 
 /** session + live role re-validation against the DB — use on MUTATING
- *  routes so demoted/deleted accounts lose their powers at once */
+ *  routes so demoted/deleted accounts lose their powers at once.
+ *  R57: الدور من كاش 30 ثانية لو موجود — استعلام أقل لكل نداء API.
+ *  الإبطال فوري من users PUT/DELETE (نفس السيرفر)، والـ TTL سقف
+ *  التعرف بين نسخ السيرفر على Vercel (مشروح في authcache.ts). */
 export async function currentUser(req: NextRequest): Promise<SessionUser | null> {
   const u = sessionUser(req);
   if (!u) return null;
+  const { cachedRole, setCachedRole } = await import("./authcache");
+  const hit = cachedRole(u.uid);
+  if (hit) return { uid: u.uid, username: u.username, role: hit as SessionUser["role"] };
   try {
     const { q } = await import("./db");
     const rows = await q("SELECT role FROM marib_user WHERE id = $1 LIMIT 1", [u.uid]);
     if (!rows.length) return null;
+    setCachedRole(u.uid, rows[0].role as string);
     return { uid: u.uid, username: u.username, role: rows[0].role as SessionUser["role"] };
   } catch {
     return u; /* DB hiccup — the signed token is still our best evidence */

@@ -142,6 +142,10 @@ const BOOT_SQL: string[] = [
     details JSONB
   )`,
   `CREATE INDEX IF NOT EXISTS marib_audit_at_idx ON marib_audit (at DESC)`,
+  /* R57 (perf): فلترة الأوديت بالأكشن (lastSync في /api/data بيقرأ
+     كل الـ uploads، وفلاتر صفحة السجل بتسأل بالأكشن) — فهرس مركب
+     يخدم الفلتر والترتيب مع بعض. */
+  `CREATE INDEX IF NOT EXISTS marib_audit_action_at_idx ON marib_audit (action, at)`,
   /* R37 — الاتزان (manpower balance): employees, per-node required
      counts, and the transfer archive. Additive only: existing tables
      are untouched; these appear on the first boot after deploy. */
@@ -313,9 +317,42 @@ const BOOT_SQL: string[] = [
 
 let booting: Promise<void> | null = null;
 
+/* ── R57 (perf): بوابة الإقلاع ──
+   البوت الكامل كان بيتنفذ على كل إقلاع بارد: ~44 استعلام DDL/فحص
+   (كل واحد رحلة شبكة على Neon = ثواني في السيرفرلس). دلوقتي أول
+   استعلام واحد بيقرأ boot_ver من marib_meta: لو مطابق للثابت →
+   النسخة دي اقلعت قبل كده بنفس الـ schema والبذر خلص → تخطي كامل.
+   أي DDL جديد مستقبلًا = زوّد على الثابت وكل نسخة هتبوت كامل مرة
+   واحدة بس. العلامة مش بتتكتب غير لما البذر يتأكد (mp_seed_ver=42)
+   — لو البذر فشل (non-fatal) البوابة مش بتتحط والسلوك القديم
+   (إعادة المحاولة كل إقلاع) بيفضل زي ما هو بالظبط. */
+const BOOT_VER = "57";
+
+interface BootInfoShape {
+  __maribBootInfo?: { ver: string; path: "fast" | "full" };
+}
+const bg = globalThis as unknown as BootInfoShape;
+
+/** R57: ازاي اقلعت النسخة الحالية — /api/health بيعرضها كإثبات
+ *  مرئي للمالك (fast = البوابة اتخطت باستعلام واحد، full = الـ DDL
+ *  اشتغل فعليًا). pending = لسه مفيش ضمان إقلاع في العملية دي. */
+export function bootInfo(): { ver: string; path: "fast" | "full" | "pending" } {
+  return { ver: BOOT_VER, path: bg.__maribBootInfo?.path || "pending" };
+}
+
 export async function ensureBoot(): Promise<void> {
   if (booting) return booting;
   const attempt = (async () => {
+    /* البوابة السريعة — استعلام واحد بدل ~44 */
+    try {
+      const v = await q("SELECT value FROM marib_meta WHERE key = 'boot_ver'");
+      if (v[0]?.value === BOOT_VER) {
+        bg.__maribBootInfo = { ver: BOOT_VER, path: "fast" };
+        return;
+      }
+    } catch {
+      /* قاعدة فاضية تمامًا — marib_meta لسه مش موجودة: بوت كامل */
+    }
     for (const stmt of BOOT_SQL) await exec(stmt);
     // default developer account (Amin) — only when the users table is empty
     const u = await q("SELECT COUNT(*)::int AS n FROM marib_user");
@@ -390,6 +427,25 @@ export async function ensureBoot(): Promise<void> {
     } catch (e) {
       console.error("manpower seed failed", e); // non-fatal: the app still boots
     }
+
+    /* R57: كتابة علامة البوابة — بس بعد التأكد إن البذر خلص فعليًا
+       (mp_seed_ver=42). لو البذر فشل العلامة مش بتتكتب، فكل إقلاع
+       بيعيد المحاولة زي السلوك القديم بالظبط. */
+    let seedOk = false;
+    try {
+      const ver2 = await q("SELECT value FROM marib_meta WHERE key = 'mp_seed_ver'");
+      seedOk = ver2[0]?.value === "42";
+    } catch {
+      /* meta قراءة فاشلة = نفضل من غير علامة (احتياط) */
+    }
+    if (seedOk) {
+      await q(
+        `INSERT INTO marib_meta (key, value) VALUES ('boot_ver', $1)
+         ON CONFLICT (key) DO UPDATE SET value = $1`,
+        [BOOT_VER]
+      );
+    }
+    bg.__maribBootInfo = { ver: BOOT_VER, path: "full" };
   })();
   booting = attempt;
   /* a failed first boot must not brick the instance forever — retry on

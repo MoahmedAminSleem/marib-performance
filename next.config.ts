@@ -77,6 +77,19 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
+      /* R57 (perf): أصول الواجهة الثابتة (11 سكريبت + app.css ≈660KB)
+         كانت بتتنزّل/تتحقق في كل زيارة — Next بيخدم ملفات public بـ
+         max-age=0 فالمتصفح بيعمل رحلة تحقق لكل ملف (12 رحلة للصفحة).
+         الملفات دي بتتغير بس عبر ?v=rXX (cache-busting ثابت من R48)
+         فالتخزين الدائم immutable آمن: أي تحديث = URL جديد. النتيجة:
+         الزيارة المتكررة = صفر تنزيل للواجهة كلها. xlsx.full.min.js
+         كمان (932KB) — بعد أول استيراد بيبقى في الكاش للأبد. */
+      {
+        source: "/app/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };

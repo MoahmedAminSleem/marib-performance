@@ -2024,7 +2024,9 @@ var MaribManpower = (function () {
     if (window.XLSX) return Promise.resolve(window.XLSX);
     return new Promise(function (res, rej) {
       var s = document.createElement("script");
-      s.src = "/app/xlsx.full.min.js";
+      /* R57: ?v=r57 — ترويسة immutable خلت الرابط يتخزن للأبد؛
+         تحديث المكتبة مستقبلًا = بارامتر جديد (نفس فكرة app.css) */
+      s.src = "/app/xlsx.full.min.js?v=r57";
       s.onload = function () { window.XLSX ? res(window.XLSX) : rej(new Error("XLSX missing")); };
       s.onerror = function () { rej(new Error("XLSX load failed")); };
       document.head.appendChild(s);
@@ -2604,10 +2606,15 @@ var MaribManpower = (function () {
       renderArch();
     });
     var imp = $("mpImportBtn");
-    if (imp) imp.addEventListener("click", function () {
-      var pick = $("mpXlsxPick");
-      if (pick) pick.click();
-    });
+    if (imp) {
+      /* R57 (perf): أول لمسة لزر الاستيراد بتشغل تنزيل xlsx (932KB)
+         في الخلفية — نفس فكرة زرار الإكسل في صفحة الداتا. silent. */
+      imp.addEventListener("pointerdown", function () { ensureXLSX().catch(function () {}); }, { passive: true });
+      imp.addEventListener("click", function () {
+        var pick = $("mpXlsxPick");
+        if (pick) pick.click();
+      });
+    }
     var pick = $("mpXlsxPick");
     if (pick) pick.addEventListener("change", function () {
       var f = pick.files && pick.files[0];

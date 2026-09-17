@@ -6,23 +6,27 @@
 
 import { SKELETON } from "./skeleton";
 
-/* R52: ?v=r55 على كل سكريبت — cache-busting بعد كل رفع (نفس فكرة app.css).
+/* R52: ?v=rXX على كل سكريبت — cache-busting بعد كل رفع (نفس فكرة app.css).
+   R57 (perf): bump إلى r57 (اتعدل app_main + app_manpower للتحميل
+   المسبق) + defer على الكل: التحميل بيتنفذ بالتوازي مع بارس الـ HTML
+   بدل ما يحجز البارس — وترتيب التنفيذ بيفضل زي ما هو (defer بيضمن
+   الترتيب، وapp_auth شغال على DOMContentLoaded اللي بييجي بعدهم).
    R52 refactoring: app_main اتقسم 4 وحدات — core (الحالة + الأدوات +
    الفلاتر + الدريو) + app_pages (عرض الصفحات) + app_entries (إدخال
    البيانات) + app_admin (الأوديت/التخزين/الصلاحيات) — كلهم بعد app_main
    عشان جسر __maribCtx يبقى جاهز، وقبل app_auth اللي بيبدأ التشغيل. */
 const SCRIPTS = [
-  "/app/app_core.js?v=r55",      // MaribCore — parsing + the 42 measures
-  "/app/i18n_dict.js?v=r55",     // AR / EN / TR dictionary
-  "/app/i18n_core.js?v=r55",     // i18n engine
-  "/app/app_charts.js?v=r55",    // MaribCharts
-  "/app/marib_cloud.js?v=r55",   // server sync client (R23)
-  "/app/app_main.js?v=r55",      // App core — state + utils + filters + drill + settings
-  "/app/app_pages.js?v=r55",     // R52 — عرض صفحات التحليل + بيت المدير
-  "/app/app_entries.js?v=r55",   // R52 — إدخال البيانات (إنتاج/غياب/أوفر تايم)
-  "/app/app_admin.js?v=r55",     // R52 — الأوديت + التخزين + الصلاحيات
-  "/app/app_auth.js?v=r55",      // MaribAuth — server login gate
-  "/app/app_manpower.js?v=r55",  // R37 — الاتزان (manpower balance)
+  "/app/app_core.js?v=r57",      // MaribCore — parsing + the 42 measures
+  "/app/i18n_dict.js?v=r57",     // AR / EN / TR dictionary
+  "/app/i18n_core.js?v=r57",     // i18n engine
+  "/app/app_charts.js?v=r57",    // MaribCharts
+  "/app/marib_cloud.js?v=r57",   // server sync client (R23)
+  "/app/app_main.js?v=r57",      // App core — state + utils + filters + drill + settings
+  "/app/app_pages.js?v=r57",     // R52 — عرض صفحات التحليل + بيت المدير
+  "/app/app_entries.js?v=r57",   // R52 — إدخال البيانات (إنتاج/غياب/أوفر تايم)
+  "/app/app_admin.js?v=r57",     // R52 — الأوديت + التخزين + الصلاحيات
+  "/app/app_auth.js?v=r57",      // MaribAuth — server login gate
+  "/app/app_manpower.js?v=r57",  // R37 — الاتزان (manpower balance)
 ];
 /* xlsx.full.min.js (~950KB) is NOT loaded upfront anymore: App.ensureXLSX()
    pulls it on first upload/export (R24 perf — the first paint got heavy). */
@@ -36,8 +40,11 @@ export default function Home() {
           React never reconciles inside dangerouslySetInnerHTML anyway;
           the whole dashboard DOM belongs to /public/app. */}
       <div id="maribApp" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: SKELETON }} />
+      {/* R57 (perf): defer — تنزيل متوازي غير حاجز أثناء البارس،
+          والتنفيذ بترتيب المصفوفة بالظبط زي قبل (ضمانة defer)،
+          وDOMContentLoaded (بووت app_auth) بييجي بعد تنفيذهم كلهم. */}
       {SCRIPTS.map((src) => (
-        <script key={src} src={src} />
+        <script key={src} src={src} defer />
       ))}
     </>
   );

@@ -109,8 +109,13 @@ export function defaultForRole(role: SessionUser["role"], feature: string): Perm
 
 /* ---------------- القراءة من الـ DB ---------------- */
 
-/** كل الـ perms لمستخدم واحد — يرجع خريطة { feature: level }. */
+/** كل الـ perms لمستخدم واحد — يرجع خريطة { feature: level }.
+ *  R57: من كاش 30 ثانية لو موجودة (استعلام أقل لكل نداء API) —
+ *  الإبطال فوري من perms PUT/DELETE (نفس السيرفر). */
 export async function loadUserPerms(userId: string): Promise<Record<string, PermLevel>> {
+  const { cachedPerms, setCachedPerms } = await import("./authcache");
+  const hit = cachedPerms(userId);
+  if (hit) return hit;
   const { q } = await import("./db");
   const rows = await q(
     "SELECT feature, level FROM marib_perm WHERE user_id = $1",
@@ -121,6 +126,7 @@ export async function loadUserPerms(userId: string): Promise<Record<string, Perm
     const lvl = r.level as PermLevel;
     if (lvl && lvl !== "inherit") out[r.feature as string] = lvl;
   }
+  setCachedPerms(userId, out);
   return out;
 }
 

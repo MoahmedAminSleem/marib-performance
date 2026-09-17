@@ -3,7 +3,7 @@
    اللي الفرونت مش بيستخدمه خالص — اتنقل على نظام marib الحي، فالتشيك
    بقى بيبص على الجداول الشغالة فعلًا (المستخدمين، الشهور، الموظفين). */
 
-import { q, ensureBoot, driverName } from "@/lib/marib/db";
+import { q, ensureBoot, driverName, bootInfo } from "@/lib/marib/db";
 import { logger } from "@/lib/marib/http";
 
 const lg = logger("health");
@@ -26,6 +26,10 @@ export async function GET() {
       /* R56: db = neon على الإنتاج (Vercel) و pglite محليًا —
          إثبات مرئي إن الداتا بتتحفظ على سيرفر Neon. */
       db: driverName(),
+      /* R57 (perf): boot = ازاي اقلعت النسخة دي — "fast" يعني بوابة
+         boot_ver اتخطت باستعلام واحد (بدل ~44 استعلام DDL على كل
+         إقلاع بارد)، و "full" يعني الـ DDL اشتغل فعليًا. */
+      boot: bootInfo(),
       users: users[0]?.n ?? 0,
       months: months[0]?.n ?? 0,
       employees: emps[0]?.n ?? 0,

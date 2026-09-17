@@ -75,7 +75,9 @@ var App = (function () {
     if (!_xlsxP) {
       _xlsxP = new Promise(function (res, rej) {
         var s = document.createElement("script");
-        s.src = "/app/xlsx.full.min.js";
+        /* R57: ?v=r57 — ترويسة immutable الجديدة خلت الرابط ده يتخزن
+           للأبد في المتصفح؛ أي تحديث للمكتبة مستقبلًا = بارامتر جديد */
+        s.src = "/app/xlsx.full.min.js?v=r57";
         s.onload = function () { window.XLSX ? res(window.XLSX) : rej(new Error("XLSX missing")); };
         s.onerror = function () { _xlsxP = null; rej(new Error("XLSX load failed")); };
         document.head.appendChild(s);
@@ -1986,6 +1988,11 @@ var App = (function () {
     /* data page (R23 #9: folder + single Excel, cloud sync) */
     $("dtFolder").addEventListener("click", function () { $("dirPick").click(); });
     $("dtExcel").addEventListener("click", function () { $("xlsxPick").click(); });
+    /* R57 (perf): أول لمسة لزر الإكسل بتشغل تنزيل xlsx (932KB) في
+       الخلفية — لمّا المستخدم يختار الملف، التحليل يبدأ فورًا بدل
+       ما يستنى التنزيل بعد الاختيار. silent — الفشل بيتساب للمسار
+       الأصلي (ensureXLSX عند البارس) */
+    $("dtExcel").addEventListener("pointerdown", function () { ensureXLSX().catch(function () {}); }, { passive: true });
     $("dirPick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
     $("xlsxPick").addEventListener("change", function (e) { collectFiles(e.target.files); e.target.value = ""; });
     if ($("ndBtn")) $("ndBtn").addEventListener("click", function () { $("dirPick").click(); });
@@ -1996,7 +2003,11 @@ var App = (function () {
     if (dpp) {
       var dpF = $("dpFolder"), dpX = $("dpExcel");
       if (dpF) dpF.addEventListener("click", function () { $("dirPick").click(); });
-      if (dpX) dpX.addEventListener("click", function () { $("xlsxPick").click(); });
+      if (dpX) {
+        dpX.addEventListener("click", function () { $("xlsxPick").click(); });
+        /* R57 (perf): نفس التحميل المسبق بتاع زرار صفحة الداتا */
+        dpX.addEventListener("pointerdown", function () { ensureXLSX().catch(function () {}); }, { passive: true });
+      }
       var dpC = $("dpClose");
       if (dpC) dpC.addEventListener("click", closeDataPop);
       dpp.addEventListener("click", function (e) { if (e.target === dpp) closeDataPop(); });

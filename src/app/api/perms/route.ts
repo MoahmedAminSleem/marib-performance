@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { q, audit } from "@/lib/marib/db";
 import { PERM_KEYS, PERM_KEY_SET, loadUserPerms, loadAllPerms, effectiveLevel, type PermLevel } from "@/lib/marib/perms";
+import { invalidateUser } from "@/lib/marib/authcache"; /* R57: إبطال كاش الصلاحيات فورًا */
 import { fail, serverFail, readJson, logger, requirePermBody, requireUserBody } from "@/lib/marib/http";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +94,9 @@ export async function PUT(req: NextRequest) {
          SET level = EXCLUDED.level, updated_at = now(), updated_by = EXCLUDED.updated_by`,
       [userId, feature, level, me.username]
     );
+    /* R57: الصلاحية اتغيرت — إبطال كاش اليوزر ده فورًا عشان المنح/
+       السحب يشتغل في نفس اللحظة (زي اختبار R55 بالظبط) */
+    invalidateUser(userId);
 
     const targetName = (target[0] as { username: string }).username;
     await audit(me.username, "edit", "perms:" + feature, targetName, { level, userId });
@@ -124,6 +128,8 @@ export async function DELETE(req: NextRequest) {
       "DELETE FROM marib_perm WHERE user_id = $1 AND feature = $2",
       [userId, feature]
     );
+    /* R57: مسح override = رجوع للفطري — نفس إلزام الإبطال الفوري */
+    invalidateUser(userId);
     await audit(me.username, "delete", "perms:" + feature, String((target[0] as { username: string }).username), { feature });
     lg.info("perm cleared", { by: me.username, user: (target[0] as { username: string }).username, feature });
     return NextResponse.json({ ok: true });
