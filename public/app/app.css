@@ -2110,68 +2110,117 @@ body.pg-home .tb-utils{display:flex}
 @media (prefers-reduced-motion:reduce){
   .mgate{transition:none}
   .mg-bg .mgb-img,.mg-bg .mgb-glow,.mg-bg .mgb-sweep{animation:none}
+  .mg-brand,.mg-hello,.mg-in h2,.mg-card{animation:none}
+  .mg-card::before{transition:none;transform:none}
 }
 .mg-in{position:relative;display:flex;flex-direction:column;gap:22px;align-items:center;padding:28px;max-height:100vh;overflow:auto}
-/* هوية الشركة فوق — لوجو مأرب + الاسم بحرف كبير */
-.mg-brand{display:flex;align-items:center;gap:14px;filter:drop-shadow(0 6px 18px rgba(4,8,14,.55))}
-.mg-brand-logo{width:52px;height:52px;object-fit:contain}
-.mg-brand-t{display:flex;flex-direction:column;gap:2px}
-.mg-brand-t b{font-size:16.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#F2EBDD}
-.mg-brand-t small{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:rgba(217,168,107,.85)}
-/* الترحيب — «أهلًا، فلان» (بيتملى من app_auth باسم الداخل) */
-.mg-hello{
-  margin:0;font-size:15px;font-weight:700;color:#EAD9B8;letter-spacing:.02em;
-  text-shadow:0 2px 12px rgba(4,8,14,.65);
+/* R65: براحة فوق عشان اللوجو الكبير في الزاوية مياكلش على العنوان */
+@media (max-width:900px){ .mg-in{padding-top:112px} }
+@media (max-width:520px){ .mg-in{padding-top:84px} }
+/* ── R65: هوية الشركة كبيرة فوق يمين — زاوية ثابتة على الشاشة
+   (طلب المالك: «اللوجو يبقي كبير كدا ويتحط فوق ع اليمين») —
+   زي رقعة البراند الخياطة على الجينز: فوق يمين ومش بتتحرك ── */
+.mg-brand{
+  position:absolute;top:30px;right:34px;z-index:3;
+  display:flex;align-items:center;gap:16px;
+  filter:drop-shadow(0 10px 26px rgba(4,8,14,.6));
+  animation:mgBrandIn .85s cubic-bezier(.19,.9,.26,1.12) .08s backwards;
 }
+.mg-brand-logo{width:auto;height:96px;object-fit:contain;display:block}
+.mg-brand-t{display:flex;flex-direction:column;gap:3px;text-align:right}
+.mg-brand-t b{font-size:18px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#F5EFDF;text-shadow:0 2px 10px rgba(4,8,14,.55)}
+.mg-brand-t small{font-size:11.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:rgba(217,168,107,.9)}
+@keyframes mgBrandIn{from{opacity:0;transform:translateX(26px)}to{opacity:1}}
+/* الموبايل: اللوجو بيصغر بس مكانته فوق يمين زي ما هي */
+@media (max-width:900px){
+  .mg-brand{top:18px;right:20px;gap:11px}
+  .mg-brand-logo{height:60px}
+  .mg-brand-t b{font-size:13.5px}
+  .mg-brand-t small{font-size:9.5px;letter-spacing:.14em}
+}
+@media (max-width:520px){
+  .mg-brand-t{display:none}   /* أنضف على الموبايل الصغير: اللوجو لوحده */
+  .mg-brand-logo{height:52px}
+}
+/* الترحيب — «أهلًا بيك يا فلان» (بيتملى من app_auth باسم الداخل) */
+.mg-hello{
+  margin:0;font-size:16.5px;font-weight:700;color:#EFDDB6;letter-spacing:.01em;
+  text-shadow:0 2px 12px rgba(4,8,14,.65);
+  animation:mgHello .7s cubic-bezier(.19,.9,.28,1.1) backwards;
+}
+@keyframes mgHello{from{opacity:0;transform:translateY(10px)}to{opacity:1}}
 .mg-in h2{
   margin:0;font-size:24px;font-weight:800;color:#F7F1E3;letter-spacing:.02em;
   padding-bottom:10px;border-bottom:2px dashed rgba(217,168,107,.35);
   text-shadow:0 3px 16px rgba(4,8,14,.75);
+  animation:mgHello .7s cubic-bezier(.19,.9,.28,1.1) .05s backwards;
 }
 .mg-cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+/* ── R65: كروت الدنيم — نفس لغة الخلفية بالظبط:
+   قماش أزرق بتوييل قطري + خياطة كريمية متقطعة حوالين الحواف
+   + رقعة كريمية للأيقونة (زي رقعة اسم البراند على الجينز).
+   الكارت بقى قطعة من نفس القماش — مش زجاج تاني فوقه ── */
 .mg-card{
-  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
-  width:280px;padding:26px 24px;border-radius:20px;text-align:start;
-  /* R64: زجاج ضبابي — الكروت بتقعد على الصورة المصورة كأنها جزء
-     منها (frosted glass) مش كتل صلبة فوقها */
-  background:linear-gradient(162deg,rgba(30,44,66,.86) 0%,rgba(22,34,50,.82) 58%,rgba(17,27,40,.86) 100%);
-  backdrop-filter:blur(10px) saturate(1.15);
-  -webkit-backdrop-filter:blur(10px) saturate(1.15);
-  border:1px solid rgba(217,168,107,.26);
-  box-shadow:0 18px 46px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
+  display:flex;flex-direction:column;align-items:flex-start;gap:10px;
+  width:280px;padding:26px 24px;border-radius:18px;text-align:start;
+  background:
+    repeating-linear-gradient(58deg,rgba(255,255,255,.03) 0 2px,transparent 2px 5px),
+    repeating-linear-gradient(-54deg,rgba(2,8,18,.18) 0 2px,transparent 2px 6px),
+    radial-gradient(125% 95% at 18% -5%,rgba(122,158,199,.18),transparent 55%),
+    linear-gradient(168deg,#2E4C6F 0%,#24405F 48%,#1A2C46 100%);
+  border:1px solid rgba(150,170,195,.24);
+  box-shadow:0 18px 44px rgba(3,10,20,.5),inset 0 1px 0 rgba(255,255,255,.1);
   color:var(--txt);position:relative;overflow:hidden;
-  transition:transform .28s ease,border-color .28s,box-shadow .28s;
-  animation:mgCard .5s cubic-bezier(.2,.9,.3,1.2) backwards;
+  transition:transform .32s cubic-bezier(.22,.9,.3,1.1),border-color .32s,box-shadow .32s;
+  animation:mgCard .75s cubic-bezier(.19,.9,.28,1.1) backwards;
 }
-.mg-card.mp{animation-delay:.12s}
-@keyframes mgCard{from{opacity:0;transform:translateY(22px) scale(.96)}to{opacity:1}}
-.mg-card::before{  /* gold stitch at the top edge */
-  content:"";position:absolute;inset-inline:18px;top:0;height:2px;
-  background:repeating-linear-gradient(90deg,#D9A86B 0 9px,transparent 9px 15px);
-  opacity:.55;
+.mg-card.mp{animation-delay:.1s}
+.mg-card.ent{animation-delay:.2s}
+@keyframes mgCard{
+  from{opacity:0;transform:translateY(28px) rotate(.5deg) scale(.96)}
+  to{opacity:1}
 }
+/* الخياطة الكريمية — خط متقطع رفيع جوه الحافة زي خياطة الجينز */
+.mg-card::after{
+  content:"";position:absolute;inset:7px;border-radius:12px;pointer-events:none;
+  border:1.5px dashed rgba(238,224,186,.42);
+}
+/* لمعة القماش لما الماوس يعدي — نسمة ضوء وحشة من بتوع الخلفية */
+.mg-card::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 32%,rgba(240,226,190,.12) 46%,rgba(255,248,226,.2) 50%,rgba(240,226,190,.12) 54%,transparent 68%);
+  transform:translateX(-115%);
+  transition:transform 1s cubic-bezier(.22,.9,.3,1);
+}
+.mg-card:hover::before{transform:translateX(115%)}
 .mg-card:hover{
-  transform:translateY(-5px);
-  border-color:rgba(217,168,107,.65);
-  box-shadow:0 24px 54px rgba(0,0,0,.6),0 0 0 1px rgba(217,168,107,.4);
+  transform:translateY(-6px) rotate(-.35deg);
+  border-color:rgba(238,224,186,.5);
+  box-shadow:0 26px 58px rgba(3,10,20,.62),inset 0 1px 0 rgba(255,255,255,.14);
 }
+/* رقعة الأيقونة — الكريمية المنسوجة زي رقعة اسم البراند على الجينز */
 .mg-card .mg-ico{
-  display:flex;align-items:center;justify-content:center;
-  width:56px;height:56px;border-radius:16px;
-  background:rgba(217,168,107,.1);color:var(--accent-2);
-  border:1px solid rgba(217,168,107,.25);
+  display:flex;align-items:center;justify-content:center;flex:none;
+  width:58px;height:58px;border-radius:14px;
+  background:linear-gradient(172deg,#F4E9CF 0%,#E7D4A9 100%);
+  color:#22406A;
+  border:1px solid rgba(120,95,50,.4);
+  box-shadow:0 3px 9px rgba(3,10,20,.38),inset 0 1px 0 rgba(255,255,255,.7);
+  transition:transform .32s cubic-bezier(.22,.9,.3,1.1);
 }
+/* الاتزان: الرقعة بمسحة ذهبية — تمييز لطيف من غير ضجة */
 .mg-card.mp .mg-ico{
-  background:rgba(217,168,107,.1);color:#D9A86B;
-  border-color:rgba(217,168,107,.3);
+  background:linear-gradient(172deg,#F6E7C6 0%,#E9D3A0 100%);
+  color:#6B4A1E;
 }
-.mg-card .mg-ico svg{width:30px;height:30px}
-.mg-card b{font-size:22px;font-weight:800}
-.mg-card small{color:var(--muted);font-size:12.5px;line-height:1.5}
+.mg-card:hover .mg-ico{transform:translateY(-2px) rotate(-2.5deg)}
+.mg-card .mg-ico svg{width:29px;height:29px}
+.mg-card b{font-size:21.5px;font-weight:800;color:#F3EDDD;text-shadow:0 2px 8px rgba(3,10,20,.4)}
+.mg-card small{color:rgba(226,219,203,.75);font-size:12.5px;line-height:1.55}
 .mg-card .mg-go{
   position:absolute;inset-inline-end:18px;bottom:16px;
-  font-size:20px;color:#D9A86B;opacity:0;transform:translateX(-6px);
-  transition:.25s;
+  font-size:20px;color:#EFDCA9;opacity:0;transform:translateX(-6px);
+  transition:.28s cubic-bezier(.22,.9,.3,1.1);
 }
 html[dir="ltr"] .mg-card .mg-go{transform:translateX(6px)}
 .mg-card:hover .mg-go{opacity:1;transform:none}
@@ -2797,17 +2846,22 @@ html[data-theme="light"]{
 
 /* ============ R45: أزرار البوابة الصغيرة (إعدادات/مستخدمين/بيانات/خروج) ============
    كانت بترسم من غير تنسيق خالص (زراير المتصفح الافتراضية باهتة). */
+/* ─── زراير البوابة: رقايق دنيم صغيرة — نفس القماش بس أهدى ─── */
 .mg-utils{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .mg-utils button{
   display:inline-flex;align-items:center;gap:9px;padding:10px 17px;border-radius:12px;
-  background:rgba(217,168,107,.08);border:1px solid rgba(217,168,107,.30);
-  color:#E7DDC8;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;
+  background:
+    repeating-linear-gradient(58deg,rgba(255,255,255,.03) 0 2px,transparent 2px 5px),
+    linear-gradient(172deg,#2C4767,#203450);
+  border:1px solid rgba(238,224,186,.26);
+  color:#EFE7D2;font-size:13px;font-weight:700;cursor:pointer;
+  transition:transform .24s cubic-bezier(.22,.9,.3,1.1),border-color .24s,box-shadow .24s;
 }
-.mg-utils button svg{width:17px;height:17px;color:#D9A86B;flex:none}
-.mg-utils button:hover{border-color:rgba(217,168,107,.68);background:rgba(217,168,107,.16);transform:translateY(-2px)}
+.mg-utils button svg{width:17px;height:17px;color:#EBD9A9;flex:none}
+.mg-utils button:hover{border-color:rgba(238,224,186,.6);transform:translateY(-2px);box-shadow:0 8px 18px rgba(3,10,20,.35)}
 .mg-utils button#mgLogout{border-color:rgba(248,113,113,.34);color:#F5C6C8}
 .mg-utils button#mgLogout svg{color:#E8A7AA}
-.mg-utils button#mgLogout:hover{border-color:rgba(248,113,113,.62);background:rgba(248,113,113,.12)}
+.mg-utils button#mgLogout:hover{border-color:rgba(248,113,113,.62);background:repeating-linear-gradient(58deg,rgba(255,255,255,.03) 0 2px,transparent 2px 5px),linear-gradient(172deg,#4A2E3E,#3A2433)}
 /* تسجيل الخروج الصغير في هيدر الاتزان */
 .mp-mini.mp-hdr.out{color:#E8A7AA;border-color:rgba(248,113,113,.30)}
 .mp-mini.mp-hdr.out:hover{color:#FFB3B6;border-color:rgba(248,113,113,.6);background:rgba(248,113,113,.12)}
@@ -2842,20 +2896,42 @@ html[data-theme="light"] .mg-bg .mgb-veil{background:radial-gradient(ellipse 64%
 html[data-theme="light"] .mg-bg .mgb-vign{background:radial-gradient(ellipse 120% 100% at 50% 50%,transparent 58%,rgba(226,232,242,.55) 100%)}
 html[data-theme="light"] .mg-brand-t b{color:#1F2937;text-shadow:none}
 html[data-theme="light"] .mg-brand-t small{color:#8A6A3B}
+/* اللوجو فاتح بطبيعته — على الثيم الفاتح محتاج ظل داكن ناعم عشان يبان */
+html[data-theme="light"] .mg-brand{filter:drop-shadow(0 3px 8px rgba(15,23,42,.55))}
 html[data-theme="light"] .mg-hello{color:#5B4E2E;text-shadow:none}
 html[data-theme="light"] .mg-in h2{color:#1F2937;border-bottom-color:rgba(176,126,63,.5);text-shadow:none}
-html[data-theme="light"] .mg-card{background:linear-gradient(162deg,rgba(255,255,255,.88) 0%,rgba(245,248,252,.86) 100%);border-color:rgba(20,33,61,.16);box-shadow:0 14px 40px rgba(15,23,42,.14)}
-html[data-theme="light"] .mg-card b{color:#1F2937}
-html[data-theme="light"] .mg-card small{color:#5B6472}
-html[data-theme="light"] .mg-card .mg-ico{background:rgba(29,58,95,.08);color:#1D3A5F;border-color:rgba(29,58,95,.18)}
-html[data-theme="light"] .mg-card.mp .mg-ico{background:rgba(176,126,63,.13);color:#A66B24;border-color:rgba(176,126,63,.32)}
-html[data-theme="light"] .mg-card:hover{box-shadow:0 20px 46px rgba(15,23,42,.20),0 0 0 1px rgba(176,126,63,.45)}
-html[data-theme="light"] .mg-utils button{background:#FFFFFF;color:#1F2937;border-color:rgba(20,33,61,.22)}
+/* دنيم مغسول فاتح — نفس القماش بألوان النهار */
+html[data-theme="light"] .mg-card{
+  background:
+    repeating-linear-gradient(58deg,rgba(255,255,255,.5) 0 2px,transparent 2px 5px),
+    repeating-linear-gradient(-54deg,rgba(20,40,70,.06) 0 2px,transparent 2px 6px),
+    radial-gradient(125% 95% at 18% -5%,rgba(255,255,255,.7),transparent 55%),
+    linear-gradient(168deg,#FDFEFF 0%,#F0F4FA 48%,#E2E9F3 100%);
+  border-color:rgba(29,58,95,.2);
+  box-shadow:0 14px 40px rgba(15,23,42,.14),inset 0 1px 0 rgba(255,255,255,.8);
+}
+html[data-theme="light"] .mg-card::after{border-color:rgba(37,64,94,.3)}
+html[data-theme="light"] .mg-card::before{
+  background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.35) 46%,rgba(255,255,255,.6) 50%,rgba(255,255,255,.35) 54%,transparent 68%);
+}
+html[data-theme="light"] .mg-card b{color:#17263A}
+html[data-theme="light"] .mg-card small{color:#4E5A6B}
+/* الرقعة الكريمية بتبقى كحلية على الفاتح — انعكاس الجينز والقميص */
+html[data-theme="light"] .mg-card .mg-ico{
+  background:linear-gradient(172deg,#2C4A6E,#1D3452);
+  color:#F2E9D2;border-color:rgba(10,20,35,.35);
+  box-shadow:0 3px 9px rgba(15,23,42,.25),inset 0 1px 0 rgba(255,255,255,.25);
+}
+html[data-theme="light"] .mg-card.mp .mg-ico{
+  background:linear-gradient(172deg,#7A5320,#5E3F17);color:#F6E7C6;
+}
+html[data-theme="light"] .mg-card:hover{box-shadow:0 20px 46px rgba(15,23,42,.2),0 0 0 1px rgba(176,126,63,.45),inset 0 1px 0 rgba(255,255,255,.9)}
+html[data-theme="light"] .mg-utils button{background:linear-gradient(172deg,#FDFEFF,#EDF2F8);color:#1F2937;border-color:rgba(20,33,61,.22)}
 html[data-theme="light"] .mg-utils button svg{color:#A66B24}
-html[data-theme="light"] .mg-utils button:hover{border-color:rgba(176,126,63,.65);background:#F7F9FC}
+html[data-theme="light"] .mg-utils button:hover{border-color:rgba(176,126,63,.65);background:#F7F9FC;box-shadow:0 8px 18px rgba(15,23,42,.12)}
 html[data-theme="light"] .mg-utils button#mgLogout{color:#C0321F;border-color:rgba(192,50,31,.35)}
 html[data-theme="light"] .mg-utils button#mgLogout svg{color:#C0321F}
-html[data-theme="light"] .mg-utils button#mgLogout:hover{border-color:rgba(192,50,31,.6);background:rgba(192,50,31,.08)}
+html[data-theme="light"] .mg-utils button#mgLogout:hover{border-color:rgba(192,50,31,.6);background:#FBEFED}
 html[data-theme="light"] .mp-mini.mp-hdr.out{color:#C0321F;border-color:rgba(192,50,31,.35)}
 html[data-theme="light"] .mp-mini.mp-hdr.out:hover{color:#A02814;border-color:rgba(192,50,31,.6);background:rgba(192,50,31,.08)}
 html[data-theme="light"] body{
@@ -3873,24 +3949,26 @@ html[data-theme="light"] .ent-form-hint{color:#5B6472}
 .ent-tab .tb-em{font-size:13px}
 .ent-head h3 .tb-em{font-size:17px;vertical-align:-2px}
 
-/* ─── 2) بطاقة الداتا إنتري في البوابة (البطاقة التالتة) ─── */
+/* ─── 2) بطاقة الداتا إنتري (البطاقة التالتة) — R65: نفس الدنيم
+       بس بمسحة كحلي أعمق شوية عشان تبان إنها بوابة الشغل اليومي ─── */
 .mg-card.ent{
   background:
-    linear-gradient(160deg, rgba(217,168,107,.10), rgba(217,168,107,.03) 55%),
-    linear-gradient(180deg, #131C2E, #0F1626);
+    repeating-linear-gradient(58deg,rgba(255,255,255,.03) 0 2px,transparent 2px 5px),
+    repeating-linear-gradient(-54deg,rgba(2,8,18,.2) 0 2px,transparent 2px 6px),
+    radial-gradient(125% 95% at 18% -5%,rgba(214,176,120,.15),transparent 55%),
+    linear-gradient(168deg,#31456B 0%,#243A5B 48%,#182842 100%);
 }
-.mg-card.ent .mg-ico{color:#E8C687}
-.mg-card.ent::before{
-  background:linear-gradient(180deg, rgba(232,198,135,.75), rgba(217,168,107,.15));
-}
-.mg-card.ent:hover{
-  border-color:rgba(232,198,135,.55);
-  transform:translateY(-2px);
-}
+.mg-card.ent .mg-ico{color:#7A5320}
+.mg-card.ent:hover{border-color:rgba(238,224,186,.5)}
 html[data-theme="light"] .mg-card.ent{
-  background:linear-gradient(160deg, rgba(185,138,79,.10), rgba(255,255,255,.96) 55%);
+  background:
+    repeating-linear-gradient(58deg,rgba(255,255,255,.5) 0 2px,transparent 2px 5px),
+    repeating-linear-gradient(-54deg,rgba(20,40,70,.06) 0 2px,transparent 2px 6px),
+    radial-gradient(125% 95% at 18% -5%,rgba(185,138,79,.12),transparent 55%),
+    linear-gradient(168deg,#FFFEFC 0%,#F3F1EA 48%,#E9E5DB 100%);
+  border-color:rgba(120,90,45,.28);
 }
-html[data-theme="light"] .mg-card.ent .mg-ico{color:#B98A4F}
+html[data-theme="light"] .mg-card.ent .mg-ico{color:#8A5A22}
 
 /* ─── 3) شريطا التحديد — بوب-أب تحت في النص يظهر لما فيه تحديد بس ─── */
 .mp-selbar{

@@ -2,7 +2,7 @@
 
 > **متعدّلش بإيدك.** الخريطة دي بتتولّد من الكود نفسه — لو اتغير
 > الكود، بتتغير معاه. أعد التوليد قبل أي commit: `bun scripts/code_map.mjs`
-> النسخة: r63 · الملفات المفهرسة: 61
+> النسخة: r63 · الملفات المفهرسة: 62
 
 ## الوصفة (30 ثانية لأي تعديل)
 
@@ -64,7 +64,7 @@
 | `public/app/app_pages.js` | AppPages | — | 1445 سطر · 73.9KB |
 | `public/app/app_auth.js` | MaribAuth | /api/perms | 1230 سطر · 57.5KB |
 | `public/app/app_entries.js` | AppEntries | /api/entries/<br>/api/entries/absence<br>/api/entries/employees<br>/api/entries/overtime<br>/api/entries/production<br>/api/po | 953 سطر · 49.4KB |
-| `public/app/i18n_dict.js` | — | — | 942 سطر · 107KB |
+| `public/app/i18n_dict.js` | — | — | 942 سطر · 107.2KB |
 | `public/app/app_core.js` | MaribCore | — | 782 سطر · 41.2KB |
 | `public/app/app_charts.js` | MaribCharts | — | 759 سطر · 40.6KB |
 | `public/app/app_admin.js` | AppAdmin | /api/perms | 448 سطر · 22.3KB |
@@ -147,8 +147,8 @@
 
 | الأصل | الحجم | الدور |
 |---|---|---|
-| `public/app/app.css` | 630.2KB | ستايل الموقع كله |
-| `public/app/bg/home-denim.jpg` | 93.4KB | خلفية الصفحة الرئيسية (R64) |
+| `public/app/app.css` | 635.1KB | ستايل الموقع كله |
+| `public/app/bg/home-denim.jpg` | 105.1KB | خلفية الصفحة الرئيسية (R64) |
 | `public/app/cursor_needle.png` | 0.9KB | أنيميشن المكنة (شاشة الدخول) |
 | `public/app/cursor_needle_thread.png` | 1.3KB | خيط المكنة (شاشة الدخول) |
 | `public/app/favicon.png` | 1.4KB | أيقونة المتصفح |

@@ -633,13 +633,13 @@ pg_data: { ar: ["البيانات", "DATA SYNC"], en: ["Data", "DATA SYNC"], tr:
 /* ============================================================
    R37 — الاتزان (manpower balance) + mode gate after login
    ============================================================ */
-mg_title:    { ar: "اختار واجهة البدء", en: "Choose where to start", tr: "Nereden başlayalım" },
-mg_hello:    { ar: "أهلًا، ", en: "Welcome, ", tr: "Hoş geldin, " },   /* R64: ترحيب الرئيسية باسم اليوزر */
+mg_title:    { ar: "إيه اللي هتشغّله النهارده؟", en: "What are we working on today?", tr: "Bugün neyle başlıyoruz?" },  /* R65: humanize — سؤال حي بدل عنوان جامد */
+mg_hello:    { ar: "أهلًا بيك يا ", en: "Good to see you, ", tr: "Hoş geldin, " },   /* R65: ترحيب بشري دافي — الاسم بيتملى من app_auth */
 nav_home:    { ar: "الرئيسية", en: "Home", tr: "Ana Sayfa" },           /* R64: عنوان التاب على الرئيسية */
 mg_dash:     { ar: "تحليل الأداء", en: "Dashboard", tr: "Panel" },
-mg_dash_sub: { ar: "رسومات ومؤشرات أداء المصنع", en: "Factory KPIs & charts", tr: "Fabrika performans grafikleri" },
+mg_dash_sub: { ar: "رسومات ومؤشرات أداء المصنع — كلها في مكان واحد", en: "Factory KPIs & charts, all in one place", tr: "Fabrika grafikleri — hepsi tek yerde" },
 mg_mp:       { ar: "الاتزان", en: "Balance", tr: "Denge" },
-mg_mp_sub:   { ar: "هيكل القوى العاملة والأعداد", en: "Manpower structure & counts", tr: "Kadro yapısı ve sayılar" },
+mg_mp_sub:   { ar: "هيكل القوى العاملة بالأعداد والنسب", en: "Manpower structure & counts", tr: "Kadro yapısı ve sayılar" },
 nav_tt_swap: { ar: "التبديل بين الواجهتين", en: "Switch between the two views", tr: "Görünümler arasında geçiş" },
 
   /* ---- R38: الاتزان v2 — home, Marib 3, vacancies, dept mgmt ---- */
