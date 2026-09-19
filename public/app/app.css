@@ -90,12 +90,17 @@ input,select{font-family:inherit}
 .bg-fx::after{content:"";position:absolute;bottom:-16%;inset-inline-start:-10%;width:520px;height:520px;
   background:radial-gradient(circle,rgba(239,31,37,.07),transparent 60%);filter:blur(10px)}
 .shell{
-  position:relative;z-index:1;max-width:1620px;margin:0 auto;
-  height:calc(100vh - 32px);margin-block:16px;
+  /* R70: الغلاف بياخد الشاشة كلها — كان كارت عائم max-width:1620px
+     بتوسيط margin:0 auto فبيفضل فراغ ضخم في الجنبين على أي شاشة
+     أعرض من 1620 + margin-block:16px بي سيب 16px فاضية فوق وتحت
+     (شكوى المالك على لقطة 1920: «مليتها فين — في فراغات في الجنب
+     وفوق وتحت» — مخططة بالأحمر). الخلفية --shell شبه شفافة
+     (ألفا .86 دنيم / .94 فاتح) فطبقات bg-fx لسه شايفة من تحتها. */
+  position:relative;z-index:1;max-width:none;margin:0;
+  height:100vh;
   display:flex;flex-direction:column;
   background:var(--shell);backdrop-filter:blur(22px);
-  border:1px solid var(--brd);border-radius:var(--r-lg);
-  box-shadow:var(--sh), 0 0 70px rgba(239,31,37,.05);
+  border:none;border-radius:0;
   overflow:hidden;
 }
 
@@ -552,7 +557,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
 }
 @media (max-width:900px){
   /* R36: mid-title rule dropped */
-  .shell{height:auto;min-height:calc(100vh - 16px);margin-block:8px}
+  .shell{height:auto;min-height:100vh;margin-block:0}   /* R70: full-bleed — كان 16px فوق وتحت */
 }
 @media (max-width:720px){
   .layout{flex-direction:column}

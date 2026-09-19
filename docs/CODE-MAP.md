@@ -2,7 +2,7 @@
 
 > **متعدّلش بإيدك.** الخريطة دي بتتولّد من الكود نفسه — لو اتغير
 > الكود، بتتغير معاه. أعد التوليد قبل أي commit: `bun scripts/code_map.mjs`
-> النسخة: r63 · الملفات المفهرسة: 66
+> النسخة: r63 · الملفات المفهرسة: 67
 
 ## الوصفة (30 ثانية لأي تعديل)
 
@@ -61,7 +61,7 @@
 |---|---|---|---|
 | `public/app/app_manpower.js` | MaribManpower | /api/manpower | 2979 سطر · 153.7KB |
 | `public/app/app_main.js` | App | — | 2269 سطر · 106.7KB |
-| `public/app/app_pages.js` | AppPages | — | 1495 سطر · 77.5KB |
+| `public/app/app_pages.js` | AppPages | — | 1497 سطر · 77.6KB |
 | `public/app/app_auth.js` | MaribAuth | /api/perms | 1235 سطر · 57.8KB |
 | `public/app/app_entries.js` | AppEntries | /api/entries/<br>/api/entries/absence<br>/api/entries/employees<br>/api/entries/overtime<br>/api/entries/production<br>/api/po | 1050 سطر · 56.5KB |
 | `public/app/i18n_dict.js` | — | — | 953 سطر · 108.4KB |
@@ -147,7 +147,7 @@
 
 | الأصل | الحجم | الدور |
 |---|---|---|
-| `public/app/app.css` | 641.1KB | ستايل الموقع كله |
+| `public/app/app.css` | 641.6KB | ستايل الموقع كله |
 | `public/app/bg/home-denim.jpg` | 102.1KB | خلفية الصفحة الرئيسية (R64) |
 | `public/app/cursor_needle.png` | 0.9KB | أنيميشن المكنة (شاشة الدخول) |
 | `public/app/cursor_needle_thread.png` | 1.3KB | خيط المكنة (شاشة الدخول) |
