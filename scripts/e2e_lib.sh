@@ -34,7 +34,7 @@
 E2E_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 E2E_PORT=3113
 E2E_MONTH="2026-09"                 # ثابت — انظر الشرح فوق
-E2E_V="r68"                         # نسخة الكاش الحالية للواجهة (تتغير مع أي تعديل واجهة)
+E2E_V="r69"                         # نسخة الكاش الحالية للواجهة (تتغير مع أي تعديل واجهة)
 E2E_COMMON="$E2E_ROOT/scripts/e2e_common"
 E2E_BASE="$E2E_COMMON/baselines"    # مرفوعة على git
 E2E_SCRATCH="$E2E_COMMON/scratch"   # gitignored — مخرجات التشغيلة الجارية

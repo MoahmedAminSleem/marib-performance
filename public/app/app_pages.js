@@ -1355,6 +1355,56 @@ var AppPages = (function (ctx) {
     return a;
   }
 
+  /* R69-1: ارتفاع جرافات بيت المدير بيملي الصفحة (شكوى المالك:
+     «محتاجة تكبر وتملي الصفحة عشان صغيرة»). كان ثابت 260px — على
+     شاشة 1080 كان بيفضل ~90-400px فاضية تحت والجرافات صغيرة.
+     دلوقتي: الارتفاع بيتحسب من مساحة المحتوى الحية (مصفوفة 3×2)،
+     بحد أدنى 240 للقراءة وحد أقصى 460 عشان ميتمددش ببذخ. تحت
+     1180 (عمود واحد) بيفضل 260 زي ما كان. الارتفاع بيتحسب وقت كل
+     رسم، وتغيير مقاس النافذة بينادي renderMhome تاني (الواتش تحته)
+     فبيتحدث معاه. */
+  function mhChartH() {
+    if (window.matchMedia("(max-width:1180px)").matches) return 260; /* عمود واحد — زي ما كان */
+    var content = document.querySelector(".content");
+    var seg = document.getElementById("mhSeg");
+    if (!content || !seg || !content.clientHeight) return 260;
+    /* موقع الشريط نفسه بيقيس كل اللي فوقه (بادنج المحتوى + شريط
+       الفلاتر + الفواصل) — أضمن من طرحهم واحد واحد */
+    var segTop = seg.getBoundingClientRect().top - content.getBoundingClientRect().top;
+    if (segTop < 0) segTop = 0;
+    var padB = parseFloat(getComputedStyle(content).paddingBottom) || 0;
+    /* كروم الكارت بيتقاس من DOM الحي — الهيدر في الثيم الفاتح بانر
+       غامق بيلف جوه بادنج الكارت (margin سالب فوق) فطوله 49px مقابل
+       27px في الدنيم: ثابت واحد كان بيسبب overflow 20px في الفاتح.
+       marginTop السالب بيتجمع في المعادلة فيلغي بادنج الكارت زي الواقع. */
+    var CHROME = 71; /* احتياطي: بادنج 32 + هيدر 27 + مارجن 10 + بوردر 2 */
+    var card = document.querySelector("#page-mhome .grid-3 .card");
+    var head = card ? card.querySelector(".card-head") : null;
+    if (card && head) {
+      var ccs = getComputedStyle(card), hcs = getComputedStyle(head);
+      var live = head.offsetHeight + (parseFloat(hcs.marginTop) || 0) + (parseFloat(hcs.marginBottom) || 0) +
+        (parseFloat(ccs.paddingTop) || 0) + (parseFloat(ccs.paddingBottom) || 0) +
+        (parseFloat(ccs.borderTopWidth) || 0) + (parseFloat(ccs.borderBottomWidth) || 0);
+      if (live >= 40) CHROME = live;   /* أقل من كده = قياس مخفي — الثابت أأمن */
+    }
+    var avail = content.clientHeight - segTop - seg.offsetHeight - 16 /* margin الشريط */ - 16 /* margin الجريد */ - padB;
+    var h = Math.floor((avail - 16 /* row gap */ - 2 * CHROME) / 2);
+    return Math.max(240, Math.min(460, h));
+  }
+
+  /* R69-1: مقاس النافذة اتغير وبيت المدير هو الصفحة الحية → إعادة
+     رسم مؤجلة. مكتبة الجرافات بترسم بعرض جديد بس بنفس الارتفاع
+     المحفوظ جوه الـ closure بتاعها، فلازم renderMhome نفسه يتنادى
+     عشان الارتفاع يتحسب من جديد. */
+  var mhResizeTimer = null;
+  window.addEventListener("resize", function () {
+    if (!document.body.classList.contains("pg-mhome")) return;
+    clearTimeout(mhResizeTimer);
+    mhResizeTimer = setTimeout(function () {
+      if (document.body.classList.contains("pg-mhome")) renderMhome();
+    }, 220);
+  });
+
   function renderMhome() {
     syncMhomeMY();   /* R36: the month/year selects stay glued to the live range */
     var bk = mhBuckets();
@@ -1373,7 +1423,7 @@ var AppPages = (function (ctx) {
       }),
       fmt: pctF(0), valueName: T("t_eff"),
       goal: { value: TH.efficiency.good * 100, color: C_GOOD, tipTitle: "t_goal_line" },
-      height: 260
+      height: mhChartH()
     });
     /* 2 — ÜRETİM ADETİ / ADAM·VARDİYA: output pieces per worker
        R33: bars open the day-details drill now (like the other five) */
@@ -1384,7 +1434,7 @@ var AppPages = (function (ctx) {
           tip: [[T("t_actual"), fmtInt(a.loA)], [T("t_wrk"), fmtInt(a.wrk)], [T("t_pcs_w"), a.pcsW == null ? "—" : I18N.dec(a.pcsW.toFixed(1))], [T("t_days"), String(a.days)]],
           drill: drill(b, "prod") };
       }),
-      valueName: T("t_pcs_w"), height: 260
+      valueName: T("t_pcs_w"), height: mhChartH()
     });
     /* 3 — TOPLAM ÇALIŞAN K.Ş.: total workers (avg of days on week/month) */
     C.vbar($("mhWrk"), {
@@ -1395,7 +1445,7 @@ var AppPages = (function (ctx) {
           tip: [[T("t_wrk"), fmtInt(Math.round(v))], [T("t_days"), String(a.days)]],
           drill: drill(b, "att") };
       }),
-      valueName: T("t_wrk"), height: 260
+      valueName: T("t_wrk"), height: mhChartH()
     });
     /* 4 — ORT. MODEL ZAMANI: average model time (SAM)
        R33: bars open the day-details drill now (like the other five) */
@@ -1406,7 +1456,7 @@ var AppPages = (function (ctx) {
           tip: [[T("t_sam"), a.sam == null ? "—" : I18N.dec(a.sam.toFixed(2))], [T("t_days"), String(a.days)]],
           drill: drill(b, "prod") };
       }),
-      valueName: T("t_sam"), height: 260
+      valueName: T("t_sam"), height: mhChartH()
     });
     /* 5 — FAZLA MESAİ ORANI: overtime % (inverted thresholds + safe goal) */
     C.vbar($("mhOt"), {
@@ -1418,7 +1468,7 @@ var AppPages = (function (ctx) {
       }),
       fmt: pctF(1), valueName: T("t_ot_pct"),
       goal: { value: TH.overtime.good * 100, color: C_GOOD, tipTitle: "t_goal_safe" },
-      height: 260
+      height: mhChartH()
     });
     /* 6 — DEVAMSIZLIK ORANI: absenteeism % — R32: absent / regular workers (was / (reg + absent)) */
     C.vbar($("mhAbs"), {
@@ -1428,7 +1478,7 @@ var AppPages = (function (ctx) {
           tip: [[T("t_abs_rate"), fmtPct(a.absPct, 1)], [T("t_absent"), fmtInt(a.absent)], [T("t_reg"), fmtInt(a.reg)], [T("t_days"), String(a.days)]],
           drill: drill(b, "att") };
       }),
-      fmt: pctF(1), valueName: T("t_abs_rate"), height: 260
+      fmt: pctF(1), valueName: T("t_abs_rate"), height: mhChartH()
     });
   }
 

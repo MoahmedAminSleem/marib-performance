@@ -1895,6 +1895,36 @@ a.su-tab:focus-visible,a.att-tab:focus-visible,a.nav-btn:focus-visible{
 .mh-box.on .en { color: #D9A86B; }
 @media (max-width: 760px) { .mh-seg { grid-template-columns: 1fr; } }
 
+/* R69-2: الثيم الفاتح — صندوق اليومي/الأسبوعي/شهري. الزرار المختار كان
+   بياخد تدرّج ذهبي شبه شفيف (ألفا .16/.10) فوق ورق الصفحة الفاتح،
+   والخط الكريمي #F2EBDD → الكلمة بتختفي بالظبط (شكوى المالك: «لون
+   الخط زي لون الخلفية»). نفس لغة qp-btn.on الفاتحة: كحلي + أبيض. */
+html[data-theme="light"] .mh-box{
+  background:linear-gradient(180deg,#FDFEFF,#EFF3F9);
+  border-color:rgba(29,58,95,.22);
+  color:#1F2937;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85);
+}
+html[data-theme="light"] .mh-box .en{color:#A66B24}
+html[data-theme="light"] .mh-box:hover{border-color:rgba(176,126,63,.6);color:#17263A}
+html[data-theme="light"] .mh-box.on{
+  color:#fff;
+  background:linear-gradient(135deg,#2A4066,#1D2E4C);
+  border-color:#1D2E4C;
+  box-shadow:0 6px 18px rgba(29,58,95,.30), inset 0 0 0 1px rgba(255,255,255,.08);
+}
+html[data-theme="light"] .mh-box.on .en{color:#E9C68A}
+
+/* R69-1: بيت المدير بيفضل 3 أعمدة لغاية 1180 — الجرافات الستة مصفوفة
+   3×2 بتملي الشاشة مع الارتفاع الديناميكي. البلوك العام (max-width:
+   1350) بيرجّع .grid-3 عمودين + أول كارت بعرض كامل يتيم — شكل
+   «مربع فوق ومربعات تحت» مبعثر على شاشات اللابتوب 1280-1350. الاستثناء
+   ده بصفحة البيت بس (ID أقوى من الكلاس) — باقي الصفحات زي ما هي. */
+@media (max-width:1350px){
+  #page-mhome .grid-3{grid-template-columns:repeat(3,1fr)}
+  #page-mhome .grid-3 .card:first-child{grid-column:auto}
+}
+
 /* filter bar on the manager home: only date-range + line + section stay */
 body.pg-mhome #qp,
 body.pg-mhome #scopeSeg,
@@ -4511,10 +4541,22 @@ tr.ot-extra-row:hover td{background:rgba(217,168,107,.10)}
   border:1px solid rgba(217,168,107,.4);border-radius:6px;padding:1px 7px;
 }
 
-/* ---- خانة الإضافيين في الفورم (عدد + ساعاتهم) ---- */
+/* ---- خانة الإضافيين في الفورم (R69: مربع واحد مرتب) ----
+   كان: .ent-form-row.two مباشرة — التسمية-الجملة الطويلة بتتكسر 4
+   سطور جوه عمود ~187px والتلميح معلق تحت الحدود من بره. دلوقتي:
+   العنوان بعرض المربع + خانتين قصيرتين + التلميح جوه كتعليق. */
 .ot-extra-form{
   background:rgba(217,168,107,.05);border:1px dashed rgba(217,168,107,.4);
-  border-radius:8px;padding:8px 10px;margin-top:2px;
+  border-radius:10px;padding:10px 12px;margin-top:2px;
+}
+.ot-x-head b{
+  display:block;font-size:11.5px;font-weight:800;color:#E9C68A;
+  letter-spacing:.02em;margin:0 0 9px;white-space:normal;line-height:1.45;
+}
+.ot-x-fields{margin-bottom:0}
+.ot-x-hint{
+  font-size:10.5px;color:#9FB0C3;margin:9px 0 0;line-height:1.55;
+  border-top:1px dashed rgba(217,168,107,.22);padding-top:8px;
 }
 
 /* الوضع الفاتح — نفس متغيرات الثيم (درس R54: القياستين) */
@@ -4529,3 +4571,5 @@ html[data-theme="light"] tr.ot-extra-row td{background:rgba(176,126,63,.06)}
 html[data-theme="light"] tr.ot-extra-row:hover td{background:rgba(176,126,63,.12)}
 html[data-theme="light"] .ot-x-chip{color:#8A5A22;background:rgba(176,126,63,.1);border-color:rgba(176,126,63,.4)}
 html[data-theme="light"] .ot-extra-form{background:rgba(176,126,63,.05);border-color:rgba(176,126,63,.45)}
+html[data-theme="light"] .ot-x-head b{color:#8A5A22}
+html[data-theme="light"] .ot-x-hint{color:#5B6472;border-top-color:rgba(176,126,63,.3)}

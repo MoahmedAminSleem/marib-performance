@@ -733,12 +733,19 @@ var AppEntries = (function (ctx) {
         '<button type="button" class="ent-add-code" id="efAddCode" hidden title="' + esc(T("ent_add_code_hint")) + '">➕ ' + esc(T("ent_add_code")) + ': <b></b></button>' +
       '</div>' +
       '<div class="ent-form-row"><label>' + esc(T("ent_hours")) + '<input type="number" id="efHours" min="0.5" max="24" step="0.5" value="2"></label></div>' +
-      /* R68: الأشخاص الإضافيين — مش مسجلين في الاتزان */
-      '<div class="ent-form-row two ot-extra-form">' +
-        '<label>' + esc(T("ent_ot_extra")) + '<input type="number" id="efExtraCount" min="0" max="500" step="1" value="0" placeholder="0"></label>' +
-        '<label>' + esc(T("ent_ot_extra_hours")) + '<input type="number" id="efExtraHours" min="0.5" max="24" step="0.5" value="2"></label>' +
+      /* R69-3: الأشخاص الإضافيين — مربع واحد مرتب (طلب المالك: «رتبه
+         كويس — فيه مربع فوق ومربع تحت والكلام نازل لتحت»). كان: تسمية
+         الجملة الطويلة بتتكسر 4 سطور جوه عمود ضيق + التلميح معلق تحت
+         المربع بره الحدود. دلوقتي: عنوان واحد بعرض المربع + خانتين
+         بتسميات قصيرة + التلميح جوه المربع كتعليق سفلي. */
+      '<div class="ot-extra-form">' +
+        '<div class="ot-x-head"><b>' + esc(T("ent_ot_extra")) + '</b></div>' +
+        '<div class="ent-form-row two ot-x-fields">' +
+          '<label>' + esc(T("ent_ot_extra_count")) + '<input type="number" id="efExtraCount" min="0" max="500" step="1" value="0" placeholder="0"></label>' +
+          '<label>' + esc(T("ent_ot_extra_hours")) + '<input type="number" id="efExtraHours" min="0.5" max="24" step="0.5" value="2"></label>' +
+        '</div>' +
+        '<p class="ot-x-hint">' + esc(T("ent_ot_extra_hint")) + '</p>' +
       '</div>' +
-      '<p class="ent-form-hint">' + esc(T("ent_ot_extra_hint")) + '</p>' +
       '<div class="ent-form-row"><label>' + esc(T("ent_note")) + '<input type="text" id="efNote" placeholder=""></label></div>';
     var fm = entOpenForm(T("ent_add") + " — " + T("ent_ot_tab"), html, function (fm) {
       var data = {

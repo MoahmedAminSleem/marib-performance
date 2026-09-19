@@ -939,7 +939,8 @@ ent_po_del_confirm:{ ar: "حذف عقد {po} من الريفرانس؟ (سجلا
 
   /* ---------- R68: الأوفر تايم زي الإنتاج + الأشخاص الإضافيين ---------- */
 ent_ot_extra:      { ar: "أشخاص إضافيين — مش مسجلين بالاتزان", en: "Extra people — not in balance", tr: "Ekstra kişiler — dengede yok" },
-ent_ot_extra_hours:{ ar: "ساعاتهم", en: "their hours", tr: "saatleri" },
+ent_ot_extra_count:{ ar: "العدد", en: "Count", tr: "Adet" },   /* R69: تسمية قصيرة جوه المربع — التسمية-الجملة الطويلة بقت عنوان المربع */
+ent_ot_extra_hours:{ ar: "ساعات الشخص", en: "Hours each", tr: "Kişi başı saat" },   /* R69: كان «ساعاتهم» */
 ent_ot_extra_hint: { ar: "بيتضافوا على المختارين بالاسم في نفس القسم والخط — الحساب: العدد × الساعات", en: "Added on top of the people picked by name in the same section & line — total = count × hours", tr: "Aynı bölüm ve hatta adla seçilenlerin üzerine eklenir — toplam = sayı × saat" },
 ent_ot_extra_badge:{ ar: "إضافي", en: "extra", tr: "ekstra" },
 ent_ot_breakdown:  { ar: "ملخص القسم والخط", en: "Section & line summary", tr: "Bölüm ve hat özeti" },
