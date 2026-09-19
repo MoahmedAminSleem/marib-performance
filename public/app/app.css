@@ -4468,3 +4468,64 @@ html[data-theme="light"] .pm-eff{color:#5B6472}
 html[data-theme="light"] .pm-eff[data-eff="hidden"]{color:#B91C1C}
 html[data-theme="light"] .pm-eff[data-eff="view"]{color:#1D3A5F}
 html[data-theme="light"] .pm-eff[data-eff="edit"]{color:#0B7A4B}
+
+/* ════════════════════════════════════════════════════════════════
+   R68 — الأوفر تايم زي الإنتاج: شريط إجمالي الشهر + ملخص القسم/الخط
+   + صفوف/خانة الأشخاص الإضافيين (المش مسجلين بالاتزان) — طلب المالك.
+   (شريطا الخط والقسم نفس .ent-strip بتوع R58 — مفيش تكرار)
+   ════════════════════════════════════════════════════════════════ */
+
+/* ---- شريط إجمالي الشهر (بالاسم + إضافيين = الإجمالي) ---- */
+.ent-ot-sum{
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  background:rgba(217,168,107,.07);border:1px solid rgba(217,168,107,.28);
+  border-radius:8px;padding:7px 10px;margin:0 0 8px;
+}
+.ot-sum-chip{
+  font-size:11.5px;color:#C9D4E4;font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.ot-sum-chip b{color:#F1E4C9;font-weight:800}
+.ot-sum-chip.tot{
+  background:rgba(217,168,107,.12);border:1px solid rgba(217,168,107,.35);
+  border-radius:6px;padding:2px 8px;color:#D9A86B;font-weight:700;
+}
+.ot-sum-chip.tot b{color:#F1E4C9}
+
+/* ---- ملخص القسم والخط (details) ---- */
+.ent-ot-bd{margin:0 0 10px}
+.ent-ot-bd summary{
+  cursor:pointer;font-size:12px;font-weight:700;color:#D9A86B;
+  padding:4px 2px;user-select:none;
+}
+.ent-ot-bd summary:hover{color:#F1E4C9}
+.ot-bd-tbl{margin-top:4px}
+.ot-bd-tbl td.num,.ot-bd-tbl th{font-variant-numeric:tabular-nums}
+
+/* ---- صف الأشخاص الإضافيين في الجدول ---- */
+tr.ot-extra-row td{background:rgba(217,168,107,.05)}
+tr.ot-extra-row:hover td{background:rgba(217,168,107,.10)}
+.ot-x-chip{
+  display:inline-block;font-size:10.5px;font-weight:700;
+  color:#D9A86B;background:rgba(217,168,107,.12);
+  border:1px solid rgba(217,168,107,.4);border-radius:6px;padding:1px 7px;
+}
+
+/* ---- خانة الإضافيين في الفورم (عدد + ساعاتهم) ---- */
+.ot-extra-form{
+  background:rgba(217,168,107,.05);border:1px dashed rgba(217,168,107,.4);
+  border-radius:8px;padding:8px 10px;margin-top:2px;
+}
+
+/* الوضع الفاتح — نفس متغيرات الثيم (درس R54: القياستين) */
+html[data-theme="light"] .ent-ot-sum{background:rgba(176,126,63,.06);border-color:rgba(176,126,63,.3)}
+html[data-theme="light"] .ot-sum-chip{color:#3D4A5C}
+html[data-theme="light"] .ot-sum-chip b{color:#1F2937}
+html[data-theme="light"] .ot-sum-chip.tot{background:rgba(176,126,63,.1);border-color:rgba(176,126,63,.35);color:#8A5A22}
+html[data-theme="light"] .ot-sum-chip.tot b{color:#1F2937}
+html[data-theme="light"] .ent-ot-bd summary{color:#8A5A22}
+html[data-theme="light"] .ent-ot-bd summary:hover{color:#5E3D16}
+html[data-theme="light"] tr.ot-extra-row td{background:rgba(176,126,63,.06)}
+html[data-theme="light"] tr.ot-extra-row:hover td{background:rgba(176,126,63,.12)}
+html[data-theme="light"] .ot-x-chip{color:#8A5A22;background:rgba(176,126,63,.1);border-color:rgba(176,126,63,.4)}
+html[data-theme="light"] .ot-extra-form{background:rgba(176,126,63,.05);border-color:rgba(176,126,63,.45)}

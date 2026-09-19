@@ -373,6 +373,11 @@ const BOOT_SQL: string[] = [
   `ALTER TABLE marib_dept ADD COLUMN IF NOT EXISTS label_tr TEXT`,
   `ALTER TABLE marib_prod ADD COLUMN IF NOT EXISTS dept_name TEXT`,
   `ALTER TABLE marib_overtime ADD COLUMN IF NOT EXISTS dept_name TEXT`,
+  /* R68 — الأشخاص الإضافيين في الأوفر تايم: ناس شغالة أوفر تايم
+     لسه مش مسجلين كود/اسم في الاتزان. الصف العادي (بالاسم)
+     extra_count=0 · صف الإضافيين = emp فاضي + extra_count=N
+     والـ hours فيه = ساعات الشخص الواحد (الإجمالي = N × hours). */
+  `ALTER TABLE marib_overtime ADD COLUMN IF NOT EXISTS extra_count INT NOT NULL DEFAULT 0`,
   /* R64 — ترحيل صلاحيات صفحة الإدخال: data.upload=edit كانت الطريقة
      الوحيدة لفتح صفحة الإدخال والكتابة فيها قبل ما القسم يبقى ليه
      مفاتيحه الخاصة (entry.view / entry.edit / entry.po). أي يوزر
@@ -410,8 +415,10 @@ let booting: Promise<void> | null = null;
 /* "58": فهرس marib_prod(po_number, date) + جدول marib_po (ريفرانس
    كمية العقد لكل PO — طلب المالك في صفحة الإدخال).
    "59": ترحيل صلاحيات صفحة الإدخال — data.upload=edit ← entry.view=view
-   + entry.edit=edit + entry.po=edit (قسم الصلاحيات المخصوص للصفحة). */
-const BOOT_VER = "59";
+   + entry.edit=edit + entry.po=edit (قسم الصلاحيات المخصوص للصفحة).
+   "68": عمود marib_overtime.extra_count — سجلات الأشخاص الإضافيين
+   (غير المسجلين بالاتزان) في نفس جدول الأوفر تايم. */
+const BOOT_VER = "68";
 
 interface BootInfoShape {
   __maribBootInfo?: { ver: string; path: "fast" | "full" };

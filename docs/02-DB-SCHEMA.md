@@ -152,18 +152,19 @@
 | actor | TEXT | |
 | created_at | TIMESTAMPTZ | |
 
-### marib_overtime (R46: الأوفر تايم)
+### marib_overtime (R46: الأوفر تايم · R68: الأشخاص الإضافيين)
 | Column | Type | Notes |
 |--------|------|-------|
 | id | TEXT PK | UUID |
 | month_key | TEXT | |
 | date | DATE | |
-| emp_id | TEXT | nullable |
-| emp_code | TEXT | |
-| emp_name | TEXT | |
+| emp_id | TEXT | nullable — فاضي لصف الإضافيين |
+| emp_code | TEXT | فاضي لصف الإضافيين |
+| emp_name | TEXT | فاضي لصف الإضافيين |
 | dept_id | TEXT | |
 | line_id | TEXT | |
-| hours | NUMERIC(4,2) | |
+| hours | NUMERIC(4,2) | ساعات الشخص الواحد — إجمالي صف الإضافيين = N × hours |
+| extra_count | INT (R68) | 0 للصف المسمّى · N لصف الأشخاص الإضافيين (مش مسجلين بالاتزان) |
 | note | TEXT | |
 | actor | TEXT | |
 | created_at | TIMESTAMPTZ | |

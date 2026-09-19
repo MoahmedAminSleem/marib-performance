@@ -34,7 +34,7 @@
 E2E_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 E2E_PORT=3113
 E2E_MONTH="2026-09"                 # ثابت — انظر الشرح فوق
-E2E_V="r67"                         # نسخة الكاش الحالية للواجهة (تتغير مع أي تعديل واجهة)
+E2E_V="r68"                         # نسخة الكاش الحالية للواجهة (تتغير مع أي تعديل واجهة)
 E2E_COMMON="$E2E_ROOT/scripts/e2e_common"
 E2E_BASE="$E2E_COMMON/baselines"    # مرفوعة على git
 E2E_SCRATCH="$E2E_COMMON/scratch"   # gitignored — مخرجات التشغيلة الجارية
@@ -202,13 +202,29 @@ e2e_cmp_json() {
 }
 e2e_cmp_xlsx() {
   python3 - "$E2E_BASE/base_$1.xlsx" "$E2E_SCRATCH/after/$1.xlsx" << 'PYX'
-import sys, zipfile
+import sys, zipfile, re
 za, zb = zipfile.ZipFile(sys.argv[1]), zipfile.ZipFile(sys.argv[2])
 na, nb = set(za.namelist()), set(zb.namelist())
 if na != nb: sys.exit(1)
+# R68 (درس الباج الكامن): التصدير والتيمبلتات بتحط ختم «تاريخ اليوم»
+# في خلية العنوان — فالمقارنة بالبايت كانت بتعد بس لأن كل الجولات
+# قبل كده اشتغلت نفس يوم التقاط الـ baselines (17 سبتمبر). التطبيع
+# محصور في سياقات العناوين الأربعة المعروفة (عقيدة R59: الطابع
+# هوية مش بيانات) — أي تاريخ تاني في أي خلية بيانات بيفضل فاضح.
+RX_DATE = re.compile(r'\d{4}-\d{2}-\d{2}')
+PREFIXES = ('تصدير ', 'تيمبلت الاتزان — ', 'تيمبلت الغياب — ', 'تيمبلت عقود الـ PO — ')
+def norm(b):
+    s = b.decode('utf-8', errors='strict')
+    for p in PREFIXES:
+        i = s.find(p)
+        if i < 0: continue
+        j = i + len(p)
+        m = RX_DATE.match(s, j)          # التاريخ لازم يلاصق العنوان نفسه
+        if m: s = s[:j] + '<DATE>' + s[m.end():]
+    return s.encode('utf-8')
 for n in sorted(na):
     if n == 'docProps/core.xml': continue   # طابع وقت الإنشاء — متغير بالطبيعة
-    if za.read(n) != zb.read(n): sys.exit(1)
+    if norm(za.read(n)) != norm(zb.read(n)): sys.exit(1)
 sys.exit(0)
 PYX
 }

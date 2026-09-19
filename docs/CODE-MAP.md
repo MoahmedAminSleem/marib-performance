@@ -2,7 +2,7 @@
 
 > **متعدّلش بإيدك.** الخريطة دي بتتولّد من الكود نفسه — لو اتغير
 > الكود، بتتغير معاه. أعد التوليد قبل أي commit: `bun scripts/code_map.mjs`
-> النسخة: r63 · الملفات المفهرسة: 64
+> النسخة: r63 · الملفات المفهرسة: 65
 
 ## الوصفة (30 ثانية لأي تعديل)
 
@@ -63,8 +63,8 @@
 | `public/app/app_main.js` | App | — | 2269 سطر · 106.7KB |
 | `public/app/app_pages.js` | AppPages | — | 1445 سطر · 73.9KB |
 | `public/app/app_auth.js` | MaribAuth | /api/perms | 1235 سطر · 57.8KB |
-| `public/app/app_entries.js` | AppEntries | /api/entries/<br>/api/entries/absence<br>/api/entries/employees<br>/api/entries/overtime<br>/api/entries/production<br>/api/po | 953 سطر · 49.4KB |
-| `public/app/i18n_dict.js` | — | — | 941 سطر · 107KB |
+| `public/app/app_entries.js` | AppEntries | /api/entries/<br>/api/entries/absence<br>/api/entries/employees<br>/api/entries/overtime<br>/api/entries/production<br>/api/po | 1043 سطر · 55.9KB |
+| `public/app/i18n_dict.js` | — | — | 952 سطر · 108.2KB |
 | `public/app/app_core.js` | MaribCore | — | 782 سطر · 41.2KB |
 | `public/app/app_charts.js` | MaribCharts | — | 759 سطر · 40.6KB |
 | `public/app/app_admin.js` | AppAdmin | /api/perms | 448 سطر · 22.3KB |
@@ -77,7 +77,7 @@
 | الملف | exports | بيستورده | سطور |
 |---|---|---|---|
 | `src/lib/marib/authcache.ts` | cachedPerms, cachedRole, invalidateUser, setCachedPerms, setCachedRole | `src/app/api/perms/route.ts`<br>`src/app/api/users/route.ts` | 83 |
-| `src/lib/marib/db.ts` | audit, bootInfo, driverName, ensureBoot, exec, q, withTransaction | `src/app/api/audit/route.ts`<br>`src/app/api/auth/route.ts`<br>`src/app/api/data/route.ts`<br>`src/app/api/entries/absence/route.ts`<br>`src/app/api/entries/employees/route.ts`<br>`src/app/api/entries/overtime/route.ts`<br>`src/app/api/entries/production/route.ts`<br>`src/app/api/health/route.ts`<br>`src/app/api/manpower/route.ts`<br>`src/app/api/perms/route.ts`<br>`src/app/api/po/route.ts`<br>`src/app/api/settings/route.ts`<br>`src/app/api/storage/route.ts`<br>`src/app/api/users/route.ts`<br>`src/lib/marib/entries.ts`<br>`src/lib/marib/http.ts`<br>`src/lib/marib/manpower_export.ts`<br>`src/lib/marib/manpower_io.ts`<br>`src/lib/marib/undo.ts` | 562 |
+| `src/lib/marib/db.ts` | audit, bootInfo, driverName, ensureBoot, exec, q, withTransaction | `src/app/api/audit/route.ts`<br>`src/app/api/auth/route.ts`<br>`src/app/api/data/route.ts`<br>`src/app/api/entries/absence/route.ts`<br>`src/app/api/entries/employees/route.ts`<br>`src/app/api/entries/overtime/route.ts`<br>`src/app/api/entries/production/route.ts`<br>`src/app/api/health/route.ts`<br>`src/app/api/manpower/route.ts`<br>`src/app/api/perms/route.ts`<br>`src/app/api/po/route.ts`<br>`src/app/api/settings/route.ts`<br>`src/app/api/storage/route.ts`<br>`src/app/api/users/route.ts`<br>`src/lib/marib/entries.ts`<br>`src/lib/marib/http.ts`<br>`src/lib/marib/manpower_export.ts`<br>`src/lib/marib/manpower_io.ts`<br>`src/lib/marib/undo.ts` | 569 |
 | `src/lib/marib/entries.ts` | deleteEntry, isDayStr, loadDeptMap, loadEmpMap, matchEmployee, monthParam | `src/app/api/entries/absence/route.ts`<br>`src/app/api/entries/overtime/route.ts`<br>`src/app/api/entries/production/route.ts`<br>`src/app/api/manpower/route.ts` | 127 |
 | `src/lib/marib/http.ts` | MAX_BODY_BYTES, fail, logger, ok, readJson, requireEntryRead, requirePerm, requirePermBody, requireRole, requireRoleBody, requireUser, requireUserBody, serverFail | `src/app/api/audit/route.ts`<br>`src/app/api/auth/route.ts`<br>`src/app/api/data/route.ts`<br>`src/app/api/entries/absence/route.ts`<br>`src/app/api/entries/employees/route.ts`<br>`src/app/api/entries/overtime/route.ts`<br>`src/app/api/entries/production/route.ts`<br>`src/app/api/health/route.ts`<br>`src/app/api/manpower/export/route.ts`<br>`src/app/api/manpower/route.ts`<br>`src/app/api/perms/route.ts`<br>`src/app/api/po/route.ts`<br>`src/app/api/settings/route.ts`<br>`src/app/api/storage/route.ts`<br>`src/app/api/users/route.ts`<br>`src/lib/marib/entries.ts`<br>`src/lib/marib/manpower_io.ts` | 160 |
 | `src/lib/marib/logger.ts` | log | `src/lib/marib/db.ts`<br>`src/lib/marib/http.ts`<br>`src/lib/marib/logger.ts` | 96 |
@@ -147,7 +147,7 @@
 
 | الأصل | الحجم | الدور |
 |---|---|---|
-| `public/app/app.css` | 635.4KB | ستايل الموقع كله |
+| `public/app/app.css` | 638.6KB | ستايل الموقع كله |
 | `public/app/bg/home-denim.jpg` | 102.1KB | خلفية الصفحة الرئيسية (R64) |
 | `public/app/cursor_needle.png` | 0.9KB | أنيميشن المكنة (شاشة الدخول) |
 | `public/app/cursor_needle_thread.png` | 1.3KB | خيط المكنة (شاشة الدخول) |

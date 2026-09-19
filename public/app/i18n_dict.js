@@ -936,5 +936,16 @@ ent_po_none:      { ar: "مفيش عقود مسجلة لسه — ضيف واحد
 ent_po_no_rows:   { ar: "الملف فاضي — مفيش صفوف PO", en: "Empty file — no PO rows", tr: "Boş dosya — PO satırı yok" },
 ent_po_imported:  { ar: "اتسجل {i} جديد واتحدث {u}", en: "{i} new, {u} updated", tr: "{i} yeni, {u} güncellendi" },
 ent_po_del_confirm:{ ar: "حذف عقد {po} من الريفرانس؟ (سجلات الإنتاج مش هتتمسح)", en: "Delete contract {po} from the reference? (production entries stay)", tr: "{po} sözleşmesi silinsin mi? (üretim kayıtları kalır)" },
+
+  /* ---------- R68: الأوفر تايم زي الإنتاج + الأشخاص الإضافيين ---------- */
+ent_ot_extra:      { ar: "أشخاص إضافيين — مش مسجلين بالاتزان", en: "Extra people — not in balance", tr: "Ekstra kişiler — dengede yok" },
+ent_ot_extra_hours:{ ar: "ساعاتهم", en: "their hours", tr: "saatleri" },
+ent_ot_extra_hint: { ar: "بيتضافوا على المختارين بالاسم في نفس القسم والخط — الحساب: العدد × الساعات", en: "Added on top of the people picked by name in the same section & line — total = count × hours", tr: "Aynı bölüm ve hatta adla seçilenlerin üzerine eklenir — toplam = sayı × saat" },
+ent_ot_extra_badge:{ ar: "إضافي", en: "extra", tr: "ekstra" },
+ent_ot_breakdown:  { ar: "ملخص القسم والخط", en: "Section & line summary", tr: "Bölüm ve hat özeti" },
+ent_ot_bd_named:   { ar: "بالاسم", en: "by name", tr: "adla" },
+ent_ot_bd_extra:   { ar: "إضافيين", en: "extras", tr: "ekstra" },
+ent_ot_bd_people:  { ar: "الأشخاص", en: "people", tr: "kişi" },
+ent_ot_bd_hours:   { ar: "الساعات", en: "hours", tr: "saat" },
 };
 

@@ -1,12 +1,17 @@
 /* /api/entries/overtime — R46-8: إدخال الأوفر تايم
    GET (?month=YYYY-MM) → list overtime entries
-   POST → create an entry (select employee by name, hours)
+   POST → create: شخص بالاسم و/أو أشخاص إضافيين (R68)
    DELETE → remove an entry
    R56: المنطق المشترك (مطابقة الموظف / خرائط الأقسام / تحقق الشهر
-        والتاريخ) اتنقل لـ lib/marib/entries.ts — نفس السلوك بالظبط. */
+        والتاريخ) اتنقل لـ lib/marib/entries.ts — نفس السلوك بالظبط.
+   R68: واجهة الأوفر تايم بقت زي الإنتاج — والطلب الجوهري: ناس
+        بتعمل أوفر تايم لسه مش مسجلين كود/اسم في الاتزان. الحفظ
+        الواحد ممكن يخرّج صفين: صف الشخص المختار بالاسم (لو اتختار)
+        + صف الإضافيين (عدد × ساعات الشخص) — الاتنين في معاملة واحدة
+        عشان ما يتحطش نص حفظ لو التاني فشل. */
 
 import { NextRequest, NextResponse } from "next/server";
-import { q, audit } from "@/lib/marib/db";
+import { q, audit, withTransaction } from "@/lib/marib/db";
 import { fail, serverFail, readJson, logger, requirePermBody, requireEntryRead } from "@/lib/marib/http";
 import { matchEmployee, loadEmpMap, loadDeptMap, monthParam, isDayStr, deleteEntry } from "@/lib/marib/entries";
 
@@ -25,7 +30,7 @@ export async function GET(req: NextRequest) {
     if (!month) return fail("month", 400);
 
     const rows = await q(
-      `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, emp_id, emp_code, emp_name, dept_id, dept_name, line_id, hours, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
+      `SELECT id, month_key, to_char(date, 'YYYY-MM-DD') AS date_str, emp_id, emp_code, emp_name, dept_id, dept_name, line_id, hours, extra_count, note, actor, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created
        FROM marib_overtime WHERE month_key = $1 ORDER BY date ASC, created_at ASC`,
       [month]
     );
@@ -37,6 +42,9 @@ export async function GET(req: NextRequest) {
       month,
       entries: rows.map((r) => {
         const emp = r.emp_id ? empMap[r.emp_id as string] : undefined;
+        /* R68: صف الإضافيين = emp فاضي و extra_count>0 — الواجهة
+           بتعرضه "N × إضافي" بدل متطابق/غير متطابق */
+        const extra = Number(r.extra_count || 0) > 0;
         return {
           id: r.id,
           month: r.month_key,
@@ -49,10 +57,12 @@ export async function GET(req: NextRequest) {
           dept_name: (r.dept_name as string) || ((r.dept_id as string) ? (deptMap[r.dept_id as string] || "") : ""),
           line_id: r.line_id || "",
           hours: r.hours,
+          extra_count: Number(r.extra_count || 0),
+          is_extra: extra,
           note: r.note || "",
           actor: r.actor,
           created: r.created,
-          matched: !!emp,
+          matched: extra ? true : !!emp,
         };
       }),
     });
@@ -79,26 +89,81 @@ export async function POST(req: NextRequest) {
     const lineId = String(body.line || body.line_id || "").trim().slice(0, 20);
     const hours = parseFloat(String(body.hours || "0"));
     const note = String(body.note || "").trim().slice(0, 200);
+    /* R68: الأشخاص الإضافيين — ناس مش مسجلين في الاتزان. العدد
+       N والساعات ساعات الشخص الواحد (إجمالي الصف = N × ساعات).
+       الحفظ الواحد بيخرّج صف الإضافيين ده جنب صف الشخص المسمّى. */
+    const extraCount = Math.floor(parseFloat(String(body.extra_count || "0")));
+    const extraHours = parseFloat(String(body.extra_hours || "0"));
+    const hasNamed = !!empCode || !!empName;
+    const hasExtra = extraCount > 0;
 
     if (!isDayStr(date)) return fail("date", 400);
-    if (hours <= 0 || hours > 24) return fail("hours", 400);
-    if (!empCode && !empName) return fail("emp", 400);
+    /* الطلب القديم كان بيرفض من غير موظف — دلوقتي الإضافيين لوحدهم
+       كفاية (الواجهة بتأكد القسم والخط قبل ما تبعت أصلًا) */
+    if (!hasNamed && !hasExtra) return fail("emp", 400);
+    if (extraCount < 0 || extraCount > 500) return fail("extra_count", 400);
+    if (hasNamed && (hours <= 0 || hours > 24)) return fail("hours", 400);
+    if (hasExtra && (extraHours <= 0 || extraHours > 24)) return fail("extra_hours", 400);
 
     /* match employee by code or name — shared helper (R56). القسم
-       النصي من الطلب هو fallback: بيفضل لو الموظف ملقوش أو من غير قسم. */
-    const { empId, deptId: resolvedDeptId } = await matchEmployee(empCode, empName, deptId || null);
+       النصي من الطلب هو fallback: بيفضل لو الموظف ملقوش أو من غير قسم.
+       صف الإضافيين ملوش موظف أصلًا — بياخد القسم النصي زي ما هو. */
+    const { empId, deptId: resolvedDeptId } = hasNamed
+      ? await matchEmployee(empCode, empName, deptId || null)
+      : { empId: null as string | null, deptId: null as string | null };
 
     const monthKey = date.slice(0, 7);
-    const id = crypto.randomUUID();
-    await q(
-      `INSERT INTO marib_overtime (id, month_key, date, emp_id, emp_code, emp_name, dept_id, dept_name, line_id, hours, note, actor)
-       VALUES ($1, $2, $3::date, NULLIF($4, ''), $5, $6, NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12)`,
-      [id, monthKey, date, empId || null, empCode, empName, resolvedDeptId || null, deptName || null, lineId || null, hours, note, me.username]
-    );
-    await audit(me.username, "create", "entries:overtime", id, { date, emp: empCode || empName, hours, matched: !!empId, dept: deptName });
-    lg.info("overtime entry created", { by: me.username, date, emp: empCode || empName, hours, matched: !!empId, dept: deptName });
+    const ids: string[] = [];
+    /* معاملة واحدة للصفين (لو عندنا صفين): مفيش نص حفظ لو التاني فشل */
+    await withTransaction(async (run) => {
+      if (hasNamed) {
+        const id = crypto.randomUUID();
+        await run(
+          `INSERT INTO marib_overtime (id, month_key, date, emp_id, emp_code, emp_name, dept_id, dept_name, line_id, hours, extra_count, note, actor)
+           VALUES ($1, $2, $3::date, NULLIF($4, ''), $5, $6, NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), $10, 0, $11, $12)`,
+          [id, monthKey, date, empId || null, empCode, empName, resolvedDeptId || null, deptName || null, lineId || null, hours, note, me.username]
+        );
+        ids.push(id);
+      }
+      if (hasExtra) {
+        const id = crypto.randomUUID();
+        await run(
+          `INSERT INTO marib_overtime (id, month_key, date, emp_id, emp_code, emp_name, dept_id, dept_name, line_id, hours, extra_count, note, actor)
+           VALUES ($1, $2, $3::date, NULL, '', '', NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), $7, $8, $9, $10)`,
+          [id, monthKey, date, deptId || null, deptName || null, lineId || null, extraHours, extraCount, note, me.username]
+        );
+        ids.push(id);
+      }
+    });
 
-    return NextResponse.json({ ok: true, id, matched: !!empId });
+    /* audit لكل صف اتعمل (نفس عادة الجولات: create + سياق) — R60:
+       الحارس على العنصر مش .length (noUncheckedIndexedAccess) */
+    const namedId = ids[0] || null;
+    const extraId = ids.length > 1 ? ids[ids.length - 1] || null : null;
+    if (hasNamed && namedId) {
+      await audit(me.username, "create", "entries:overtime", namedId, { date, emp: empCode || empName, hours, matched: !!empId, dept: deptName });
+    }
+    if (hasExtra && extraId) {
+      await audit(me.username, "create", "entries:overtime", extraId, { date, extra: extraCount, hours: extraHours, dept: deptName, line: lineId });
+    }
+    lg.info("overtime entry created", {
+      by: me.username, date, dept: deptName, line: lineId,
+      emp: hasNamed ? (empCode || empName) : null,
+      matched: hasNamed ? !!empId : null,
+      hours: hasNamed ? hours : null,
+      extra_count: hasExtra ? extraCount : 0,
+      extra_hours: hasExtra ? extraHours : 0,
+    });
+
+    /* الرد متوافق للخلف: id/matched بيتكلموا عن الصف الأول (المسمّى لو
+       موجود) — وids للواجهة الجديدة اللي عايزة تعرف كل اللي اتعمل */
+    return NextResponse.json({
+      ok: true,
+      id: namedId || extraId,
+      ids,
+      matched: hasNamed ? !!empId : true,
+      extra_count: hasExtra ? extraCount : 0,
+    });
   } catch (e) {
     return serverFail("entries:overtime", "POST", e);
   }

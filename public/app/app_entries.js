@@ -158,23 +158,11 @@ var AppEntries = (function (ctx) {
     });
   }
   /* R50: أقسام الإنتاج الخمسة الثابتة + الخمسة خطوط — دي أقسام
-     الأرضية الفعلية، مش شجرة الاتزان كلها (طلب المالك) */
+     الأرضية الفعلية، مش شجرة الاتزان كلها (طلب المالك)
+     R68: entSecOptions/entLineOptions (الدروب ليست) اتمسحوا — الأوفر
+     تايم كان آخر مستخدم ليهم وبقى شريط نقر زي الإنتاج (grep-verified). */
   var ENT_SECTIONS = ["الصدر", "الضهر", "التجميع", "التجهيزات", "البوكت"];
   var ENT_LINES = ["1", "2", "3", "4", "5"];
-  function entSecOptions(sel) {
-    var h = '<option value="">' + esc(T("ent_sec_prod")) + '</option>';
-    for (var i = 0; i < ENT_SECTIONS.length; i++) {
-      h += '<option value="' + esc(ENT_SECTIONS[i]) + '">' + esc(ENT_SECTIONS[i]) + "</option>";
-    }
-    return h;
-  }
-  function entLineOptions() {
-    var h = '<option value="">' + esc(T("ent_line_n")) + "</option>";
-    for (var i = 0; i < ENT_LINES.length; i++) {
-      h += '<option value="' + esc(ENT_LINES[i]) + '">' + esc(I18N.lang() === "tr" ? "Hat " + ENT_LINES[i] : "خط " + ENT_LINES[i]) + "</option>";
-    }
-    return h;
-  }
   /* ============================================================
      R58 — نموذج الإنتاج الجديد (طلب المالك):
      1) التاريخ الافتراضي = امبارح (الإنتاج بيتسجل غالبًا لليوم اللي فات)
@@ -515,14 +503,33 @@ var AppEntries = (function (ctx) {
   function entRenderOvertime(body, entries) {
     /* R64: الإضافة/الحذف لصاحب entry.edit بس */
     var canEdit = entCanEdit();
+    /* R68: الحساب الصح — الأشخاص = المسمّى (كل صف = 1) + الإضافيين
+       (صف الإضافيين = N) · الساعات = ساعات المسمّى + (N × ساعات
+       الشخص الإضافي). الأرقام دي هي اللي بيطمن المالك إن الإضافيين
+       «بيتضافوا على اللي مختارين بالاسم» فعلًا. */
+    var namedN = 0, extraN = 0, namedH = 0, extraH = 0;
+    entries.forEach(function (e) {
+      var n = parseInt(e.extra_count, 10) || 0;
+      var h = parseFloat(e.hours) || 0;
+      if (n > 0) { extraN += n; extraH += n * h; }
+      else { namedN += 1; namedH += h; }
+    });
+    var totP = namedN + extraN, totH = Math.round((namedH + extraH) * 100) / 100;
     var html = '<div class="ent-actions">' +
       (canEdit ? '<button type="button" class="ent-add" id="entOtAdd">' + esc(T("ent_add")) + '</button>' : "") +
       entRoChip() +
       '<span class="ent-count"><b>' + entries.length + '</b> ' + esc(T("mp_rows")) + '</span>' +
     '</div>';
-    if (!entries.length) {
-      html += '<p class="ent-empty">' + esc(T("ent_no_data")) + '</p>';
-    } else {
+    if (entries.length) {
+      /* R68: شريط إجمالي الشهر — بالاسم + إضافيين = الإجمالي */
+      html += '<div class="ent-ot-sum" id="entOtSum">' +
+        '<span class="ot-sum-chip">👤 ' + esc(T("ent_ot_bd_named")) + ': <b>' + namedN + '</b></span>' +
+        '<span class="ot-sum-chip">➕ ' + esc(T("ent_ot_bd_extra")) + ': <b>' + extraN + '</b></span>' +
+        '<span class="ot-sum-chip tot">👥 ' + esc(T("ent_ot_bd_people")) + ': <b>' + totP + '</b></span>' +
+        '<span class="ot-sum-chip tot">⏱ ' + esc(T("ent_ot_bd_hours")) + ': <b>' + totH + '</b></span>' +
+      '</div>';
+      /* R68: ملخص القسم والخط — «لكل قسم وخط عشان يحسب صح» */
+      html += entOtBreakdown(entries);
       html += '<table class="ent-tbl"><thead><tr>' +
         '<th>' + esc(T("ent_date")) + '</th>' +
         '<th>' + esc(T("ent_code")) + '</th>' +
@@ -534,18 +541,36 @@ var AppEntries = (function (ctx) {
         (canEdit ? '<th>' + esc(T("ent_actions")) + '</th>' : "") +
         '</tr></thead><tbody>';
       entries.forEach(function (e) {
-        html += '<tr class="' + (e.matched ? "" : "unmatched") + '">' +
-          '<td>' + esc(e.date) + '</td>' +
-          '<td>' + esc(e.emp_code || "—") + '</td>' +
-          '<td>' + esc(e.emp_name || "—") + '</td>' +
-          '<td>' + esc(e.dept_name || "—") + '</td>' +
-          '<td class="num">' + esc(e.hours) + '</td>' +
-          '<td>' + esc(e.note || "") + '</td>' +
-          '<td>' + (e.matched ? esc(T("ent_matched")) : '<b class="bad">' + esc(T("ent_unmatched")) + '</b>') + '</td>' +
-          (canEdit ? '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="overtime">' + esc(T("ent_deleted")) + '</button></td>' : "") +
-        '</tr>';
+        var n = parseInt(e.extra_count, 10) || 0;
+        var h = parseFloat(e.hours) || 0;
+        if (n > 0) {
+          /* R68: صف أشخاص إضافيين — الحساب مرئي: ساعات × عدد = إجمالي */
+          html += '<tr class="ot-extra-row">' +
+            '<td>' + esc(e.date) + '</td>' +
+            '<td>➕</td>' +
+            '<td><b>' + esc(T("ent_ot_extra_badge")) + ' × ' + n + '</b></td>' +
+            '<td>' + esc(e.dept_name || "—") + (e.line_id ? ' · <span class="faint">' + esc(e.line_id) + '</span>' : "") + '</td>' +
+            '<td class="num"><b>' + h + '</b> × ' + n + ' = <b>' + (Math.round(n * h * 100) / 100) + '</b></td>' +
+            '<td>' + esc(e.note || "") + '</td>' +
+            '<td><span class="ot-x-chip">' + esc(T("ent_ot_extra_badge")) + '</span></td>' +
+            (canEdit ? '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="overtime">' + esc(T("ent_deleted")) + '</button></td>' : "") +
+          '</tr>';
+        } else {
+          html += '<tr class="' + (e.matched ? "" : "unmatched") + '">' +
+            '<td>' + esc(e.date) + '</td>' +
+            '<td>' + esc(e.emp_code || "—") + '</td>' +
+            '<td>' + esc(e.emp_name || "—") + '</td>' +
+            '<td>' + esc(e.dept_name || "—") + (e.line_id ? ' · <span class="faint">' + esc(e.line_id) + '</span>' : "") + '</td>' +
+            '<td class="num">' + esc(e.hours) + '</td>' +
+            '<td>' + esc(e.note || "") + '</td>' +
+            '<td>' + (e.matched ? esc(T("ent_matched")) : '<b class="bad">' + esc(T("ent_unmatched")) + '</b>') + '</td>' +
+            (canEdit ? '<td><button type="button" class="ent-del" data-id="' + esc(e.id) + '" data-tab="overtime">' + esc(T("ent_deleted")) + '</button></td>' : "") +
+          '</tr>';
+        }
       });
       html += '</tbody></table>';
+    } else {
+      html += '<p class="ent-empty">' + esc(T("ent_no_data")) + '</p>';
     }
     body.innerHTML = html;
     var add = body.querySelector("#entOtAdd");
@@ -553,6 +578,39 @@ var AppEntries = (function (ctx) {
     body.querySelectorAll(".ent-del").forEach(function (b) {
       b.addEventListener("click", function () { entDelete("overtime", b.getAttribute("data-id")); });
     });
+  }
+  /* R68: ملخص الأوفر تايم حسب القسم والخط — نفس أرقام شريط الإجمالي
+     بس مفصولة، عشان «عدد الأشخاص لكل قسم وخط» يبان لوحده */
+  function entOtBreakdown(entries) {
+    var map = {};
+    entries.forEach(function (e) {
+      var key = (e.dept_name || "—") + "\u0001" + (e.line_id || "—");
+      var rec = map[key];
+      if (!rec) rec = map[key] = { dept: e.dept_name || "—", line: e.line_id || "—", named: 0, extra: 0, hours: 0 };
+      var n = parseInt(e.extra_count, 10) || 0;
+      var h = parseFloat(e.hours) || 0;
+      if (n > 0) { rec.extra += n; rec.hours += n * h; }
+      else { rec.named += 1; rec.hours += h; }
+    });
+    var keys = Object.keys(map).sort();
+    var h = '<details class="ent-ot-bd" open id="entOtBd"><summary>🧮 ' + esc(T("ent_ot_breakdown")) + '</summary>' +
+      '<table class="ent-tbl ot-bd-tbl"><thead><tr>' +
+      '<th>' + esc(T("mp_dept")) + '</th>' +
+      '<th>' + esc(T("ent_line")) + '</th>' +
+      '<th>' + esc(T("ent_ot_bd_named")) + '</th>' +
+      '<th>' + esc(T("ent_ot_bd_extra")) + '</th>' +
+      '<th>' + esc(T("ent_ot_bd_people")) + '</th>' +
+      '<th>' + esc(T("ent_ot_bd_hours")) + '</th>' +
+      '</tr></thead><tbody>';
+    keys.forEach(function (k) {
+      var r = map[k];
+      h += '<tr><td>' + esc(r.dept) + '</td><td>' + esc(r.line) + '</td>' +
+        '<td class="num">' + r.named + '</td>' +
+        '<td class="num">➕ ' + r.extra + '</td>' +
+        '<td class="num"><b>' + (r.named + r.extra) + '</b></td>' +
+        '<td class="num">' + (Math.round(r.hours * 100) / 100) + '</td></tr>';
+    });
+    return h + '</tbody></table></details>';
   }
   /* R50: كومبوبوكس الموظفين — بحث بالاسم أو الكود،
      مع إكمال تلقائي لباقي الكلمة، وزرار «إضافة كرقم» للي مش موجود.
@@ -658,26 +716,38 @@ var AppEntries = (function (ctx) {
     if (onState) onState(state);
   }
   function entOpenOtForm() {
-    var today = new Date().toISOString().slice(0, 10);
+    /* R68 — نموذج الأوفر تايم الجديد (طلب المالك: «زي واجهة تسجيل
+       الإنتاج»): 1) التاريخ الافتراضي = امبارس — نفس منطق الإنتاج
+       2) شريط للخط فوق + شريط للقسم تحت بنفس شكل الإنتاج
+       3) خانة الأشخاص الإضافيين: ناس بتعمل أوفر تايم لسه مش
+       مسجلين كود/اسم في الاتزان — بتتكتب كعدد + ساعات الشخص،
+       وبتتضاف على المختارين بالاسم في نفس القسم والخط. */
     var html =
-      '<div class="ent-form-row"><label>' + esc(T("ent_date")) + '<input type="date" id="efDate" value="' + today + '"></label></div>' +
-      '<div class="ent-form-row two">' +
-        '<label>' + esc(T("ent_dept")) + '<select id="efSec">' + entSecOptions() + '</select></label>' +
-        '<label>' + esc(T("ent_line")) + '<select id="efLine">' + entLineOptions() + '</select></label>' +
-      '</div>' +
+      '<div class="ent-form-row"><label>' + esc(T("ent_date")) + '<input type="date" id="efDate" value="' + entYesterday() + '"></label></div>' +
+      /* R68: شريطا الخط والقسم — نفس مكونات نموذج الإنتاج (R58) */
+      entStripRow("efLineStrip", "ent_line", entLineItems()) +
+      entStripRow("efSecStrip", "ent_dept", entSecItems()) +
       '<div class="ent-form-row ent-cb-row"><label class="ent-cb-lbl">' + esc(T("ent_person")) + '</label>' +
         '<div class="ent-cb"><input type="text" id="efPerson" placeholder="' + esc(T("ent_person")) + '" autocomplete="off">' +
         '<div class="ent-cb-list" id="efPersonList" hidden></div></div>' +
         '<button type="button" class="ent-add-code" id="efAddCode" hidden title="' + esc(T("ent_add_code_hint")) + '">➕ ' + esc(T("ent_add_code")) + ': <b></b></button>' +
       '</div>' +
       '<div class="ent-form-row"><label>' + esc(T("ent_hours")) + '<input type="number" id="efHours" min="0.5" max="24" step="0.5" value="2"></label></div>' +
+      /* R68: الأشخاص الإضافيين — مش مسجلين في الاتزان */
+      '<div class="ent-form-row two ot-extra-form">' +
+        '<label>' + esc(T("ent_ot_extra")) + '<input type="number" id="efExtraCount" min="0" max="500" step="1" value="0" placeholder="0"></label>' +
+        '<label>' + esc(T("ent_ot_extra_hours")) + '<input type="number" id="efExtraHours" min="0.5" max="24" step="0.5" value="2"></label>' +
+      '</div>' +
+      '<p class="ent-form-hint">' + esc(T("ent_ot_extra_hint")) + '</p>' +
       '<div class="ent-form-row"><label>' + esc(T("ent_note")) + '<input type="text" id="efNote" placeholder=""></label></div>';
-    entOpenForm(T("ent_add") + " — " + T("ent_ot_tab"), html, function (fm) {
+    var fm = entOpenForm(T("ent_add") + " — " + T("ent_ot_tab"), html, function (fm) {
       var data = {
         date: fm.querySelector("#efDate").value,
-        dept: (fm.querySelector("#efSec") || {}).value || "",
-        line: (fm.querySelector("#efLine") || {}).value || "",
+        dept: entStripSelected(fm, "efSecStrip"),
+        line: entStripSelected(fm, "efLineStrip"),
         hours: parseFloat(fm.querySelector("#efHours").value) || 0,
+        extra_count: parseInt(fm.querySelector("#efExtraCount").value, 10) || 0,
+        extra_hours: parseFloat(fm.querySelector("#efExtraHours").value) || 0,
         note: fm.querySelector("#efNote").value.trim(),
       };
       /* الشخص: يا اختيار من الكومبوبوكس يا كود حر من زرار «إضافة كرقم» */
@@ -693,27 +763,47 @@ var AppEntries = (function (ctx) {
       } else if (pinp && pinp.value.trim()) {
         data.emp_name = pinp.value.trim();
       }
-      if (!data.date || (!data.emp_code && !data.emp_name) || data.hours <= 0 || !data.dept || !data.line) {
+      var hasNamed = !!(data.emp_code || data.emp_name);
+      var hasExtra = data.extra_count > 0;
+      /* R68: الفورم بيعلّم — لا زم تختار قسم وخط (زي الإنتاج) ويبقى
+         عندنا على الأقل شخص بالاسم أو عدد إضافيين */
+      if (!data.date || !data.dept || !data.line || (!hasNamed && !hasExtra)) {
         toast(T("toast_fill"), "err");
         return false;
       }
+      if (hasNamed && data.hours <= 0) { toast(T("toast_fill"), "err"); return false; }
+      if (hasExtra && data.extra_hours <= 0) { toast(T("toast_fill"), "err"); return false; }
       entSubmitForm("/api/entries/overtime", data, function (r) {
-        if (r && r.matched === false) {
-          toast(T("ent_unmatched") + " — " + (r.id ? "id " + r.id : ""), "warn");
-        } else {
-          toast(T("ent_saved"), "ok");
-        }
+        /* R68: توست بيحكي اللي اتعمل فعلًا — «1 بالاسم · 4 إضافيين»
+           (والغير المتطابق بيفضل تحذير زي ما كان) */
+        var parts = [];
+        if (hasNamed) parts.push("1 " + T("ent_ot_bd_named"));
+        if (hasExtra && r && r.extra_count) parts.push(r.extra_count + " " + T("ent_ot_bd_extra"));
+        var warn = hasNamed && r && r.matched === false;
+        toast(T("ent_saved") + (parts.length ? " — " + parts.join(" · ") : ""), warn ? "warn" : "ok");
       });
       return true;
     });
+    if (!fm) return;
+    /* R68: ربط الأشرطة — نقر واحد بيحدد (الأوفر تايم ملوش PO فمفيش
+       استعلام حي — بس تبديل on/off) */
+    ["efLineStrip", "efSecStrip"].forEach(function (id) {
+      var strip = fm.querySelector("#" + id);
+      if (!strip) return;
+      strip.addEventListener("click", function (e) {
+        var b = e.target.closest(".ent-strip-btn");
+        if (!b) return;
+        strip.querySelectorAll(".ent-strip-btn").forEach(function (x) { x.classList.toggle("on", x === b); });
+      });
+    });
     /* اربط الكومبوبوكس بعد فتح المودال — الكاش من الاتزان */
     setTimeout(function () {
-      var fm = document.querySelector(".ent-form-modal");
-      if (!fm) return;
+      var fm2 = document.querySelector(".ent-form-modal");
+      if (!fm2) return;
       entEmpList(function () {
-        var pinp = fm.querySelector("#efPerson");
+        var pinp = fm2.querySelector("#efPerson");
         if (pinp) pinp._picked = null;
-        entBindCombo(fm, function (st) {
+        entBindCombo(fm2, function (st) {
           if (pinp) pinp._picked = st.picked;
         });
       });
