@@ -16,18 +16,18 @@ import { SKELETON } from "./skeleton";
    البيانات) + app_admin (الأوديت/التخزين/الصلاحيات) — كلهم بعد app_main
    عشان جسر __maribCtx يبقى جاهز، وقبل app_auth اللي بيبدأ التشغيل. */
 const SCRIPTS = [
-  "/app/kit.js?v=r70",           // R59 — MaribKit: أدوات مشتركة (dstamp/ensureXLSX/dlBlob/readGrid)
-  "/app/app_core.js?v=r70",      // MaribCore — parsing + the 42 measures
-  "/app/i18n_dict.js?v=r70",     // AR / EN / TR dictionary
-  "/app/i18n_core.js?v=r70",     // i18n engine
-  "/app/app_charts.js?v=r70",    // MaribCharts
-  "/app/marib_cloud.js?v=r70",   // server sync client (R23)
-  "/app/app_main.js?v=r70",      // App core — state + utils + filters + drill + settings
-  "/app/app_pages.js?v=r70",     // R52 — عرض صفحات التحليل + بيت المدير
-  "/app/app_entries.js?v=r70",   // R52 — إدخال البيانات (إنتاج/غياب/أوفر تايم)
-  "/app/app_admin.js?v=r70",     // R52 — الأوديت + التخزين + الصلاحيات
-  "/app/app_auth.js?v=r70",      // MaribAuth — server login gate
-  "/app/app_manpower.js?v=r70",  // R37 — الاتزان (manpower balance)
+  "/app/kit.js?v=r71",           // R59 — MaribKit: أدوات مشتركة (dstamp/ensureXLSX/dlBlob/readGrid)
+  "/app/app_core.js?v=r71",      // MaribCore — parsing + the 42 measures
+  "/app/i18n_dict.js?v=r71",     // AR / EN / TR dictionary
+  "/app/i18n_core.js?v=r71",     // i18n engine
+  "/app/app_charts.js?v=r71",    // MaribCharts
+  "/app/marib_cloud.js?v=r71",   // server sync client (R23)
+  "/app/app_main.js?v=r71",      // App core — state + utils + filters + drill + settings
+  "/app/app_pages.js?v=r71",     // R52 — عرض صفحات التحليل + بيت المدير
+  "/app/app_entries.js?v=r71",   // R52 — إدخال البيانات (إنتاج/غياب/أوفر تايم)
+  "/app/app_admin.js?v=r71",     // R52 — الأوديت + التخزين + الصلاحيات
+  "/app/app_auth.js?v=r71",      // MaribAuth — server login gate
+  "/app/app_manpower.js?v=r71",  // R37 — الاتزان (manpower balance)
 ];
 /* xlsx.full.min.js (~950KB) is NOT loaded upfront anymore: App.ensureXLSX()
    pulls it on first upload/export (R24 perf — the first paint got heavy). */

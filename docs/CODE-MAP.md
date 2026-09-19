@@ -2,7 +2,7 @@
 
 > **متعدّلش بإيدك.** الخريطة دي بتتولّد من الكود نفسه — لو اتغير
 > الكود، بتتغير معاه. أعد التوليد قبل أي commit: `bun scripts/code_map.mjs`
-> النسخة: r63 · الملفات المفهرسة: 67
+> النسخة: r63 · الملفات المفهرسة: 71
 
 ## الوصفة (30 ثانية لأي تعديل)
 
@@ -29,6 +29,7 @@
 | `/health` | GET | — | data, emp, user | `src/app/api/health/route.ts` |
 | `/manpower` | GET/POST | manpower.view | dept, emp, req, setting, transfer | `src/app/api/manpower/route.ts` |
 | `/manpower/export` | GET | manpower.export | — | `src/app/api/manpower/export/route.ts` |
+| `/owner-uploads` | GET/POST | — | — | `src/app/api/owner-uploads/route.ts` |
 | `/perms` | GET/PUT/DELETE | users.manage | perm, user | `src/app/api/perms/route.ts` |
 | `/po` | GET/POST/DELETE | entry.po · **entry-read** | po, prod | `src/app/api/po/route.ts` |
 | `/settings` | GET/PUT | settings.edit | setting | `src/app/api/settings/route.ts` |
@@ -79,7 +80,7 @@
 | `src/lib/marib/authcache.ts` | cachedPerms, cachedRole, invalidateUser, setCachedPerms, setCachedRole | `src/app/api/perms/route.ts`<br>`src/app/api/users/route.ts` | 83 |
 | `src/lib/marib/db.ts` | audit, bootInfo, driverName, ensureBoot, exec, q, withTransaction | `src/app/api/audit/route.ts`<br>`src/app/api/auth/route.ts`<br>`src/app/api/data/route.ts`<br>`src/app/api/entries/absence/route.ts`<br>`src/app/api/entries/employees/route.ts`<br>`src/app/api/entries/overtime/route.ts`<br>`src/app/api/entries/production/route.ts`<br>`src/app/api/health/route.ts`<br>`src/app/api/manpower/route.ts`<br>`src/app/api/perms/route.ts`<br>`src/app/api/po/route.ts`<br>`src/app/api/settings/route.ts`<br>`src/app/api/storage/route.ts`<br>`src/app/api/users/route.ts`<br>`src/lib/marib/entries.ts`<br>`src/lib/marib/http.ts`<br>`src/lib/marib/manpower_export.ts`<br>`src/lib/marib/manpower_io.ts`<br>`src/lib/marib/undo.ts` | 569 |
 | `src/lib/marib/entries.ts` | deleteEntry, isDayStr, loadDeptMap, loadEmpMap, matchEmployee, monthParam | `src/app/api/entries/absence/route.ts`<br>`src/app/api/entries/overtime/route.ts`<br>`src/app/api/entries/production/route.ts`<br>`src/app/api/manpower/route.ts` | 127 |
-| `src/lib/marib/http.ts` | MAX_BODY_BYTES, fail, logger, ok, readJson, requireEntryRead, requirePerm, requirePermBody, requireRole, requireRoleBody, requireUser, requireUserBody, serverFail | `src/app/api/audit/route.ts`<br>`src/app/api/auth/route.ts`<br>`src/app/api/data/route.ts`<br>`src/app/api/entries/absence/route.ts`<br>`src/app/api/entries/employees/route.ts`<br>`src/app/api/entries/overtime/route.ts`<br>`src/app/api/entries/production/route.ts`<br>`src/app/api/health/route.ts`<br>`src/app/api/manpower/export/route.ts`<br>`src/app/api/manpower/route.ts`<br>`src/app/api/perms/route.ts`<br>`src/app/api/po/route.ts`<br>`src/app/api/settings/route.ts`<br>`src/app/api/storage/route.ts`<br>`src/app/api/users/route.ts`<br>`src/lib/marib/entries.ts`<br>`src/lib/marib/manpower_io.ts` | 160 |
+| `src/lib/marib/http.ts` | MAX_BODY_BYTES, fail, logger, ok, readJson, requireEntryRead, requirePerm, requirePermBody, requireRole, requireRoleBody, requireUser, requireUserBody, serverFail | `src/app/api/audit/route.ts`<br>`src/app/api/auth/route.ts`<br>`src/app/api/data/route.ts`<br>`src/app/api/entries/absence/route.ts`<br>`src/app/api/entries/employees/route.ts`<br>`src/app/api/entries/overtime/route.ts`<br>`src/app/api/entries/production/route.ts`<br>`src/app/api/health/route.ts`<br>`src/app/api/manpower/export/route.ts`<br>`src/app/api/manpower/route.ts`<br>`src/app/api/owner-uploads/route.ts`<br>`src/app/api/perms/route.ts`<br>`src/app/api/po/route.ts`<br>`src/app/api/settings/route.ts`<br>`src/app/api/storage/route.ts`<br>`src/app/api/users/route.ts`<br>`src/lib/marib/entries.ts`<br>`src/lib/marib/manpower_io.ts` | 160 |
 | `src/lib/marib/logger.ts` | log | `src/lib/marib/db.ts`<br>`src/lib/marib/http.ts`<br>`src/lib/marib/logger.ts` | 96 |
 | `src/lib/marib/manpower_export.ts` | buildExport, buildTemplate | `src/app/api/manpower/export/route.ts` | 661 |
 | `src/lib/marib/manpower_io.ts` | cleanStr, deptPath, hasArabic, importManpower, logTransfer, normCode, normName | `src/app/api/manpower/route.ts` | 443 |
@@ -100,7 +101,7 @@
 | `src/lib/marib/authcache.ts` | `src/app/api/perms/route.ts` · `src/app/api/users/route.ts` |
 | `src/lib/marib/db.ts` | `src/app/api/audit/route.ts` · `src/app/api/auth/route.ts` · `src/app/api/data/route.ts` · `src/app/api/entries/absence/route.ts` · `src/app/api/entries/employees/route.ts` · `src/app/api/entries/overtime/route.ts` · `src/app/api/entries/production/route.ts` · `src/app/api/health/route.ts` · `src/app/api/manpower/route.ts` · `src/app/api/perms/route.ts` · `src/app/api/po/route.ts` · `src/app/api/settings/route.ts` · `src/app/api/storage/route.ts` · `src/app/api/users/route.ts` · `src/lib/marib/entries.ts` · `src/lib/marib/http.ts` · `src/lib/marib/manpower_export.ts` · `src/lib/marib/manpower_io.ts` · `src/lib/marib/undo.ts` |
 | `src/lib/marib/entries.ts` | `src/app/api/entries/absence/route.ts` · `src/app/api/entries/overtime/route.ts` · `src/app/api/entries/production/route.ts` · `src/app/api/manpower/route.ts` |
-| `src/lib/marib/http.ts` | `src/app/api/audit/route.ts` · `src/app/api/auth/route.ts` · `src/app/api/data/route.ts` · `src/app/api/entries/absence/route.ts` · `src/app/api/entries/employees/route.ts` · `src/app/api/entries/overtime/route.ts` · `src/app/api/entries/production/route.ts` · `src/app/api/health/route.ts` · `src/app/api/manpower/export/route.ts` · `src/app/api/manpower/route.ts` · `src/app/api/perms/route.ts` · `src/app/api/po/route.ts` · `src/app/api/settings/route.ts` · `src/app/api/storage/route.ts` · `src/app/api/users/route.ts` · `src/lib/marib/entries.ts` · `src/lib/marib/manpower_io.ts` |
+| `src/lib/marib/http.ts` | `src/app/api/audit/route.ts` · `src/app/api/auth/route.ts` · `src/app/api/data/route.ts` · `src/app/api/entries/absence/route.ts` · `src/app/api/entries/employees/route.ts` · `src/app/api/entries/overtime/route.ts` · `src/app/api/entries/production/route.ts` · `src/app/api/health/route.ts` · `src/app/api/manpower/export/route.ts` · `src/app/api/manpower/route.ts` · `src/app/api/owner-uploads/route.ts` · `src/app/api/perms/route.ts` · `src/app/api/po/route.ts` · `src/app/api/settings/route.ts` · `src/app/api/storage/route.ts` · `src/app/api/users/route.ts` · `src/lib/marib/entries.ts` · `src/lib/marib/manpower_io.ts` |
 | `src/lib/marib/logger.ts` | `src/lib/marib/db.ts` · `src/lib/marib/http.ts` · `src/lib/marib/logger.ts` |
 | `src/lib/marib/manpower_export.ts` | `src/app/api/manpower/export/route.ts` |
 | `src/lib/marib/manpower_io.ts` | `src/app/api/manpower/route.ts` |
